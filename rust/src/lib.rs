@@ -9,7 +9,7 @@
 //! use pixestl::{Config, Palette, LithophaneGenerator};
 //! use std::path::Path;
 //!
-//! # fn main() -> antml:Result<()> {
+//! # fn main() -> pixestl::Result<()> {
 //! let config = Config::builder()
 //!     .src_image_path("input.png")
 //!     .palette_path("palette.json")
