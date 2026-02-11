@@ -218,7 +218,7 @@ impl ColorCombi {
     ///
     /// 1. Split layers into: bottom white, middle colored, top white
     /// 2. Reassemble as: bottom + middle + top
-    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize, nb_layers: usize) {
+    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize, _nb_layers: usize) {
         let mut bottom_white = Vec::new();
         let mut middle_colored = Vec::new();
         let mut top_white = Vec::new();

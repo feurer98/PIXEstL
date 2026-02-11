@@ -15,7 +15,8 @@ pub mod quantize;
 pub use color_combi::ColorCombi;
 pub use color_layer::ColorLayer;
 pub use generator::{combine_combi_groups, create_multi_combi};
-pub use loader::PaletteLoader;
+pub use loader::{PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
+pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
 use crate::error::Result;

@@ -53,6 +53,10 @@ pub enum PixestlError {
     #[error("Required color {0} missing from palette")]
     MissingColor(String),
 
+    /// Invalid palette configuration
+    #[error("Invalid palette: {0}")]
+    InvalidPalette(String),
+
     /// General error with context
     #[error("{0}")]
     Other(String),
