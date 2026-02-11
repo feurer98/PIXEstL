@@ -1,24 +1,19 @@
-//! Lithophane generation logic
+//! Lithophane generation core
+//!
+//! This module provides functionality for:
+//! - Converting quantized images to 3D lithophane meshes
+//! - Color layer generation (stacked cubes)
+//! - Texture layer generation (brightness-based depth)
+//! - Support plate generation
+//! - Parallel mesh generation using Rayon
 
-// TODO: Implement lithophane module
-// This is a stub for now
+pub mod config;
+pub mod generator;
+pub mod geometry;
+pub mod color_layer;
+pub mod texture_layer;
+pub mod support_plate;
 
-use crate::{Config, Palette, Result};
-
-pub struct LithophaneGenerator {
-    _config: Config,
-    _palette: Palette,
-}
-
-impl LithophaneGenerator {
-    pub fn new(config: Config, palette: Palette) -> Self {
-        Self {
-            _config: config,
-            _palette: palette,
-        }
-    }
-
-    pub fn generate(&self) -> Result<()> {
-        Ok(())
-    }
-}
+pub use config::{LithophaneConfig, PixelCreationMethod};
+pub use generator::LithophaneGenerator;
+pub use geometry::{Mesh, Triangle, Vector3};
