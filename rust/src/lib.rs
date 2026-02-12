@@ -3,6 +3,7 @@
 //! This library provides functionality to generate color lithophanes for 3D printing
 //! with multi-color filaments using CMYK-based additive color mixing.
 
+pub mod cli;
 pub mod color;
 pub mod error;
 pub mod image;

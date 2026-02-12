@@ -1,12 +1,14 @@
-//! PIXEstL CLI entry point
+//! PIXEstL command-line application
 
-use pixestl::{cli, Result};
+use clap::Parser;
+use pixestl::cli::Cli;
+use std::process;
 
-fn main() -> Result<()> {
-    let _config = cli::parse_args()?;
+fn main() {
+    let cli = Cli::parse();
 
-    println!("PIXEstL - Color Lithophane Generator");
-    println!("Phase 2 (Color Module) implementation in progress...");
-
-    Ok(())
+    if let Err(e) = cli.run() {
+        eprintln!("Error: {}", e);
+        process::exit(1);
+    }
 }
