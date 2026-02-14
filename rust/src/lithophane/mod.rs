@@ -7,12 +7,12 @@
 //! - Support plate generation
 //! - Parallel mesh generation using Rayon
 
+pub mod color_layer;
 pub mod config;
 pub mod generator;
 pub mod geometry;
-pub mod color_layer;
-pub mod texture_layer;
 pub mod support_plate;
+pub mod texture_layer;
 
 pub use config::{LithophaneConfig, PixelCreationMethod};
 pub use generator::LithophaneGenerator;

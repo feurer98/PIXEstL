@@ -1,12 +1,14 @@
 //! Main lithophane generator orchestrator
 
+use crate::color::Rgb;
 use crate::error::{PixestlError, Result};
-use crate::image::{has_transparent_pixel, resize_image, flip_vertical, convert_to_grayscale, extract_pixels};
+use crate::image::{
+    convert_to_grayscale, extract_pixels, flip_vertical, has_transparent_pixel, resize_image,
+};
 use crate::lithophane::config::LithophaneConfig;
 use crate::lithophane::geometry::Mesh;
 use crate::lithophane::{color_layer, support_plate, texture_layer};
 use crate::palette::{quantize_image, Palette};
-use crate::color::Rgb;
 use image::{DynamicImage, RgbaImage};
 
 pub struct LithophaneGenerator {
@@ -19,11 +21,7 @@ impl LithophaneGenerator {
         Ok(Self { config })
     }
 
-    pub fn generate(
-        &self,
-        image: &DynamicImage,
-        palette: &Palette,
-    ) -> Result<Vec<(String, Mesh)>> {
+    pub fn generate(&self, image: &DynamicImage, palette: &Palette) -> Result<Vec<(String, Mesh)>> {
         let mut layers = Vec::new();
 
         let color_image = if self.config.color_layer {
@@ -33,16 +31,17 @@ impl LithophaneGenerator {
                 self.config.dest_height_mm,
                 self.config.color_pixel_width,
             )?;
-            
+
             let pixels_with_option = extract_pixels(&resized);
             let pixels: Vec<Vec<Rgb>> = pixels_with_option
                 .iter()
                 .map(|row| row.iter().filter_map(|&p| p).collect())
                 .collect();
-            
+
             let palette_colors = palette.colors();
-            let quantized_pixels = quantize_image(&pixels, &palette_colors, self.config.color_distance_method)?;
-            
+            let quantized_pixels =
+                quantize_image(&pixels, &palette_colors, self.config.color_distance_method)?;
+
             let quantized = pixels_to_image(quantized_pixels);
             Some(flip_vertical(&quantized))
         } else {
@@ -56,7 +55,7 @@ impl LithophaneGenerator {
                 self.config.dest_height_mm,
                 self.config.texture_pixel_width,
             )?;
-            
+
             let grayscale = convert_to_grayscale(&resized);
             Some(flip_vertical(&grayscale))
         } else {
@@ -104,21 +103,15 @@ impl LithophaneGenerator {
                     color_names.push(name.to_string());
                 }
             }
-            
+
             let layer_name = if color_names.is_empty() {
                 format!("layer-{}", group_idx + 1)
             } else {
                 format!("layer-{}", color_names.join("+"))
             };
 
-            let mesh = color_layer::generate_color_layer(
-                image,
-                palette,
-                hex_codes,
-                &self.config,
-                -1,
-                -1,
-            )?;
+            let mesh =
+                color_layer::generate_color_layer(image, palette, hex_codes, &self.config, -1, -1)?;
 
             layers.push((layer_name, mesh));
         }
@@ -133,10 +126,14 @@ impl LithophaneGenerator {
 
 fn pixels_to_image(pixels: Vec<Vec<Rgb>>) -> RgbaImage {
     use image::{ImageBuffer, Rgba};
-    
+
     let height = pixels.len() as u32;
-    let width = if height > 0 { pixels[0].len() as u32 } else { 0 };
-    
+    let width = if height > 0 {
+        pixels[0].len() as u32
+    } else {
+        0
+    };
+
     ImageBuffer::from_fn(width, height, |x, y| {
         if y as usize >= pixels.len() || x as usize >= pixels[y as usize].len() {
             Rgba([0, 0, 0, 0])

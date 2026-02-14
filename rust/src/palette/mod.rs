@@ -19,7 +19,6 @@ pub use loader::{PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
 pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
-use crate::error::Result;
 use std::collections::HashMap;
 
 /// A palette of colors with combinations for lithophane generation

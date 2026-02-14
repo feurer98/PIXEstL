@@ -35,8 +35,12 @@ fn write_ascii_stl<W: Write>(mesh: &Mesh, writer: &mut W, name: &str) -> Result<
 
 fn write_ascii_triangle<W: Write>(writer: &mut W, triangle: &Triangle) -> Result<()> {
     let normal = triangle.normal();
-    writeln!(writer, "facet normal {} {} {}", normal.x, normal.y, normal.z)
-        .map_err(PixestlError::Io)?;
+    writeln!(
+        writer,
+        "facet normal {} {} {}",
+        normal.x, normal.y, normal.z
+    )
+    .map_err(PixestlError::Io)?;
     writeln!(writer, "  outer loop").map_err(PixestlError::Io)?;
     write_ascii_vertex(writer, &triangle.v0)?;
     write_ascii_vertex(writer, &triangle.v1)?;
@@ -60,7 +64,9 @@ fn write_binary_stl<W: Write>(mesh: &Mesh, writer: &mut W, name: &str) -> Result
     writer.write_all(&header).map_err(PixestlError::Io)?;
 
     let triangle_count = mesh.triangles.len() as u32;
-    writer.write_all(&triangle_count.to_le_bytes()).map_err(PixestlError::Io)?;
+    writer
+        .write_all(&triangle_count.to_le_bytes())
+        .map_err(PixestlError::Io)?;
 
     for triangle in &mesh.triangles {
         write_binary_triangle(writer, triangle)?;
@@ -79,9 +85,15 @@ fn write_binary_triangle<W: Write>(writer: &mut W, triangle: &Triangle) -> Resul
 }
 
 fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
-    writer.write_all(&(vec.x as f32).to_le_bytes()).map_err(PixestlError::Io)?;
-    writer.write_all(&(vec.y as f32).to_le_bytes()).map_err(PixestlError::Io)?;
-    writer.write_all(&(vec.z as f32).to_le_bytes()).map_err(PixestlError::Io)?;
+    writer
+        .write_all(&(vec.x as f32).to_le_bytes())
+        .map_err(PixestlError::Io)?;
+    writer
+        .write_all(&(vec.y as f32).to_le_bytes())
+        .map_err(PixestlError::Io)?;
+    writer
+        .write_all(&(vec.z as f32).to_le_bytes())
+        .map_err(PixestlError::Io)?;
     Ok(())
 }
 
@@ -97,12 +109,12 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
     let file = File::create(output_path).map_err(PixestlError::Io)?;
     let mut zip = ZipWriter::new(file);
 
-    let options = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     for (layer_name, mesh) in layers {
         let filename = format!("{}.stl", layer_name);
-        zip.start_file(filename, options).map_err(PixestlError::Zip)?;
+        zip.start_file(filename, options)
+            .map_err(PixestlError::Zip)?;
         write_stl(mesh, &mut zip, format, layer_name)?;
     }
 
@@ -189,7 +201,7 @@ mod tests {
         let mut output = Vec::new();
         write_stl(&mesh, &mut output, StlFormat::Ascii, "test").unwrap();
         assert!(String::from_utf8(output).unwrap().contains("solid test"));
-        
+
         let mut output = Vec::new();
         write_stl(&mesh, &mut output, StlFormat::Binary, "test").unwrap();
         assert_eq!(output.len(), 84);

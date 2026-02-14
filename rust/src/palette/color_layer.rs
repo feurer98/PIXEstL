@@ -1,6 +1,6 @@
 //! ColorLayer represents a single layer of a filament color in CMYK color space
 
-use crate::color::{Cmyk, Hsl, Rgb};
+use crate::color::{Cmyk, Hsl};
 use std::cmp::Ordering;
 
 /// A single color layer with CMYK values

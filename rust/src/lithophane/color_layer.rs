@@ -6,9 +6,9 @@
 use crate::color::Rgb;
 use crate::error::Result;
 use crate::image::is_pixel_transparent;
-use crate::lithophane::geometry::{Mesh, Vector3};
 use crate::lithophane::config::LithophaneConfig;
-use crate::palette::{ColorCombi, Palette};
+use crate::lithophane::geometry::{Mesh, Vector3};
+use crate::palette::Palette;
 use image::RgbaImage;
 use rayon::prelude::*;
 
@@ -138,11 +138,12 @@ fn process_row(
                         .layer_position(hex_code, layer_index)
                         .unwrap_or(0);
 
-                    let (adjusted_height, adjusted_before) = if layer_offset != -1 && layer_max != -1 {
-                        apply_layer_offset(layer_height, layer_before, layer_offset, layer_max)
-                    } else {
-                        (layer_height, layer_before)
-                    };
+                    let (adjusted_height, adjusted_before) =
+                        if layer_offset != -1 && layer_max != -1 {
+                            apply_layer_offset(layer_height, layer_before, layer_offset, layer_max)
+                        } else {
+                            (layer_height, layer_before)
+                        };
 
                     if adjusted_height == 0 {
                         continue;
@@ -204,11 +205,7 @@ fn apply_layer_offset(
 
         (new_height, new_before)
     } else {
-        let mut new_before = if layer_before <= offset {
-            0
-        } else {
-            layer_before - offset
-        };
+        let new_before = layer_before.saturating_sub(offset);
 
         let mut new_height = layer_height;
 

@@ -4,7 +4,9 @@ use crate::color::ColorDistanceMethod;
 use crate::error::Result;
 use crate::image::load_image;
 use crate::lithophane::{LithophaneConfig, PixelCreationMethod as LithoPixelMethod};
-use crate::palette::{PaletteLoader, PaletteLoaderConfig, PixelCreationMethod as PalettePixelMethod};
+use crate::palette::{
+    PaletteLoader, PaletteLoaderConfig, PixelCreationMethod as PalettePixelMethod,
+};
 use crate::stl::{export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
@@ -158,7 +160,11 @@ impl Cli {
 
         println!("Loading image: {}", self.input.display());
         let image = load_image(&self.input)?;
-        println!("  Image size: {}x{} pixels\n", image.width(), image.height());
+        println!(
+            "  Image size: {}x{} pixels\n",
+            image.width(),
+            image.height()
+        );
 
         println!("Loading palette: {}", self.palette.display());
         let palette_config = PaletteLoaderConfig {

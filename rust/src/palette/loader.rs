@@ -2,7 +2,7 @@
 
 use crate::color::{ColorDistanceMethod, Rgb};
 use crate::error::{PixestlError, Result};
-use crate::palette::{combine_combi_groups, create_multi_combi, ColorCombi, ColorLayer, Palette};
+use crate::palette::{create_multi_combi, ColorCombi, ColorLayer, Palette};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -216,7 +216,7 @@ impl PaletteLoader {
         config: &PaletteLoaderConfig,
     ) -> Result<()> {
         // Remove white from the list for grouping
-        let mut working_hex_list: Vec<String> = hex_color_list
+        let working_hex_list: Vec<String> = hex_color_list
             .iter()
             .filter(|h| *h != "#FFFFFF")
             .cloned()
@@ -232,7 +232,7 @@ impl PaletteLoader {
 
         // Calculate number of groups
         let nb_groups = if nb_color_pool > 0 {
-            (working_hex_list.len() + nb_color_pool - 1) / nb_color_pool
+            working_hex_list.len().div_ceil(nb_color_pool)
         } else {
             1
         };

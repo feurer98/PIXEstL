@@ -143,11 +143,7 @@ impl Mesh {
     /// Translates all triangles in the mesh by a vector
     pub fn translate(&self, offset: Vector3) -> Mesh {
         Mesh {
-            triangles: self
-                .triangles
-                .iter()
-                .map(|t| t.translate(offset))
-                .collect(),
+            triangles: self.triangles.iter().map(|t| t.translate(offset)).collect(),
         }
     }
 
