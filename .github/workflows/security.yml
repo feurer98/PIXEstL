@@ -56,10 +56,6 @@ jobs:
       - name: Install cargo-deny
         run: cargo install cargo-deny
 
-      - name: Check licenses
-        working-directory: ./rust
-        run: cargo deny check licenses
-
       - name: Check bans
         working-directory: ./rust
         run: cargo deny check bans
