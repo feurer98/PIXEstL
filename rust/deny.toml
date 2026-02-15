@@ -2,16 +2,11 @@
 # https://embarkstudios.github.io/cargo-deny/
 
 [advisories]
-# Warn about security vulnerabilities
-vulnerability = "deny"
-# Warn about unmaintained crates
-unmaintained = "warn"
-# Warn about yanked crates
-yanked = "deny"
-# Ignore specific advisories (add IDs here if needed)
+version = 2
 ignore = []
 
 [licenses]
+version = 2
 # Allow only these licenses
 allow = [
     "MIT",
@@ -20,25 +15,19 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
+    "Unicode-3.0",
     "Unicode-DFS-2016",
     "Unlicense",
     "Zlib",
 ]
-# Confidence threshold for license detection
 confidence-threshold = 0.8
 
 [bans]
-# Warn about multiple versions of the same crate
 multiple-versions = "warn"
-# Wildcards in dependencies
 wildcards = "allow"
-# Highlight notable crates
 highlight = "all"
 
 [sources]
-# Lint level for unknown registries
 unknown-registry = "warn"
-# Lint level for unknown git sources
 unknown-git = "warn"
-# Allow git sources
 allow-git = []
