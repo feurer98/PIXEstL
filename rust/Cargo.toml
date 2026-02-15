@@ -50,7 +50,7 @@ assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
 approx = "0.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 proptest = "1"
 
 [[bench]]
