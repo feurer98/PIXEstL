@@ -476,6 +476,6 @@ mod tests {
         let palette = PaletteLoader::load(file.path(), config).unwrap();
 
         assert!(palette.nb_groups() > 0);
-        assert!(palette.hex_color_groups().len() > 0);
+        assert!(!palette.hex_color_groups().is_empty());
     }
 }

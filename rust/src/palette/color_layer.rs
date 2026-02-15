@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_sorting_by_k() {
-        let mut layers = vec![
+        let mut layers = [
             ColorLayer::from_cmyk("#AAAAAA".to_string(), 1, 0.0, 0.0, 0.0, 0.2), // Light
             ColorLayer::from_cmyk("#000000".to_string(), 1, 0.0, 0.0, 0.0, 0.9), // Dark
             ColorLayer::from_cmyk("#666666".to_string(), 1, 0.0, 0.0, 0.0, 0.5), // Medium

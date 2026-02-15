@@ -9,7 +9,7 @@
 
 use crate::color::Rgb;
 use crate::error::{PixestlError, Result};
-use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use std::path::Path;
 
 /// Loads an image from a file path

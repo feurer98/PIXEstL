@@ -212,7 +212,7 @@ mod tests {
         // - Red[1] + Green[2] + Blue[2] = 5 ✓
         // (Note: Red[1]+Red[1]+Red[1]+Red[1]+Red[1] won't work due to duplicate check)
 
-        assert!(combis.len() >= 1);
+        assert!(!combis.is_empty());
         assert!(combis.iter().all(|c| c.total_layers() == 5));
     }
 
@@ -329,7 +329,7 @@ mod tests {
         let combis = create_multi_combi(None, &layers, 5);
 
         // Should generate many valid combinations
-        assert!(combis.len() > 0);
+        assert!(!combis.is_empty());
         assert!(combis.iter().all(|c| c.total_layers() == 5));
 
         // Each should have unique color combinations

@@ -27,11 +27,6 @@ impl ColorCombi {
         Self { layers }
     }
 
-    /// Creates an empty ColorCombi
-    fn empty() -> Self {
-        Self { layers: Vec::new() }
-    }
-
     /// Attempts to combine this ColorCombi with a new ColorLayer
     ///
     /// Returns None if:
@@ -205,11 +200,6 @@ impl ColorCombi {
         &self.layers
     }
 
-    /// Gets the layers mutably
-    pub(crate) fn layers_mut(&mut self) -> &mut Vec<ColorLayer> {
-        &mut self.layers
-    }
-
     /// Optimizes white layers by moving them to bottom and top
     ///
     /// Based on Java Palette.optimizeWhiteLayer
@@ -261,7 +251,10 @@ impl std::fmt::Display for ColorCombi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+
+    fn create_empty_combi() -> ColorCombi {
+        ColorCombi { layers: Vec::new() }
+    }
 
     fn create_red_layer(layers: u32) -> ColorLayer {
         ColorLayer::from_cmyk("#FF0000".to_string(), layers, 0.0, 1.0, 1.0, 0.0)
@@ -356,10 +349,10 @@ mod tests {
 
         let rgb = combi.compute_rgb();
 
-        // Just verify it produces a valid RGB color
-        assert!(rgb.r <= 255);
-        assert!(rgb.g <= 255);
-        assert!(rgb.b <= 255);
+        // Just verify it produces a valid RGB color (u8 type guarantees 0-255 range)
+        let _r = rgb.r;
+        let _g = rgb.g;
+        let _b = rgb.b;
     }
 
     #[test]
@@ -367,7 +360,7 @@ mod tests {
         let red1 = create_red_layer(2);
         let red2 = create_red_layer(3);
 
-        let mut combi = ColorCombi::empty();
+        let mut combi = create_empty_combi();
         combi.add_layer(red1);
         combi.add_layer(red2);
 
@@ -387,7 +380,7 @@ mod tests {
         let green = create_green_layer(3);
         let red2 = create_red_layer(1);
 
-        let mut combi = ColorCombi::empty();
+        let mut combi = create_empty_combi();
         combi.add_layer(red);
         combi.add_layer(green);
         combi.add_layer(red2);
@@ -404,7 +397,7 @@ mod tests {
         let green = create_green_layer(3);
         let red2 = create_red_layer(1);
 
-        let mut combi = ColorCombi::empty();
+        let mut combi = create_empty_combi();
         combi.add_layer(red1);
         combi.add_layer(green);
         combi.add_layer(red2);
@@ -422,7 +415,7 @@ mod tests {
         let red = create_red_layer(3);
         let white2 = create_white_layer(1);
 
-        let mut combi = ColorCombi::empty();
+        let mut combi = create_empty_combi();
         combi.add_layer(white1.clone());
         combi.add_layer(red.clone());
         combi.add_layer(white2.clone());

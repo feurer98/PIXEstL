@@ -26,8 +26,6 @@ fn get_pixel_height(
 
     // K value (darkness) determines thickness
     let k = cmyk.k;
-    
-
     k * (max_thickness - min_thickness) + min_thickness
 }
 

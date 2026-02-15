@@ -133,13 +133,6 @@ impl Palette {
             combi.optimize_white_layers(nb_color_pool, self.nb_layers as usize);
         }
     }
-
-    /// Factorizes all color combinations
-    pub(crate) fn factorize_all(&mut self) {
-        for combi in self.quantized_colors.values_mut() {
-            combi.factorize();
-        }
-    }
 }
 
 #[cfg(test)]

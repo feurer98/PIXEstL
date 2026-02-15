@@ -12,7 +12,7 @@ use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-enum CliStlFormat {
+pub enum CliStlFormat {
     Ascii,
     Binary,
 }
@@ -27,7 +27,7 @@ impl From<CliStlFormat> for StlFormat {
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-enum CliColorDistance {
+pub enum CliColorDistance {
     Rgb,
     CieLab,
 }
@@ -42,7 +42,7 @@ impl From<CliColorDistance> for ColorDistanceMethod {
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-enum CliPixelMethod {
+pub enum CliPixelMethod {
     Additive,
     Full,
 }
