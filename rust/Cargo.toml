@@ -21,7 +21,7 @@ clap = { version = "4", features = ["derive"] }
 image = "0.25"
 
 # Mathematics & Geometry
-nalgebra = "0.33"
+nalgebra = "0.34"
 
 # STL Export
 stl_io = "0.10"
