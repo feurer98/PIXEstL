@@ -24,7 +24,7 @@ image = "0.25"
 nalgebra = "0.33"
 
 # STL Export
-stl_io = "0.7"
+stl_io = "0.10"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
