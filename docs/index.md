@@ -4,8 +4,8 @@
 
 **PIXEstL** verwandelt deine Fotos in beeindruckende, farbige Lithophanien fuer den 3D-Druck. Durch CMYK-basierte additive Farbmischung mit transparenten Filamenten entstehen hinterleuchtete Kunstwerke mit erstaunlicher Farbtiefe.
 
-[Schnellstart](schnellstart.md){ .md-button .md-button--primary }
-[Installation](installation.md){ .md-button }
+[Schnellstart](schnellstart.md){.md-button .md-button--primary}
+[Installation](installation.md){.md-button}
 
 ---
 
@@ -19,19 +19,19 @@ Eine Lithophanie ist ein duenner, lichtdurchlaessiger 3D-Druck, der erst durch H
 
 <div class="grid cards" markdown>
 
--   **CMYK-Farbmischung**
+-   ** CMYK-Farbmischung **
 
     ---
 
     Additive Farbmischung mit transparenten Filamenten erzeugt tausende Farbtoene aus nur 4-8 Grundfarben.
 
--   **Hochperformant**
+-   ** Hochperformant **
 
     ---
 
     In Rust geschrieben mit paralleler Verarbeitung (Rayon). 2-3x schneller als die Java-Vorgaengerversion.
 
--   **AMS-Unterstuetzung**
+-   ** AMS-Unterstuetzung **
 
     ---
 
