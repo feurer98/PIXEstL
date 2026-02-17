@@ -15,7 +15,7 @@ pub mod quantize;
 pub use color_combi::ColorCombi;
 pub use color_layer::ColorLayer;
 pub use generator::create_multi_combi;
-pub use loader::{PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
+pub use loader::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
 pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
@@ -79,6 +79,11 @@ impl Palette {
     /// Gets all hex codes in the palette
     pub fn hex_codes(&self) -> Vec<String> {
         self.hex_codes_map.keys().cloned().collect()
+    }
+
+    /// Gets the number of layers per color pixel
+    pub fn nb_layers(&self) -> u32 {
+        self.nb_layers
     }
 
     /// Gets the number of AMS groups

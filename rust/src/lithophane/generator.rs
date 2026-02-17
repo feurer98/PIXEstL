@@ -79,7 +79,28 @@ impl LithophaneGenerator {
             layers.push(("layer-texture".to_string(), texture_mesh));
         }
 
+        // Apply curve transformation if configured
+        if self.config.curve > 0.0 {
+            let total_width = self.compute_total_width(image);
+            for (_name, mesh) in &mut layers {
+                mesh.apply_curve(self.config.curve, total_width);
+            }
+        }
+
         Ok(layers)
+    }
+
+    /// Computes the total width of the lithophane in mm for curve transformation.
+    fn compute_total_width(&self, image: &DynamicImage) -> f64 {
+        let (img_w, img_h) = (image.width() as f64, image.height() as f64);
+
+        if self.config.dest_width_mm > 0.0 {
+            self.config.dest_width_mm
+        } else if self.config.dest_height_mm > 0.0 && img_h > 0.0 {
+            (img_w / img_h) * self.config.dest_height_mm
+        } else {
+            img_w * self.config.color_pixel_width
+        }
     }
 
     fn generate_color_layers(

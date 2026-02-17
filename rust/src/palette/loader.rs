@@ -76,6 +76,108 @@ impl Default for PaletteLoaderConfig {
 pub struct PaletteLoader;
 
 impl PaletteLoader {
+    /// Loads raw palette data from a JSON file without computing combinations.
+    ///
+    /// Useful for displaying palette information or validating the palette
+    /// before running a full generation.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the JSON palette file
+    ///
+    /// # Returns
+    ///
+    /// A HashMap of hex codes to PaletteColorEntry data
+    pub fn load_raw(path: &Path) -> Result<HashMap<String, PaletteColorEntry>> {
+        let json_content = fs::read_to_string(path)?;
+        let palette_data: HashMap<String, PaletteColorEntry> = serde_json::from_str(&json_content)?;
+        Ok(palette_data)
+    }
+
+    /// Validates palette completeness against the target layer count.
+    ///
+    /// Checks each active filament for missing or incomplete layer definitions
+    /// and returns a list of warning messages. These are warnings, not errors —
+    /// the palette may still work but with suboptimal color accuracy.
+    ///
+    /// # Arguments
+    ///
+    /// * `palette_data` - Raw palette data from `load_raw()`
+    /// * `target_layers` - Number of color layers configured (--color-layers)
+    ///
+    /// # Returns
+    ///
+    /// A list of warning strings. Empty if the palette is complete.
+    pub fn validate_completeness(
+        palette_data: &HashMap<String, PaletteColorEntry>,
+        target_layers: u32,
+    ) -> Vec<String> {
+        let mut warnings = Vec::new();
+
+        // Sort entries for deterministic output
+        let mut entries: Vec<_> = palette_data.iter().collect();
+        entries.sort_by_key(|(hex, _)| hex.to_string());
+
+        for (hex_code, entry) in &entries {
+            if !entry.active {
+                continue;
+            }
+
+            if let Some(layers) = &entry.layers {
+                let mut defined_layers: Vec<u32> = layers
+                    .keys()
+                    .filter_map(|k| k.parse::<u32>().ok())
+                    .collect();
+                defined_layers.sort();
+
+                if defined_layers.is_empty() {
+                    warnings.push(format!(
+                        "Filament {} ('{}') ist aktiv, hat aber keine gueltigen Layer-Definitionen.",
+                        hex_code, entry.name
+                    ));
+                    continue;
+                }
+
+                let max_defined = *defined_layers.iter().max().unwrap();
+
+                // Warn if only 1 layer defined but target is higher
+                if defined_layers.len() == 1 && target_layers > 1 {
+                    warnings.push(format!(
+                        "Filament {} ('{}') hat nur Schicht {} definiert, aber {} Schichten \
+                        sind konfiguriert (--color-layers {}). Fuer bessere Farbergebnisse: \
+                        HSL-Werte fuer Schichten 1 bis {} definieren.",
+                        hex_code,
+                        entry.name,
+                        defined_layers[0],
+                        target_layers,
+                        target_layers,
+                        target_layers
+                    ));
+                }
+                // Warn if max defined layer is less than target
+                else if max_defined < target_layers && defined_layers.len() > 1 {
+                    warnings.push(format!(
+                        "Filament {} ('{}') hat Schichten bis {} definiert, aber {} Schichten \
+                        sind konfiguriert. Schichten {} bis {} fehlen.",
+                        hex_code,
+                        entry.name,
+                        max_defined,
+                        target_layers,
+                        max_defined + 1,
+                        target_layers
+                    ));
+                }
+            } else {
+                warnings.push(format!(
+                    "Filament {} ('{}') ist aktiv, hat aber keine Layer-Definitionen.",
+                    hex_code, entry.name
+                ));
+            }
+        }
+
+        warnings
+    }
+
     /// Loads a palette from a JSON file
     ///
     /// Based on Java Palette constructor
@@ -479,5 +581,177 @@ mod tests {
 
         assert!(palette.nb_groups() > 0);
         assert!(!palette.hex_color_groups().is_empty());
+    }
+
+    #[test]
+    fn test_load_raw() {
+        let file = create_test_palette_json();
+        let data = PaletteLoader::load_raw(file.path()).unwrap();
+
+        assert!(data.contains_key("#FF0000"));
+        assert!(data.contains_key("#FFFFFF"));
+        assert_eq!(data["#FF0000"].name, "Red");
+        assert!(data["#FF0000"].active);
+        assert!(!data["#0000FF"].active);
+    }
+
+    #[test]
+    fn test_validate_completeness_no_warnings() {
+        // Palette with all 5 layers defined — should produce no warnings
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        for i in 1..=5 {
+            layers.insert(
+                i.to_string(),
+                LayerDefinition::Hsl {
+                    h: 200.0,
+                    s: 100.0,
+                    l: 80.0 - (i as f64 * 8.0),
+                },
+            );
+        }
+        data.insert(
+            "#0086D6".to_string(),
+            PaletteColorEntry {
+                name: "Cyan".to_string(),
+                active: true,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert!(
+            warnings.is_empty(),
+            "Expected no warnings, got: {:?}",
+            warnings
+        );
+    }
+
+    #[test]
+    fn test_validate_completeness_single_layer_warning() {
+        // Palette with only layer 5 defined but 5 layers configured
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        layers.insert(
+            "5".to_string(),
+            LayerDefinition::Hsl {
+                h: 200.0,
+                s: 100.0,
+                l: 50.0,
+            },
+        );
+        data.insert(
+            "#0086D6".to_string(),
+            PaletteColorEntry {
+                name: "Cyan".to_string(),
+                active: true,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("nur Schicht 5 definiert"));
+        assert!(warnings[0].contains("5 Schichten"));
+    }
+
+    #[test]
+    fn test_validate_completeness_missing_upper_layers() {
+        // Palette with layers 1-3 defined but 5 layers configured
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        for i in 1..=3 {
+            layers.insert(
+                i.to_string(),
+                LayerDefinition::Hsl {
+                    h: 200.0,
+                    s: 100.0,
+                    l: 80.0 - (i as f64 * 8.0),
+                },
+            );
+        }
+        data.insert(
+            "#0086D6".to_string(),
+            PaletteColorEntry {
+                name: "Cyan".to_string(),
+                active: true,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("Schichten bis 3 definiert"));
+        assert!(warnings[0].contains("4 bis 5 fehlen"));
+    }
+
+    #[test]
+    fn test_validate_completeness_inactive_no_warning() {
+        // Inactive filament with incomplete layers — should produce no warning
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        layers.insert(
+            "5".to_string(),
+            LayerDefinition::Hsl {
+                h: 240.0,
+                s: 100.0,
+                l: 50.0,
+            },
+        );
+        data.insert(
+            "#0000FF".to_string(),
+            PaletteColorEntry {
+                name: "Blue".to_string(),
+                active: false,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn test_validate_completeness_no_layers_warning() {
+        // Active filament with no layers defined
+        let mut data = HashMap::new();
+        data.insert(
+            "#FF0000".to_string(),
+            PaletteColorEntry {
+                name: "Red".to_string(),
+                active: true,
+                layers: None,
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("keine Layer-Definitionen"));
+    }
+
+    #[test]
+    fn test_validate_completeness_single_layer_config_no_warning() {
+        // Palette with 1 layer defined and 1 layer configured — should be fine
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        layers.insert(
+            "1".to_string(),
+            LayerDefinition::Hsl {
+                h: 200.0,
+                s: 100.0,
+                l: 50.0,
+            },
+        );
+        data.insert(
+            "#0086D6".to_string(),
+            PaletteColorEntry {
+                name: "Cyan".to_string(),
+                active: true,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 1);
+        assert!(warnings.is_empty());
     }
 }
