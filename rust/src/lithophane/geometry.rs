@@ -210,6 +210,35 @@ impl Mesh {
     }
 }
 
+impl Mesh {
+    /// Applies a cylindrical curve transformation to the mesh.
+    ///
+    /// Wraps the mesh around a cylinder along the X axis.
+    /// - `curve_degrees`: Arc angle in degrees (0=flat, 90=quarter, 360=full cylinder)
+    /// - `total_width`: Total width of the flat mesh in mm (the arc length)
+    ///
+    /// The Y axis remains unchanged (cylinder axis).
+    /// The X axis maps to the angular position.
+    /// The Z axis (depth/thickness) becomes the radial offset from the cylinder surface.
+    pub fn apply_curve(&mut self, curve_degrees: f64, total_width: f64) {
+        if curve_degrees == 0.0 || total_width <= 0.0 {
+            return;
+        }
+
+        let curve_radians = curve_degrees.to_radians();
+        let radius = total_width / curve_radians;
+
+        for triangle in &mut self.triangles {
+            for vertex in [&mut triangle.v0, &mut triangle.v1, &mut triangle.v2] {
+                let angle = (vertex.x / total_width) * curve_radians;
+                let r = radius + vertex.z;
+                vertex.x = r * angle.sin();
+                vertex.z = r * angle.cos() - radius;
+            }
+        }
+    }
+}
+
 impl Default for Mesh {
     fn default() -> Self {
         Self::new()
@@ -357,5 +386,122 @@ mod tests {
         let mesh2 = Mesh::cube(1.0, 1.0, 1.0, Vector3::new(2.0, 0.0, 0.0));
         mesh1.merge(&mesh2);
         assert_eq!(mesh1.triangle_count(), 24); // 12 + 12
+    }
+
+    // --- apply_curve tests ---
+
+    #[test]
+    fn test_apply_curve_zero_degrees_no_change() {
+        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let original = mesh.clone();
+        mesh.apply_curve(0.0, 100.0);
+
+        // Should be unchanged
+        for (t_orig, t_curved) in original.triangles.iter().zip(mesh.triangles.iter()) {
+            assert_eq!(t_orig.v0, t_curved.v0);
+            assert_eq!(t_orig.v1, t_curved.v1);
+            assert_eq!(t_orig.v2, t_curved.v2);
+        }
+    }
+
+    #[test]
+    fn test_apply_curve_preserves_triangle_count() {
+        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let count_before = mesh.triangle_count();
+        mesh.apply_curve(90.0, 100.0);
+        assert_eq!(mesh.triangle_count(), count_before);
+    }
+
+    #[test]
+    fn test_apply_curve_y_unchanged() {
+        // Y axis (cylinder axis) should not be affected by curve
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 5.0, 0.0),
+            Vector3::new(10.0, 10.0, 0.0),
+            Vector3::new(10.0, 15.0, 0.0),
+        ));
+        let original_ys: Vec<f64> = vec![
+            mesh.triangles[0].v0.y,
+            mesh.triangles[0].v1.y,
+            mesh.triangles[0].v2.y,
+        ];
+
+        mesh.apply_curve(180.0, 100.0);
+
+        assert_relative_eq!(mesh.triangles[0].v0.y, original_ys[0], epsilon = 1e-10);
+        assert_relative_eq!(mesh.triangles[0].v1.y, original_ys[1], epsilon = 1e-10);
+        assert_relative_eq!(mesh.triangles[0].v2.y, original_ys[2], epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_apply_curve_origin_vertex_unchanged_z() {
+        // A vertex at x=0, z=some_value should keep its z after curve
+        // because angle=0 → sin(0)=0, cos(0)=1 → new_z = (r+z)*1 - r = z
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 0.0, 1.5),
+            Vector3::new(0.0, 1.0, 1.5),
+            Vector3::new(0.0, 2.0, 1.5),
+        ));
+
+        mesh.apply_curve(180.0, 100.0);
+
+        // At x=0: angle=0, new_x = r*sin(0) = 0, new_z = (r+z)*cos(0) - r = z
+        assert_relative_eq!(mesh.triangles[0].v0.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mesh.triangles[0].v0.z, 1.5, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_apply_curve_360_degrees_forms_cylinder() {
+        // For 360° curve, the vertex at x=total_width should map back near x=0
+        // (full circle). angle = 2π, sin(2π) ≈ 0, cos(2π) ≈ 1
+        let total_width = 100.0;
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(total_width, 0.0, 0.0),
+            Vector3::new(total_width / 2.0, 1.0, 0.0),
+        ));
+
+        mesh.apply_curve(360.0, total_width);
+
+        // v0 at x=0: should stay near origin
+        assert_relative_eq!(mesh.triangles[0].v0.x, 0.0, epsilon = 1e-6);
+        // v1 at x=total_width (360°): should come back near origin
+        assert_relative_eq!(mesh.triangles[0].v1.x, 0.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_apply_curve_90_degrees_quarter_cylinder() {
+        // At 90°, vertex at x=total_width should be at angle=π/2
+        let total_width = 100.0;
+        let radius = total_width / (90.0_f64.to_radians()); // r = 100 / (π/2) ≈ 63.66
+
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(total_width, 0.0, 0.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        ));
+
+        mesh.apply_curve(90.0, total_width);
+
+        // v0 at x=total_width: angle=π/2
+        // new_x = r * sin(π/2) = r ≈ 63.66
+        // new_z = r * cos(π/2) - r = 0 - r ≈ -63.66
+        assert_relative_eq!(mesh.triangles[0].v0.x, radius, epsilon = 0.01);
+        assert_relative_eq!(mesh.triangles[0].v0.z, -radius, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_apply_curve_negative_width_no_change() {
+        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let original = mesh.clone();
+        mesh.apply_curve(90.0, -1.0); // Invalid width, should skip
+
+        for (t_orig, t_curved) in original.triangles.iter().zip(mesh.triangles.iter()) {
+            assert_eq!(t_orig.v0, t_curved.v0);
+        }
     }
 }

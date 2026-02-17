@@ -103,6 +103,11 @@ impl LithophaneConfig {
                 "At least one of color_layer or texture_layer must be enabled".to_string(),
             ));
         }
+        if self.curve < 0.0 || self.curve > 360.0 {
+            return Err(crate::error::PixestlError::Config(
+                "curve must be between 0 and 360 degrees".to_string(),
+            ));
+        }
         Ok(())
     }
 
@@ -194,5 +199,50 @@ mod tests {
             ..LithophaneConfig::default()
         };
         assert!((config.total_color_layer_height() - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_valid_curve_zero() {
+        let config = LithophaneConfig {
+            curve: 0.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_valid_curve_360() {
+        let config = LithophaneConfig {
+            curve: 360.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_valid_curve_90() {
+        let config = LithophaneConfig {
+            curve: 90.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_invalid_curve_negative() {
+        let config = LithophaneConfig {
+            curve: -10.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_curve_over_360() {
+        let config = LithophaneConfig {
+            curve: 400.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
     }
 }

@@ -81,7 +81,7 @@ pub struct Cli {
         short = 'i',
         long,
         value_name = "FILE",
-        required_unless_present = "palette_info"
+        required_unless_present_any = ["palette_info", "calibrate"]
     )]
     pub input: Option<PathBuf>,
 
@@ -92,7 +92,7 @@ pub struct Cli {
         short = 'o',
         long,
         value_name = "FILE",
-        required_unless_present = "palette_info"
+        required_unless_present_any = ["palette_info"]
     )]
     pub output: Option<PathBuf>,
 
@@ -141,6 +141,14 @@ pub struct Cli {
     #[arg(long, default_value = "0")]
     pub color_number: usize,
 
+    /// Curve angle in degrees (0=flat, 90=quarter cylinder, 180=half, 360=full cylinder)
+    #[arg(short = 'C', long, default_value = "0")]
+    pub curve: f64,
+
+    /// Generate calibration test pattern instead of lithophane (no image needed)
+    #[arg(long)]
+    pub calibrate: bool,
+
     #[arg(long)]
     pub debug: bool,
 }
@@ -162,7 +170,7 @@ impl Cli {
             pixel_creation_method: self.pixel_method.into(),
             color_number: self.color_number,
             color_distance_method: self.color_distance.into(),
-            curve: 0.0,
+            curve: self.curve,
             debug: self.debug,
             low_memory: false,
             layer_thread_max_number: 0,
@@ -173,6 +181,10 @@ impl Cli {
     pub fn run(&self) -> Result<()> {
         if self.palette_info {
             return self.run_palette_info();
+        }
+
+        if self.calibrate {
+            return self.run_calibrate();
         }
 
         // input and output are guaranteed present by clap (required_unless_present)
@@ -207,6 +219,9 @@ impl Cli {
         // --- Generate lithophane ---
         println!("Generating lithophane layers...");
         let config = self.to_lithophane_config();
+        if config.curve > 0.0 {
+            println!("  Curve: {:.0} degrees", config.curve);
+        }
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
         let layers = generator.generate(&image, &palette)?;
         println!("  Generated {} layer(s)", layers.len());
@@ -221,6 +236,73 @@ impl Cli {
         println!("  Format: {:?}\n", self.format);
 
         println!("Done!");
+        Ok(())
+    }
+
+    /// Generates calibration test pattern and exports it.
+    fn run_calibrate(&self) -> Result<()> {
+        let output = self.output.as_ref().ok_or_else(|| {
+            crate::error::PixestlError::Config(
+                "Output path (-o) is required for calibration".to_string(),
+            )
+        })?;
+
+        println!("PIXEstL - Kalibrierungs-Testmuster");
+        println!("==================================\n");
+
+        // Load palette
+        println!("Lade Palette: {}", self.palette.display());
+        let raw_palette = PaletteLoader::load_raw(&self.palette)?;
+        self.print_palette_warnings(&raw_palette);
+
+        let active_count = raw_palette
+            .values()
+            .filter(|e| e.active && e.layers.is_some())
+            .count();
+        println!("  Aktive Filamente: {}", active_count);
+        println!("  Schichten: {}\n", self.color_layers);
+
+        // Generate calibration pattern
+        let config = self.to_lithophane_config();
+        let (grid_w, grid_d) =
+            crate::lithophane::calibration::calibration_grid_dimensions(active_count, self.color_layers);
+        println!(
+            "Generiere Kalibrierungsmuster: {:.0}mm x {:.0}mm",
+            grid_w, grid_d
+        );
+        println!(
+            "  {} Filamente x {} Schichtstufen = {} Testfelder",
+            active_count,
+            self.color_layers,
+            active_count * self.color_layers as usize
+        );
+
+        let layers =
+            crate::lithophane::calibration::generate_calibration_pattern(&raw_palette, &config)?;
+
+        for (name, mesh) in &layers {
+            println!("  - {}: {} Dreiecke", name, mesh.triangle_count());
+        }
+        println!();
+
+        // Export
+        println!("Exportiere nach: {}", output.display());
+        export_to_zip(&layers, output, self.format.into())?;
+        println!("  Format: {:?}\n", self.format);
+
+        println!("Fertig!");
+        println!();
+        println!("--- Kalibrierungs-Anleitung ---");
+        println!("1. Drucken Sie die ZIP-Datei mit Ihrem Multi-Color-Drucker.");
+        println!("   Jede STL-Datei entspricht einem Filament.");
+        println!("2. Jede Reihe zeigt ein Filament bei 1 bis {} Schichten.", self.color_layers);
+        println!("3. Fotografieren Sie das Ergebnis bei neutraler Beleuchtung");
+        println!("   (Camera Pro: ISO 50-125, WB 5000K).");
+        println!(
+            "4. Messen Sie die HSL-Werte jedes Feldes und tragen Sie sie"
+        );
+        println!("   in die Palette-JSON ein.");
+
         Ok(())
     }
 
