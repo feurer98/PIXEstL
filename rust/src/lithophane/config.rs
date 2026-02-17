@@ -110,3 +110,89 @@ impl LithophaneConfig {
         self.color_pixel_layer_thickness * self.color_pixel_layer_number as f64
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config_is_valid() {
+        let config = LithophaneConfig::default();
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_invalid_color_pixel_width() {
+        let config = LithophaneConfig {
+            color_pixel_width: 0.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_texture_pixel_width() {
+        let config = LithophaneConfig {
+            texture_pixel_width: -1.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_layer_thickness() {
+        let config = LithophaneConfig {
+            color_pixel_layer_thickness: 0.0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_layer_number() {
+        let config = LithophaneConfig {
+            color_pixel_layer_number: 0,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_texture_thickness_range() {
+        let defaults = LithophaneConfig::default();
+        let config = LithophaneConfig {
+            texture_max_thickness: defaults.texture_min_thickness,
+            ..defaults
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_plate_thickness() {
+        let config = LithophaneConfig {
+            plate_thickness: -0.1,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_invalid_no_layers_enabled() {
+        let config = LithophaneConfig {
+            color_layer: false,
+            texture_layer: false,
+            ..LithophaneConfig::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_total_color_layer_height() {
+        let config = LithophaneConfig {
+            color_pixel_layer_thickness: 0.1,
+            color_pixel_layer_number: 5,
+            ..LithophaneConfig::default()
+        };
+        assert!((config.total_color_layer_height() - 0.5).abs() < 1e-10);
+    }
+}

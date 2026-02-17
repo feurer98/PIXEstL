@@ -71,16 +71,25 @@ pub fn generate_color_layer(
         })
         .collect();
 
-    // Merge all row meshes
-    let mut final_mesh = Mesh::new();
+    // Merge all row meshes with pre-allocation
+    let total_triangles: usize = row_meshes.iter().map(|m| m.triangle_count()).sum();
+    let mut final_mesh = Mesh::with_capacity(total_triangles);
     for row_mesh in row_meshes {
-        final_mesh.merge(&row_mesh);
+        final_mesh.merge_owned(row_mesh);
     }
 
     Ok(final_mesh)
 }
 
-/// Processes a single row of pixels
+/// Processes a single row of pixels to generate cube meshes for color layers.
+///
+/// For each hex code in the palette, scans the row left-to-right using run-length
+/// encoding (RLE) to merge consecutive same-color pixels into wider cubes. For each
+/// RLE run, looks up the `ColorCombi` from the palette and generates a cube for each
+/// layer of that hex code's contribution.
+///
+/// Transparent pixels and pixels adjacent to transparent neighbors are skipped
+/// to avoid artifacts at transparency boundaries.
 #[allow(clippy::too_many_arguments)]
 fn process_row(
     image: &RgbaImage,
@@ -118,7 +127,9 @@ fn process_row(
                 let next_pixel = image.get_pixel(x + k, y);
                 let next_rgb = Rgb::new(next_pixel[0], next_pixel[1], next_pixel[2]);
 
-                if next_rgb != pixel_rgb || has_transparent_neighbor(image, x + k, y) {
+                if next_rgb != pixel_rgb
+                    || (has_transparency && has_transparent_neighbor(image, x + k, y))
+                {
                     break;
                 }
 
@@ -177,6 +188,14 @@ fn process_row(
     mesh
 }
 
+/// Clips a layer's height and position to fit within a visible window.
+///
+/// When generating multi-group AMS layers, each STL file only represents a
+/// subset of the total layer stack. This function clips a layer that spans
+/// `[layer_before, layer_before + layer_height)` to the visible window
+/// `[offset, offset + layer_max)`.
+///
+/// Returns `(0, 0)` if the layer is entirely outside the window.
 fn apply_layer_offset(
     layer_height: u32,
     layer_before: usize,
@@ -215,5 +234,117 @@ fn apply_layer_offset(
         }
 
         (new_height, new_before)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::{ImageBuffer, Rgba};
+
+    fn create_opaque_image(width: u32, height: u32, color: [u8; 3]) -> RgbaImage {
+        ImageBuffer::from_fn(width, height, |_, _| {
+            Rgba([color[0], color[1], color[2], 255])
+        })
+    }
+
+    fn create_image_with_transparent_center(width: u32, height: u32) -> RgbaImage {
+        ImageBuffer::from_fn(width, height, |x, y| {
+            if x == width / 2 && y == height / 2 {
+                Rgba([0, 0, 0, 0]) // transparent center
+            } else {
+                Rgba([255, 0, 0, 255]) // opaque red
+            }
+        })
+    }
+
+    // --- apply_layer_offset tests ---
+
+    #[test]
+    fn test_apply_layer_offset_no_offset() {
+        // offset=0, layer_max=5: no clipping
+        let (h, b) = apply_layer_offset(3, 0, 0, 5);
+        assert_eq!(h, 3);
+        assert_eq!(b, 0);
+    }
+
+    #[test]
+    fn test_apply_layer_offset_entirely_above_range() {
+        // Layer starts at position 10, but offset+max = 0+5 = 5
+        let (h, _) = apply_layer_offset(3, 10, 0, 5);
+        assert_eq!(h, 0); // entirely clipped
+    }
+
+    #[test]
+    fn test_apply_layer_offset_entirely_below_offset() {
+        // Layer at position 0 with height 2, offset=5: layer ends at 2 < 5
+        let (h, _) = apply_layer_offset(2, 0, 5, 5);
+        assert_eq!(h, 0); // entirely clipped
+    }
+
+    #[test]
+    fn test_apply_layer_offset_partial_clip_from_bottom() {
+        // Layer at position 1 with height 4, offset=3, max=5
+        // Layer spans [1, 5), offset window is [3, 8)
+        // After clipping: delta = 3-1 = 2, new_height = 4-2 = 2, new_before = 0
+        let (h, b) = apply_layer_offset(4, 1, 3, 5);
+        assert_eq!(h, 2);
+        assert_eq!(b, 0);
+    }
+
+    #[test]
+    fn test_apply_layer_offset_partial_clip_from_top() {
+        // Layer at position 3 with height 5, offset=0, max=5
+        // Layer spans [3, 8), window is [0, 5)
+        // new_before = 3-0 = 3, new_height = 5 but 5+3=8 > 5, so delta=3, height=2
+        let (h, b) = apply_layer_offset(5, 3, 0, 5);
+        assert_eq!(h, 2);
+        assert_eq!(b, 3);
+    }
+
+    #[test]
+    fn test_apply_layer_offset_exact_boundary() {
+        // Layer at position 0, height 5, offset=0, max=5: exactly fills window
+        let (h, b) = apply_layer_offset(5, 0, 0, 5);
+        assert_eq!(h, 5);
+        assert_eq!(b, 0);
+    }
+
+    #[test]
+    fn test_apply_layer_offset_clamp_to_max() {
+        // Layer at position 0 with height 10, offset=2, max=3
+        // layer_before < offset: delta = 2-0 = 2, new_height = 10-2 = 8, clamped to max=3
+        let (h, b) = apply_layer_offset(10, 0, 2, 3);
+        assert_eq!(h, 3);
+        assert_eq!(b, 0);
+    }
+
+    // --- has_transparent_neighbor tests ---
+
+    #[test]
+    fn test_has_transparent_neighbor_all_opaque() {
+        let image = create_opaque_image(3, 3, [255, 0, 0]);
+        assert!(!has_transparent_neighbor(&image, 1, 1));
+    }
+
+    #[test]
+    fn test_has_transparent_neighbor_with_transparent() {
+        let image = create_image_with_transparent_center(3, 3);
+        // Pixel at (0, 0) has neighbor at (1, 1) which is transparent
+        assert!(has_transparent_neighbor(&image, 0, 0));
+    }
+
+    #[test]
+    fn test_has_transparent_neighbor_corner_pixel() {
+        let image = create_opaque_image(3, 3, [255, 0, 0]);
+        // Corner pixel (0, 0) in all-opaque image
+        assert!(!has_transparent_neighbor(&image, 0, 0));
+    }
+
+    #[test]
+    fn test_has_transparent_neighbor_edge_pixel() {
+        let image = create_opaque_image(3, 3, [255, 0, 0]);
+        // Edge pixel (1, 0) in all-opaque image
+        assert!(!has_transparent_neighbor(&image, 1, 0));
     }
 }

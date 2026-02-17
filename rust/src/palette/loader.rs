@@ -275,7 +275,9 @@ impl PaletteLoader {
             temp_color_combi_list.push(temp_list);
         }
 
-        let final_combi_list = temp_color_combi_list.last().unwrap();
+        let final_combi_list = temp_color_combi_list.last().ok_or_else(|| {
+            PixestlError::InvalidPalette("No color combination groups were generated".to_string())
+        })?;
 
         // Set group information
         palette.set_nb_groups(nb_groups);

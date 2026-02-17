@@ -12,7 +12,9 @@ pub mod hsl;
 pub mod rgb;
 
 pub use cielab::CieLab;
-pub use distance::{find_closest_color, ColorDistance, ColorDistanceMethod};
+pub use distance::{
+    find_closest_color, find_closest_color_precomputed, ColorDistance, ColorDistanceMethod,
+};
 pub use hsl::Hsl;
 pub use rgb::Rgb;
 

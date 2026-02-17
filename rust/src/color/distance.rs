@@ -1,6 +1,7 @@
 //! Color distance calculation methods
 
 use crate::color::{CieLab, Rgb};
+use crate::error::PixestlError;
 
 /// Method for calculating color distance
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -92,44 +93,80 @@ impl ColorDistance for CieLab {
 ///     Rgb::new(255, 255, 255),
 /// ];
 ///
-/// let closest = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
+/// let closest = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb).unwrap();
 /// assert_eq!(closest, Rgb::new(128, 128, 128));
 /// ```
-pub fn find_closest_color(target: &Rgb, colors: &[Rgb], method: ColorDistanceMethod) -> Rgb {
-    assert!(!colors.is_empty(), "Color list cannot be empty");
+pub fn find_closest_color(
+    target: &Rgb,
+    colors: &[Rgb],
+    method: ColorDistanceMethod,
+) -> crate::error::Result<Rgb> {
+    if colors.is_empty() {
+        return Err(PixestlError::InvalidPalette(
+            "Color list cannot be empty".to_string(),
+        ));
+    }
 
     match method {
-        ColorDistanceMethod::Rgb => {
-            let mut min_distance = f64::MAX;
-            let mut closest = colors[0];
-
-            for color in colors {
-                let distance = target.distance(color);
-                if distance < min_distance {
-                    min_distance = distance;
-                    closest = *color;
-                }
-            }
-
-            closest
-        }
+        ColorDistanceMethod::Rgb => Ok(find_closest_rgb(target, colors)),
         ColorDistanceMethod::CieLab => {
-            let target_lab = CieLab::from(*target);
-            let mut min_distance = f64::MAX;
-            let mut closest = colors[0];
-
-            for color in colors {
-                let color_lab = CieLab::from(*color);
-                let distance = target_lab.distance(&color_lab);
-                if distance < min_distance {
-                    min_distance = distance;
-                    closest = *color;
-                }
-            }
-
-            closest
+            let palette_labs: Vec<CieLab> = colors.iter().map(|c| CieLab::from(*c)).collect();
+            Ok(find_closest_cielab(target, colors, &palette_labs))
         }
     }
+}
+
+/// Find the closest color using pre-computed CIELab values for the palette.
+///
+/// This avoids redundant CIELab conversions when matching many pixels against
+/// the same palette. Pre-compute `palette_labs` once, then call this for each pixel.
+pub fn find_closest_color_precomputed(
+    target: &Rgb,
+    colors: &[Rgb],
+    palette_labs: &[CieLab],
+    method: ColorDistanceMethod,
+) -> crate::error::Result<Rgb> {
+    if colors.is_empty() {
+        return Err(PixestlError::InvalidPalette(
+            "Color list cannot be empty".to_string(),
+        ));
+    }
+
+    match method {
+        ColorDistanceMethod::Rgb => Ok(find_closest_rgb(target, colors)),
+        ColorDistanceMethod::CieLab => Ok(find_closest_cielab(target, colors, palette_labs)),
+    }
+}
+
+fn find_closest_rgb(target: &Rgb, colors: &[Rgb]) -> Rgb {
+    let mut min_distance = f64::MAX;
+    let mut closest = colors[0];
+
+    for color in colors {
+        let distance = target.distance(color);
+        if distance < min_distance {
+            min_distance = distance;
+            closest = *color;
+        }
+    }
+
+    closest
+}
+
+fn find_closest_cielab(target: &Rgb, colors: &[Rgb], palette_labs: &[CieLab]) -> Rgb {
+    let target_lab = CieLab::from(*target);
+    let mut min_distance = f64::MAX;
+    let mut closest = colors[0];
+
+    for (color, color_lab) in colors.iter().zip(palette_labs.iter()) {
+        let distance = target_lab.distance(color_lab);
+        if distance < min_distance {
+            min_distance = distance;
+            closest = *color;
+        }
+    }
+
+    closest
 }
 
 #[cfg(test)]
@@ -218,7 +255,7 @@ mod tests {
             Rgb::new(255, 255, 255),
         ];
 
-        let closest = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
+        let closest = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb).unwrap();
         assert_eq!(closest, Rgb::new(128, 128, 128));
     }
 
@@ -231,7 +268,7 @@ mod tests {
             Rgb::new(0, 0, 255), // Blue
         ];
 
-        let closest = find_closest_color(&target, &palette, ColorDistanceMethod::CieLab);
+        let closest = find_closest_color(&target, &palette, ColorDistanceMethod::CieLab).unwrap();
         // Should pick red as it's closest in perceptual space
         assert_eq!(closest, Rgb::new(255, 0, 0));
     }
@@ -245,20 +282,21 @@ mod tests {
             Rgb::new(255, 255, 255),
         ];
 
-        let closest_rgb = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
-        let closest_lab = find_closest_color(&target, &palette, ColorDistanceMethod::CieLab);
+        let closest_rgb = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb).unwrap();
+        let closest_lab =
+            find_closest_color(&target, &palette, ColorDistanceMethod::CieLab).unwrap();
 
         assert_eq!(closest_rgb, target);
         assert_eq!(closest_lab, target);
     }
 
     #[test]
-    #[should_panic(expected = "Color list cannot be empty")]
     fn test_find_closest_color_empty_palette() {
         let target = Rgb::new(128, 128, 128);
         let palette: Vec<Rgb> = vec![];
 
-        find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
+        let result = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
+        assert!(result.is_err());
     }
 
     #[test]
@@ -271,8 +309,9 @@ mod tests {
             Rgb::new(0, 255, 0), // Green
         ];
 
-        let closest_rgb = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
-        let closest_lab = find_closest_color(&target, &palette, ColorDistanceMethod::CieLab);
+        let closest_rgb = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb).unwrap();
+        let closest_lab =
+            find_closest_color(&target, &palette, ColorDistanceMethod::CieLab).unwrap();
 
         // RGB might give different result than CIELab due to perceptual differences
         // Both are valid, but CIELab should be more perceptually accurate

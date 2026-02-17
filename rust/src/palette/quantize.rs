@@ -1,6 +1,6 @@
 //! Image quantization to palette colors with parallel processing
 
-use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
+use crate::color::{find_closest_color_precomputed, CieLab, ColorDistanceMethod, Rgb};
 use crate::error::Result;
 use rayon::prelude::*;
 
@@ -47,10 +47,16 @@ pub fn quantize_pixels(
         return Ok(pixels.to_vec());
     }
 
+    // Pre-compute CIELab values for palette colors once
+    let palette_labs: Vec<CieLab> = palette_colors.iter().map(|c| CieLab::from(*c)).collect();
+
     // Use Rayon for parallel processing
     let quantized: Vec<Rgb> = pixels
         .par_iter()
-        .map(|pixel| find_closest_color(pixel, palette_colors, method))
+        .map(|pixel| {
+            find_closest_color_precomputed(pixel, palette_colors, &palette_labs, method)
+                .expect("palette is non-empty")
+        })
         .collect();
 
     Ok(quantized)
@@ -78,12 +84,18 @@ pub fn quantize_image(
         return Ok(image_data.to_vec());
     }
 
+    // Pre-compute CIELab values for palette colors once
+    let palette_labs: Vec<CieLab> = palette_colors.iter().map(|c| CieLab::from(*c)).collect();
+
     // Process each row in parallel
     let quantized: Vec<Vec<Rgb>> = image_data
         .par_iter()
         .map(|row| {
             row.iter()
-                .map(|pixel| find_closest_color(pixel, palette_colors, method))
+                .map(|pixel| {
+                    find_closest_color_precomputed(pixel, palette_colors, &palette_labs, method)
+                        .expect("palette is non-empty")
+                })
                 .collect()
         })
         .collect();
