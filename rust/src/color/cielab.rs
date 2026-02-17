@@ -3,6 +3,22 @@
 use crate::color::Rgb;
 use std::fmt;
 
+/// D65 standard illuminant reference white point (X component)
+const D65_X: f64 = 95.047;
+/// D65 standard illuminant reference white point (Y component)
+const D65_Y: f64 = 100.000;
+/// D65 standard illuminant reference white point (Z component)
+const D65_Z: f64 = 108.883;
+
+/// sRGB companding threshold for linearization
+const SRGB_THRESHOLD: f64 = 0.04045;
+
+/// CIELab linearization epsilon: (6/29)^3
+const LAB_EPSILON: f64 = 0.008856;
+
+/// CIELab linearization kappa: 1 / (3 * (6/29)^2)
+const LAB_KAPPA: f64 = 7.787037; // 1.0 / (3.0 * (6.0/29.0)^2)
+
 /// CIELab color representation
 ///
 /// - L: Lightness (0.0-100.0)
@@ -108,7 +124,7 @@ fn rgb_to_xyz(rgb: Rgb) -> Xyz {
 ///
 /// Based on Java ColorUtil.pivotRgbToXyz implementation
 fn pivot_rgb_to_xyz(n: f64) -> f64 {
-    if n > 0.04045 {
+    if n > SRGB_THRESHOLD {
         ((n + 0.055) / 1.055).powf(2.4)
     } else {
         n / 12.92
@@ -124,14 +140,9 @@ fn pivot_rgb_to_xyz(n: f64) -> f64 {
 ///
 /// Based on Java ColorUtil.xyzToLab implementation
 fn xyz_to_lab(xyz: Xyz) -> CieLab {
-    // D65 reference white point
-    let x_n = 95.047;
-    let y_n = 100.000;
-    let z_n = 108.883;
-
-    let x = xyz.x / x_n;
-    let y = xyz.y / y_n;
-    let z = xyz.z / z_n;
+    let x = xyz.x / D65_X;
+    let y = xyz.y / D65_Y;
+    let z = xyz.z / D65_Z;
 
     // Apply Lab transformation function
     let fx = if x > 0.0 { pivot_xyz_to_lab(x) } else { 0.0 };
@@ -149,12 +160,10 @@ fn xyz_to_lab(xyz: Xyz) -> CieLab {
 ///
 /// Based on Java ColorUtil.pivotXyzToLab implementation
 fn pivot_xyz_to_lab(n: f64) -> f64 {
-    let epsilon = (6.0_f64 / 29.0_f64).powi(3);
-
-    if n > epsilon {
+    if n > LAB_EPSILON {
         n.cbrt()
     } else {
-        n / (3.0 * (6.0_f64 / 29.0_f64).powi(2)) + 4.0 / 29.0
+        n * LAB_KAPPA + 4.0 / 29.0
     }
 }
 

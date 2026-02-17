@@ -147,9 +147,14 @@ impl Mesh {
         }
     }
 
-    /// Merges another mesh into this one
+    /// Merges another mesh into this one (by reference, cloning triangles)
     pub fn merge(&mut self, other: &Mesh) {
         self.triangles.extend(other.triangles.iter().cloned());
+    }
+
+    /// Merges another mesh into this one by consuming it (no cloning)
+    pub fn merge_owned(&mut self, other: Mesh) {
+        self.triangles.extend(other.triangles);
     }
 
     /// Creates a cube mesh

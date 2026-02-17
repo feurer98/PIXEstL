@@ -41,15 +41,22 @@ pub fn generate_texture_layer(image: &RgbaImage, config: &LithophaneConfig) -> R
         .map(|y| process_texture_row(image, y, width, height, config))
         .collect();
 
-    // Merge all row meshes
-    let mut final_mesh = Mesh::new();
+    // Merge all row meshes with pre-allocation
+    let total_triangles: usize = row_meshes.iter().map(|m| m.triangle_count()).sum();
+    let mut final_mesh = Mesh::with_capacity(total_triangles);
     for row_mesh in row_meshes {
-        final_mesh.merge(&row_mesh);
+        final_mesh.merge_owned(row_mesh);
     }
 
     Ok(final_mesh)
 }
 
+/// Processes a single row of quads for the texture layer mesh.
+///
+/// For each pixel quad (2x2 group of adjacent pixels), generates two triangles
+/// forming the surface, plus edge wall triangles along the image borders. The Z
+/// height of each vertex is determined by the pixel's CMYK K (darkness) value,
+/// creating a relief surface where darker pixels are thicker.
 fn process_texture_row(
     image: &RgbaImage,
     y: u32,
@@ -157,4 +164,80 @@ fn add_bottom_edge(mesh: &mut Mesh, i: f64, i1: f64, j1: f64, h01: f64, h11: f64
         Vector3::new(i, j1, 0.0),
         Vector3::new(i1, j1, 0.0),
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+    use image::{ImageBuffer, Rgba};
+
+    fn create_uniform_image(width: u32, height: u32, color: [u8; 3]) -> RgbaImage {
+        ImageBuffer::from_fn(width, height, |_, _| {
+            Rgba([color[0], color[1], color[2], 255])
+        })
+    }
+
+    #[test]
+    fn test_get_pixel_height_white() {
+        // White pixel: K=0, should return min_thickness
+        let image = create_uniform_image(1, 1, [255, 255, 255]);
+        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        assert_relative_eq!(height, 0.3, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_get_pixel_height_black() {
+        // Black pixel: K=1, should return max_thickness
+        let image = create_uniform_image(1, 1, [0, 0, 0]);
+        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        assert_relative_eq!(height, 1.8, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_get_pixel_height_gray() {
+        // Mid-gray: K ≈ 0.5, height should be between min and max
+        let image = create_uniform_image(1, 1, [128, 128, 128]);
+        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        assert!(height > 0.3 && height < 1.8);
+    }
+
+    #[test]
+    fn test_generate_texture_layer_2x2() {
+        // 2x2 image produces 1x1 grid of quads = 2 surface triangles
+        // Plus edge triangles: left(2) + top(2) + right(2) + bottom(2) = 8
+        // Total = 2 + 8 = 10
+        let image = create_uniform_image(2, 2, [128, 128, 128]);
+        let config = LithophaneConfig::default();
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+        assert_eq!(mesh.triangle_count(), 10);
+    }
+
+    #[test]
+    fn test_generate_texture_layer_3x3() {
+        // 3x3 image produces 2x2 grid of quads = 4 quads * 2 triangles = 8 surface triangles
+        // Edge triangles: left(2*2) + top(2*2) + right(2*2) + bottom(2*2) = 16
+        // Total = 8 + 16 = 24
+        let image = create_uniform_image(3, 3, [128, 128, 128]);
+        let config = LithophaneConfig::default();
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+        assert_eq!(mesh.triangle_count(), 24);
+    }
+
+    #[test]
+    fn test_texture_heights_monotonic_with_darkness() {
+        // Darker pixels should produce taller heights
+        let light = create_uniform_image(1, 1, [200, 200, 200]);
+        let dark = create_uniform_image(1, 1, [50, 50, 50]);
+
+        let h_light = get_pixel_height(&light, 0, 0, 0.3, 1.8);
+        let h_dark = get_pixel_height(&dark, 0, 0, 0.3, 1.8);
+
+        assert!(
+            h_dark > h_light,
+            "Dark ({}) should be taller than light ({})",
+            h_dark,
+            h_light
+        );
+    }
 }
