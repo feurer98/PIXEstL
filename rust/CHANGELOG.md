@@ -2,6 +2,25 @@
 
 All notable changes to the PIXEstL Rust port will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Curve mode** (`--curve` / `-C`): Cylindrical lithophane generation (0-360 degrees).
+  Wraps the lithophane around a cylinder for lamp shades, panorama displays, and
+  curved picture frames. Issue #14.
+- **Calibration test pattern generator** (`--calibrate`): Generates a grid of test
+  squares for each active filament at all layer counts (1 through N). Outputs a ZIP
+  with separate STL files per filament for correct slicer assignment.
+- **Palette validation warnings**: Warns when layer definitions are missing or
+  incomplete for the configured number of color layers.
+- **Resolution warnings**: Alerts when `--color-pixel-width` is too large relative
+  to the source image resolution.
+- **`--palette-info` flag**: Displays active filaments, color combinations, and
+  layer configuration without generating a lithophane.
+
+### Changed
+- CLI now accepts `--calibrate` and `--palette-info` without requiring an input image.
+
 ## [0.1.0] - 2024-02-12
 
 ### Added - Initial Rust Port

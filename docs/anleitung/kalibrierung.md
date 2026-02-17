@@ -34,7 +34,30 @@ Die Kalibrierung erfasst die HSL-Werte (Farbton, Saettigung, Helligkeit) deiner 
 
 Drucke Farb-Teststreifen mit 1 bis 5 Schichten fuer jede Filamentfarbe. Jeder Streifen sollte gross genug sein, um spaeter eine saubere Farbmessung durchfuehren zu koennen (mindestens 10 x 10 mm pro Feld).
 
-Die Kalibrierungs-STL kann entweder mit PIXEstL generiert oder manuell in einem CAD-Programm erstellt werden. Wichtig ist, dass jedes Feld eine exakte Anzahl von Schichten enthaelt:
+### Automatisch mit PIXEstL (empfohlen)
+
+PIXEstL kann die Kalibrierungs-Testmuster direkt aus deiner Palette generieren:
+
+```bash
+pixestl --calibrate -p palette/filament-palette-0.10mm.json -o kalibrierung.zip --color-layers 5
+```
+
+Dieser Befehl erzeugt:
+
+- Fuer jedes aktive Filament eine Reihe mit 5 Testquadraten (10 x 10 mm)
+- Jedes Quadrat hat die exakte Dicke fuer 1, 2, 3, 4 bzw. 5 Schichten
+- Separate STL-Dateien pro Filament (fuer korrekte Filamentzuordnung im Slicer)
+- Eine Grundplatte als Basis
+
+!!! tip "7-Schicht-Kalibrierung"
+    Fuer eine feinere Kalibrierung mit 7 Schichten:
+    ```bash
+    pixestl --calibrate -p palette.json -o kalibrierung.zip --color-layers 7
+    ```
+
+### Manuell erstellen
+
+Alternativ kann das Testmuster manuell in einem CAD-Programm erstellt werden. Wichtig ist, dass jedes Feld eine exakte Anzahl von Schichten enthaelt:
 
 | Feld | Schichten | Dicke bei 0.10mm |
 |------|-----------|-------------------|

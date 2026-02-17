@@ -110,6 +110,29 @@ pixestl -i bild.jpg -p palette.json -o ausgabe.zip -w 100 --format binary
 
 Wenn du mehr Farben in der Palette hast, als dein AMS gleichzeitig aufnehmen kann, teilt `--color-number 4` die Farbschichten in mehrere Gruppen auf. Jede Gruppe kann als separater Druckauftrag nacheinander gedruckt werden.
 
+### Kruemmung (Curve)
+
+| Parameter | Standard | Beschreibung |
+|-----------|----------|--------------|
+| `-C` / `--curve` | 0 | Kruemmungswinkel in Grad. 0 = flach (Standard), 90 = Viertelzylinder, 180 = Halbzylinder, 360 = Vollzylinder. |
+
+Die Kruemmung wickelt die Lithophanie um einen Zylinder. Der Radius wird automatisch aus der Breite und dem Winkel berechnet, sodass die Bogenlaenge der eingestellten Breite entspricht.
+
+```bash
+# Halbzylinder, 150mm breit
+pixestl -i panorama.jpg -p palette.json -o panorama.zip -w 150 -C 180
+
+# Vollzylinder (Lampe), 250mm Umfang
+pixestl -i bild.jpg -p palette.json -o lampe.zip -w 250 -C 360
+```
+
+!!! info "Wann Kruemmung verwenden?"
+    Gekruemmte Lithophanien eignen sich besonders fuer:
+
+    - **Panoramafotos** als freistehendes Halbzylinder-Bild
+    - **Lampenschirme** als Vollzylinder (360 Grad)
+    - **Bilderrahmen-Effekt** mit leichter Kruemmung (20-45 Grad)
+
 ### Weitere Parameter
 
 | Parameter | Standard | Beschreibung |
@@ -117,6 +140,7 @@ Wenn du mehr Farben in der Palette hast, als dein AMS gleichzeitig aufnehmen kan
 | `--plate-thickness` | 0.2 mm | Dicke der Grundplatte |
 | `--no-color` | (Flag) | Erzeugt keine Farbschichten (nur Textur, Graustufenlithophanie) |
 | `--no-texture` | (Flag) | Erzeugt keine Texturschicht (nur Farbe, flach) |
+| `--calibrate` | (Flag) | Kalibrierungsmodus: Generiert Testmuster statt Lithophanie (kein Bild noetig) |
 | `--debug` | (Flag) | Gibt zusaetzliche Debug-Informationen aus |
 
 ---
@@ -187,6 +211,31 @@ pixestl \
 ```
 
 Erzeugt eine klassische Graustufen-Lithophanie ohne Farbschichten. Die Helligkeit wird ausschliesslich ueber die Texturdicke gesteuert. Benoetigt nur weisses Filament.
+
+### 6. Gekruemmte Lithophanie (Halbzylinder)
+
+```bash
+pixestl \
+  -i panorama.jpg \
+  -p palette/filament-palette-0.10mm.json \
+  -o panorama_curved.zip \
+  -w 200 \
+  -C 180 \
+  --format binary
+```
+
+Erzeugt eine 200mm breite Halbzylinder-Lithophanie. Die Kruemmung von 180 Grad wickelt das Bild um einen Halbkreis. Besonders geeignet fuer Panoramafotos, die als freistehendes Leuchtbild aufgestellt werden.
+
+### 7. Kalibrierungs-Testmuster
+
+```bash
+pixestl --calibrate \
+  -p palette/filament-palette-0.10mm.json \
+  -o kalibrierung.zip \
+  --color-layers 7
+```
+
+Generiert Kalibrierungs-Testfelder (10 x 10 mm) fuer alle aktiven Filamente der Palette. Jedes Filament erhaelt eine Reihe mit Quadraten bei aufsteigender Schichtanzahl (1 bis 7). Die Ausgabe enthaelt separate STL-Dateien pro Filament, sodass jedem das richtige Filament im Slicer zugewiesen werden kann.
 
 ---
 

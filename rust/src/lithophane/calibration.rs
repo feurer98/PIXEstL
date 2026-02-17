@@ -50,15 +50,13 @@ pub fn generate_calibration_pattern(
     let num_columns = nb_layers as usize;
 
     // Grid dimensions
-    let grid_width = num_columns as f64 * SQUARE_SIZE + (num_columns - 1).max(0) as f64 * SQUARE_GAP;
-    let grid_depth = num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
+    let grid_width =
+        num_columns as f64 * SQUARE_SIZE + (num_columns - 1).max(0) as f64 * SQUARE_GAP;
+    let grid_depth =
+        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
 
     // Generate base plate
-    let plate_center = Vector3::new(
-        grid_width / 2.0,
-        grid_depth / 2.0,
-        -plate_thickness / 2.0,
-    );
+    let plate_center = Vector3::new(grid_width / 2.0, grid_depth / 2.0, -plate_thickness / 2.0);
     let plate = Mesh::cube(grid_width, grid_depth, plate_thickness, plate_center);
     layers.push(("calibration-plate".to_string(), plate));
 
@@ -82,10 +80,7 @@ pub fn generate_calibration_pattern(
             filament_mesh.merge(&cube);
         }
 
-        let layer_name = format!(
-            "calibration-{}",
-            sanitize_filename(&entry.name, hex_code)
-        );
+        let layer_name = format!("calibration-{}", sanitize_filename(&entry.name, hex_code));
         layers.push((layer_name, filament_mesh));
     }
 
@@ -93,13 +88,12 @@ pub fn generate_calibration_pattern(
 }
 
 /// Returns the grid dimensions (width_mm, depth_mm) for a calibration pattern.
-pub fn calibration_grid_dimensions(
-    num_filaments: usize,
-    nb_layers: u32,
-) -> (f64, f64) {
+pub fn calibration_grid_dimensions(num_filaments: usize, nb_layers: u32) -> (f64, f64) {
     let num_columns = nb_layers as usize;
-    let width = num_columns as f64 * SQUARE_SIZE + (num_columns.saturating_sub(1)) as f64 * SQUARE_GAP;
-    let depth = num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
+    let width =
+        num_columns as f64 * SQUARE_SIZE + (num_columns.saturating_sub(1)) as f64 * SQUARE_GAP;
+    let depth =
+        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
     (width, depth)
 }
 

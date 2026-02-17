@@ -264,8 +264,10 @@ impl Cli {
 
         // Generate calibration pattern
         let config = self.to_lithophane_config();
-        let (grid_w, grid_d) =
-            crate::lithophane::calibration::calibration_grid_dimensions(active_count, self.color_layers);
+        let (grid_w, grid_d) = crate::lithophane::calibration::calibration_grid_dimensions(
+            active_count,
+            self.color_layers,
+        );
         println!(
             "Generiere Kalibrierungsmuster: {:.0}mm x {:.0}mm",
             grid_w, grid_d
@@ -295,12 +297,13 @@ impl Cli {
         println!("--- Kalibrierungs-Anleitung ---");
         println!("1. Drucken Sie die ZIP-Datei mit Ihrem Multi-Color-Drucker.");
         println!("   Jede STL-Datei entspricht einem Filament.");
-        println!("2. Jede Reihe zeigt ein Filament bei 1 bis {} Schichten.", self.color_layers);
+        println!(
+            "2. Jede Reihe zeigt ein Filament bei 1 bis {} Schichten.",
+            self.color_layers
+        );
         println!("3. Fotografieren Sie das Ergebnis bei neutraler Beleuchtung");
         println!("   (Camera Pro: ISO 50-125, WB 5000K).");
-        println!(
-            "4. Messen Sie die HSL-Werte jedes Feldes und tragen Sie sie"
-        );
+        println!("4. Messen Sie die HSL-Werte jedes Feldes und tragen Sie sie");
         println!("   in die Palette-JSON ein.");
 
         Ok(())

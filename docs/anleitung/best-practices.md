@@ -127,13 +127,15 @@ Nach dem Kalibrieren solltest du folgende Werte pruefen:
 
 Fuer optimale Ergebnisse empfehlen wir folgenden Ablauf:
 
-1. **Palette kalibrieren** (einmalig pro Filament-Set und Schichthoehe)
-2. **Palette pruefen:** `pixestl --palette-info -p palette.json`
-3. **Bild vorbereiten:** Kontrast erhoehen, Highlights reduzieren
-4. **Testgenerierung:** Mit niedrigerer Aufloesung starten (`--color-pixel-width 0.8`)
-5. **STL im Slicer pruefen:** Filamentzuordnung und Schichtreihenfolge kontrollieren
-6. **Feintuning:** Bei Bedarf `--color-pixel-width` verkleinern oder `--color-layers` erhoehen
-7. **Finaler Druck:** Mit Ironing, langsamer Geschwindigkeit, korrekter Schichthoehe
+1. **Kalibrierungs-Testmuster generieren:** `pixestl --calibrate -p palette.json -o kalibrierung.zip`
+2. **Testmuster drucken, fotografieren und HSL-Werte messen** (einmalig pro Filament-Set und Schichthoehe)
+3. **Palette pruefen:** `pixestl --palette-info -p palette.json`
+4. **Bild vorbereiten:** Kontrast erhoehen, Highlights reduzieren
+5. **Testgenerierung:** Mit niedrigerer Aufloesung starten (`--color-pixel-width 0.8`)
+6. **STL im Slicer pruefen:** Filamentzuordnung und Schichtreihenfolge kontrollieren
+7. **Feintuning:** Bei Bedarf `--color-pixel-width` verkleinern oder `--color-layers` erhoehen
+8. **Optional: Kruemmung hinzufuegen:** `-C 90` bis `-C 360` fuer zylindrische Formen
+9. **Finaler Druck:** Mit Ironing, langsamer Geschwindigkeit, korrekter Schichthoehe
 
 ---
 

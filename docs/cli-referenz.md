@@ -8,19 +8,21 @@ Vollstaendige Referenz aller Kommandozeilen-Parameter von PIXEstL.
 
 ```bash
 pixestl [OPTIONEN] -i <DATEI> -p <DATEI> -o <DATEI>
+pixestl --calibrate -p <DATEI> -o <DATEI>
+pixestl --palette-info -p <DATEI>
 ```
 
 ---
 
 ## Pflichtparameter
 
-Diese drei Parameter sind bei jedem Aufruf erforderlich:
+Diese Parameter sind beim regulaeren Lithophanie-Aufruf erforderlich:
 
 | Parameter        | Kurzform | Beschreibung                                      |
 |------------------|----------|---------------------------------------------------|
-| `--input`        | `-i`     | Pfad zum Eingabebild (JPG, PNG, WebP)             |
+| `--input`        | `-i`     | Pfad zum Eingabebild (JPG, PNG, WebP). Nicht noetig bei `--calibrate` oder `--palette-info`. |
 | `--palette`      | `-p`     | Pfad zur Palette-Datei (JSON)                     |
-| `--output`       | `-o`     | Pfad zur Ausgabe-Datei (ZIP mit STL-Dateien)      |
+| `--output`       | `-o`     | Pfad zur Ausgabe-Datei (ZIP mit STL-Dateien). Nicht noetig bei `--palette-info`. |
 
 !!! example "Minimalbeispiel"
     ```bash
@@ -117,6 +119,75 @@ Parameter fuer die STL-Ausgabe.
 
 ---
 
+## Kruemmung (Curve)
+
+Erzeugt zylindrisch gekruemmte Lithophanien statt flacher Platten.
+
+| Parameter    | Kurzform | Standard | Beschreibung                                                     |
+|--------------|----------|----------|------------------------------------------------------------------|
+| `--curve`    | `-C`     | `0`      | Kruemmungswinkel in Grad (0=flach, 90=Viertelzylinder, 360=Vollzylinder) |
+
+Der Winkel gibt an, welchen Bogenabschnitt eines Zylinders die Lithophanie umspannt:
+
+| Wert  | Ergebnis                                          |
+|-------|---------------------------------------------------|
+| `0`   | Flache Lithophanie (Standard, keine Kruemmung)     |
+| `5`   | Minimal gekruemmt, fast flach                      |
+| `90`  | Viertelzylinder                                    |
+| `180` | Halbzylinder                                       |
+| `360` | Vollzylinder (die Enden treffen sich)              |
+
+!!! info "Wie die Kruemmung wirkt"
+    Die X-Achse (Breite) der Lithophanie wird um einen Zylinder gewickelt. Die Y-Achse (Hoehe) bleibt die Zylinderachse. Die Z-Achse (Tiefe/Dicke) wird zum radialen Abstand von der Zylinderoberflaeche. Der Radius wird automatisch so berechnet, dass die Bogenlaenge der eingestellten Breite entspricht.
+
+!!! example "Beispiele"
+    ```bash
+    # Viertelzylinder, 120mm breit
+    pixestl -i foto.jpg -p palette.json -o out.zip -w 120 -C 90
+
+    # Vollzylinder (Lampe/Vase), 200mm Umfang
+    pixestl -i foto.jpg -p palette.json -o out.zip -w 200 -C 360
+
+    # Leichte Kruemmung fuer Bilderrahmen
+    pixestl -i foto.jpg -p palette.json -o out.zip -w 100 -C 30
+    ```
+
+---
+
+## Kalibrierung
+
+Generiert ein Kalibrierungs-Testmuster direkt aus der Palette, ohne dass ein Eingabebild benoetigt wird.
+
+| Parameter      | Beschreibung                                                             |
+|----------------|--------------------------------------------------------------------------|
+| `--calibrate`  | Kalibrierungsmodus: Erzeugt Testmuster statt einer Lithophanie          |
+
+Im Kalibrierungsmodus generiert PIXEstL ein Raster von Testquadraten (10 x 10 mm) fuer jedes aktive Filament in der Palette. Fuer jedes Filament werden Quadrate mit 1 bis N Schichten erzeugt (N = `--color-layers`).
+
+Die Ausgabe ist ein ZIP-Archiv mit:
+
+- `calibration-plate.stl` — Grundplatte
+- `calibration-[Filament].stl` — Testquadrate pro Filament (eine Reihe mit aufsteigender Schichtanzahl)
+
+!!! example "Kalibrierungs-Testmuster generieren"
+    ```bash
+    # 5-Schicht-Kalibrierung
+    pixestl --calibrate -p palette/filament-palette-0.10mm.json -o kalibrierung.zip
+
+    # 7-Schicht-Kalibrierung
+    pixestl --calibrate -p palette.json -o kalibrierung.zip --color-layers 7
+    ```
+
+!!! info "Workflow"
+    1. Testmuster generieren: `pixestl --calibrate -p palette.json -o kalibrierung.zip`
+    2. ZIP in Slicer laden und drucken (jede STL dem passenden Filament zuweisen)
+    3. Gedruckte Testfelder vor Lichtquelle halten und fotografieren
+    4. HSL-Werte pro Feld messen und in die Palette-JSON eintragen
+
+    Siehe [Filament-Kalibrierung](anleitung/kalibrierung.md) fuer die vollstaendige Anleitung.
+
+---
+
 ## Erweiterte Optionen
 
 Parameter fuer Feinsteuerung und Debugging.
@@ -162,9 +233,9 @@ Der Parameter `--color-number` steuert, wie viele Farben pro Druckgruppe verwend
 
 ---
 
-## Vollstaendiges Beispiel
+## Vollstaendige Beispiele
 
-Ein typischer Aufruf mit den gaengigsten Optionen:
+### Flache Lithophanie (Standard)
 
 ```bash
 pixestl \
@@ -180,4 +251,29 @@ pixestl \
   --pixel-method additive
 ```
 
-Dieser Befehl erzeugt eine 120mm breite Farb-Lithophanie mit 5 Farbschichten, CIE-Lab-Farbabgleich und binaerer STL-Ausgabe.
+Erzeugt eine 120mm breite, flache Farb-Lithophanie mit 5 Farbschichten, CIE-Lab-Farbabgleich und binaerer STL-Ausgabe.
+
+### Gekruemmte Lithophanie (Halbzylinder)
+
+```bash
+pixestl \
+  -i panorama.jpg \
+  -p palette/filament-palette-0.10mm.json \
+  -o panorama_curved.zip \
+  -w 200 \
+  -C 180 \
+  --format binary
+```
+
+Erzeugt eine 200mm breite Halbzylinder-Lithophanie. Ideal fuer Panoramafotos, die als freistehendes Leuchtbild aufgestellt werden.
+
+### Kalibrierungs-Testmuster
+
+```bash
+pixestl --calibrate \
+  -p palette/filament-palette-0.10mm.json \
+  -o kalibrierung.zip \
+  --color-layers 7
+```
+
+Generiert Kalibrierungs-Testfelder fuer alle aktiven Filamente mit 7 Schichtstufen.
