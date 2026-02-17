@@ -1,0 +1,77 @@
+site_name: PIXEstL - Farb-Lithophanie-Generator
+site_url: https://feurer98.github.io/PIXEstL
+site_description: Generiere farbige Lithophanien fuer den 3D-Druck mit CMYK-basierter additiver Farbmischung
+repo_url: https://github.com/feurer98/PIXEstL
+repo_name: feurer98/PIXEstL
+
+theme:
+  name: material
+  language: de
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Dunkles Design aktivieren
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Helles Design aktivieren
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang: de
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Start: index.md
+  - Installation: installation.md
+  - Schnellstart: schnellstart.md
+  - Anleitung:
+    - Filament-Kalibrierung: anleitung/kalibrierung.md
+    - Palette-Format: anleitung/palette.md
+    - Lithophanie generieren: anleitung/generierung.md
+    - Slicer-Einrichtung: anleitung/slicer.md
+    - Drucken & Nachbearbeitung: anleitung/druck.md
+  - Konzepte:
+    - CMYK Farbmischung: konzepte/farbmischung.md
+    - Technische Architektur: konzepte/architektur.md
+  - Galerie: galerie.md
+  - CLI-Referenz: cli-referenz.md
+  - FAQ: faq.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/feurer98/PIXEstL
