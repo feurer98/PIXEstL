@@ -4,8 +4,9 @@
 
 **PIXEstL** verwandelt deine Fotos in beeindruckende, farbige Lithophanien fuer den 3D-Druck. Durch CMYK-basierte additive Farbmischung mit transparenten Filamenten entstehen hinterleuchtete Kunstwerke mit erstaunlicher Farbtiefe.
 
-[Schnellstart](schnellstart.md){.md-button .md-button--primary}
-[Installation](installation.md){.md-button}
+[Schnellstart](schnellstart.md){ .md-button .md-button--primary }
+&nbsp;
+[Installation](installation.md){ .md-button }
 
 ---
 
@@ -17,47 +18,27 @@ Eine Lithophanie ist ein duenner, lichtdurchlaessiger 3D-Druck, der erst durch H
 
 ## Features
 
-<div class="grid cards" markdown>
-
--   ** CMYK-Farbmischung **
-
-    ---
-
+!!! tip "CMYK-Farbmischung"
     Additive Farbmischung mit transparenten Filamenten erzeugt tausende Farbtoene aus nur 4-8 Grundfarben.
 
--   ** Hochperformant **
-
-    ---
-
+!!! tip "Hochperformant"
     In Rust geschrieben mit paralleler Verarbeitung (Rayon). 2-3x schneller als die Java-Vorgaengerversion.
 
--   ** AMS-Unterstuetzung **
-
-    ---
-
+!!! tip "AMS-Unterstuetzung"
     Volle Unterstuetzung fuer Bambu Lab AMS mit automatischer Farbgruppen-Aufteilung (4/8/16 Farben).
 
--   **Kalibrierbar**
-
-    ---
-
+!!! tip "Kalibrierbar"
     Eigene Filament-Paletten fuer exakte Farbreproduktion mit jedem Drucker und Filament-Hersteller.
-
-</div>
 
 ---
 
 ## Beispiele
 
-<div class="grid" markdown>
-
 ![Cafe Terrace at Night](assets/images/galerie/Terrace_at_Night.jpg){ width="300" }
-
+&nbsp;
 ![Schmetterling](assets/images/galerie/butterfly.jpg){ width="300" }
-
+&nbsp;
 ![Ahsoka](assets/images/galerie/ahsoka.jpg){ width="300" }
-
-</div>
 
 [Mehr Beispiele in der Galerie](galerie.md){ .md-button }
 
