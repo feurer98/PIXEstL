@@ -161,4 +161,5 @@ Hier ein vollstaendiges Beispiel fuer Cyan:
 ## Naechste Schritte
 
 - [Palette-Format](palette.md) -- Detaillierte Beschreibung der JSON-Struktur
+- [Best Practices](best-practices.md) -- Tipps und Tricks fuer bessere Ergebnisse
 - [Lithophanie generieren](generierung.md) -- Die kalibrierte Palette verwenden

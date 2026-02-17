@@ -232,7 +232,13 @@ In diesem Format wird jeder Schicht direkt ein Hex-Farbwert zugewiesen, anstatt 
 
 ---
 
+!!! tip "Palette pruefen"
+    Verwende `pixestl --palette-info -p deine-palette.json` um zu pruefen, welche Filamente aktiv sind, wie viele Farbkombinationen erzeugt werden und ob Layer-Definitionen fehlen.
+
+---
+
 ## Naechste Schritte
 
 - [Filament-Kalibrierung](kalibrierung.md) -- HSL-Werte fuer eigene Filamente messen
+- [Best Practices](best-practices.md) -- Tipps und Tricks fuer bessere Ergebnisse
 - [Lithophanie generieren](generierung.md) -- Die Palette im Generierungsprozess verwenden

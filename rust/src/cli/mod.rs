@@ -5,10 +5,12 @@ use crate::error::Result;
 use crate::image::load_image;
 use crate::lithophane::{LithophaneConfig, PixelCreationMethod as LithoPixelMethod};
 use crate::palette::{
-    PaletteLoader, PaletteLoaderConfig, PixelCreationMethod as PalettePixelMethod,
+    PaletteColorEntry, PaletteLoader, PaletteLoaderConfig,
+    PixelCreationMethod as PalettePixelMethod,
 };
 use crate::stl::{export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -71,14 +73,28 @@ impl From<CliPixelMethod> for PalettePixelMethod {
 #[command(version)]
 #[command(about = "Generate color lithophanes for 3D printing", long_about = None)]
 pub struct Cli {
-    #[arg(short = 'i', long, value_name = "FILE")]
-    pub input: PathBuf,
+    /// Show palette information and exit (no generation)
+    #[arg(long)]
+    pub palette_info: bool,
+
+    #[arg(
+        short = 'i',
+        long,
+        value_name = "FILE",
+        required_unless_present = "palette_info"
+    )]
+    pub input: Option<PathBuf>,
 
     #[arg(short = 'p', long, value_name = "FILE")]
     pub palette: PathBuf,
 
-    #[arg(short = 'o', long, value_name = "FILE")]
-    pub output: PathBuf,
+    #[arg(
+        short = 'o',
+        long,
+        value_name = "FILE",
+        required_unless_present = "palette_info"
+    )]
+    pub output: Option<PathBuf>,
 
     #[arg(short = 'w', long, default_value = "0")]
     pub width: f64,
@@ -155,18 +171,22 @@ impl Cli {
     }
 
     pub fn run(&self) -> Result<()> {
+        if self.palette_info {
+            return self.run_palette_info();
+        }
+
+        // input and output are guaranteed present by clap (required_unless_present)
+        let input = self.input.as_ref().unwrap();
+        let output = self.output.as_ref().unwrap();
+
         println!("PIXEstL - Color Lithophane Generator");
         println!("=====================================\n");
 
-        println!("Loading image: {}", self.input.display());
-        let image = load_image(&self.input)?;
-        println!(
-            "  Image size: {}x{} pixels\n",
-            image.width(),
-            image.height()
-        );
-
+        // --- Load and validate palette ---
         println!("Loading palette: {}", self.palette.display());
+        let raw_palette = PaletteLoader::load_raw(&self.palette)?;
+        self.print_palette_warnings(&raw_palette);
+
         let palette_config = PaletteLoaderConfig {
             nb_layers: self.color_layers,
             creation_method: self.pixel_method.into(),
@@ -177,6 +197,14 @@ impl Cli {
         println!("  Colors found: {}", palette.colors().len());
         println!("  Color groups: {}\n", palette.hex_color_groups().len());
 
+        // --- Load image and check resolution ---
+        println!("Loading image: {}", input.display());
+        let image = load_image(input)?;
+        println!("  Image size: {}x{} pixels", image.width(), image.height());
+        self.print_resolution_warning(image.width(), image.height());
+        println!();
+
+        // --- Generate lithophane ---
         println!("Generating lithophane layers...");
         let config = self.to_lithophane_config();
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
@@ -187,11 +215,189 @@ impl Cli {
         }
         println!();
 
-        println!("Exporting to: {}", self.output.display());
-        export_to_zip(&layers, &self.output, self.format.into())?;
+        // --- Export ---
+        println!("Exporting to: {}", output.display());
+        export_to_zip(&layers, output, self.format.into())?;
         println!("  Format: {:?}\n", self.format);
 
-        println!("✓ Generation complete!");
+        println!("Done!");
         Ok(())
+    }
+
+    /// Displays palette information and exits without generating.
+    fn run_palette_info(&self) -> Result<()> {
+        println!("PIXEstL - Palette Information");
+        println!("============================\n");
+
+        println!("Datei:          {}", self.palette.display());
+        println!("Farbschichten:  {}", self.color_layers);
+        println!("Methode:        {:?}\n", self.pixel_method);
+
+        // Load raw palette data for display
+        let raw_data = PaletteLoader::load_raw(&self.palette)?;
+
+        // Separate active and inactive filaments
+        let mut active: Vec<_> = raw_data
+            .iter()
+            .filter(|(_, e)| e.active && e.layers.is_some())
+            .collect();
+        active.sort_by_key(|(hex, _)| hex.to_string());
+
+        let mut inactive: Vec<_> = raw_data
+            .iter()
+            .filter(|(_, e)| !e.active || e.layers.is_none())
+            .collect();
+        inactive.sort_by_key(|(hex, _)| hex.to_string());
+
+        // Display active filaments
+        println!("Aktive Filamente ({}):", active.len());
+        for (hex, entry) in &active {
+            Self::print_filament_info(hex, entry, self.color_layers);
+        }
+
+        // Display inactive filaments
+        if !inactive.is_empty() {
+            println!("\nInaktive Filamente ({}):", inactive.len());
+            for (hex, entry) in &inactive {
+                println!("  {}  {}", hex, entry.name);
+            }
+        }
+
+        // Try to load full palette for combination count and AMS info
+        let palette_config = PaletteLoaderConfig {
+            nb_layers: self.color_layers,
+            creation_method: self.pixel_method.into(),
+            color_number: self.color_number,
+            distance_method: self.color_distance.into(),
+        };
+
+        println!();
+        match PaletteLoader::load(&self.palette, palette_config) {
+            Ok(palette) => {
+                println!("Farbkombinationen: {}", palette.color_count());
+                println!("AMS-Gruppen:       {}", palette.nb_groups());
+
+                // Show AMS group assignment if more than 1 group
+                let groups = palette.hex_color_groups();
+                if groups.len() > 1 {
+                    println!("\nAMS-Gruppen-Zuordnung:");
+                    for (i, group) in groups.iter().enumerate() {
+                        let names: Vec<String> = group
+                            .iter()
+                            .map(|hex| {
+                                raw_data
+                                    .get(hex.as_str())
+                                    .map(|e| e.name.as_str())
+                                    .unwrap_or(hex.as_str())
+                                    .to_string()
+                            })
+                            .collect();
+                        println!("  Slot {}: {}", i + 1, names.join(", "));
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Farbkombinationen konnten nicht berechnet werden: {}", e);
+            }
+        }
+
+        // Validation warnings
+        let warnings = PaletteLoader::validate_completeness(&raw_data, self.color_layers);
+        if warnings.is_empty() {
+            println!("\nWarnungen: keine");
+        } else {
+            println!("\nWarnungen ({}):", warnings.len());
+            for w in &warnings {
+                eprintln!("  - {}", w);
+            }
+        }
+
+        // Explanatory note about layer numbers (addresses Issue #12)
+        println!("\n--- Hinweis zu Layer-Nummern ---");
+        println!("Die Nummern in \"layers\" (z.B. \"1\", \"3\", \"5\") definieren die Farbdichte:");
+        println!("  \"1\" = 1 Schicht dieses Filaments (duenn, hell, transparent)");
+        println!("  \"5\" = 5 Schichten uebereinander (dick, dunkel, gesaettigt)");
+        println!("Diese Nummern sind NICHT die physische Position im STL.");
+        println!("PIXEstL kombiniert verschiedene Filamente mit verschiedenen Schichtanzahlen,");
+        println!("um die Zielfarbe jedes Pixels bestmoeglich zu approximieren.");
+
+        Ok(())
+    }
+
+    /// Prints information about a single filament entry.
+    fn print_filament_info(hex: &str, entry: &PaletteColorEntry, target_layers: u32) {
+        if let Some(layers) = &entry.layers {
+            let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
+            layer_nums.sort();
+
+            let layer_str: String = layer_nums
+                .iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let completeness = if layer_nums.len() as u32 >= target_layers {
+                "vollstaendig".to_string()
+            } else {
+                format!("{} von {} definiert", layer_nums.len(), target_layers)
+            };
+
+            println!(
+                "  {}  {:<35} Schichten: {:<15} ({})",
+                hex, entry.name, layer_str, completeness
+            );
+        }
+    }
+
+    /// Prints palette validation warnings to stderr.
+    fn print_palette_warnings(&self, raw_data: &HashMap<String, PaletteColorEntry>) {
+        let warnings = PaletteLoader::validate_completeness(raw_data, self.color_layers);
+        if !warnings.is_empty() {
+            eprintln!();
+            for w in &warnings {
+                eprintln!("  [Warnung] {}", w);
+            }
+            eprintln!(
+                "  [Hinweis] Layer-Nummern in der Palette definieren Farbdichte-Stufen \
+                (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
+            );
+            eprintln!();
+        }
+    }
+
+    /// Prints a resolution warning if the image has significantly more pixels
+    /// than the effective color resolution.
+    fn print_resolution_warning(&self, image_width: u32, image_height: u32) {
+        // Calculate effective width in mm
+        let effective_width_mm = if self.width > 0.0 {
+            self.width
+        } else if self.height > 0.0 && image_height > 0 {
+            (image_width as f64 * self.height) / image_height as f64
+        } else {
+            return; // Cannot calculate without dimensions
+        };
+
+        if effective_width_mm <= 0.0 || self.color_pixel_width <= 0.0 {
+            return;
+        }
+
+        let effective_color_pixels = (effective_width_mm / self.color_pixel_width) as u32;
+
+        // Warn if source image has at least 3x more pixels than effective output
+        // (significant downsampling that could cause visible quality loss)
+        if effective_color_pixels > 0 && image_width >= effective_color_pixels * 3 {
+            let suggested_pixel_width = effective_width_mm / image_width as f64;
+            eprintln!(
+                "  [Hinweis] Das Bild hat {} Pixel Breite, aber bei {:.0}mm / {:.2}mm \
+                Pixelgroesse entstehen nur {} Farbpixel.",
+                image_width, effective_width_mm, self.color_pixel_width, effective_color_pixels
+            );
+            eprintln!(
+                "            Fuer schaerfere Ergebnisse: --color-pixel-width {:.2} \
+                (= {} Farbpixel)",
+                suggested_pixel_width.max(0.1),
+                (effective_width_mm / suggested_pixel_width.max(0.1)) as u32
+            );
+        }
     }
 }
