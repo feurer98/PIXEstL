@@ -1,8 +1,10 @@
+# Important! This is a personal project that was ported with Claude. Neither the documentation nor the code has been fully checked. WIP
+
 # PIXEstL - Rust Edition
 
 **Color Lithophane Generator for 3D Printing with Multi-Filament Support**
 
-Rust port of the original [PIXEstL](https://github.com/feurer98/PIXEstL) Java application. Generate stunning color lithophanes for 3D printing using CMYK-based additive color mixing with automatic material system (AMS) support.
+Rust port of the original [PIXEstL]([https://github.com/gaugo87/PIXEstL]) Java application. Generate stunning color lithophanes for 3D printing using CMYK-based additive color mixing with automatic material system (AMS) support.
 
 [![Tests](https://img.shields.io/badge/tests-149%20passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange)]()
