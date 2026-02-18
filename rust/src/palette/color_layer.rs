@@ -237,7 +237,7 @@ mod tests {
         let layer1 = ColorLayer::from_cmyk("#FF0000".to_string(), 2, 0.0, 1.0, 1.0, 0.0);
         let layer2 = ColorLayer::from_cmyk("#00FF00".to_string(), 3, 1.0, 0.0, 1.0, 0.0);
 
-        layer1.combine_with(&layer2);
+        let _ = layer1.combine_with(&layer2);
     }
 
     #[test]
