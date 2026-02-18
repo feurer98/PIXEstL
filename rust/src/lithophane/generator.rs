@@ -139,7 +139,6 @@ impl LithophaneGenerator {
 
         Ok(layers)
     }
-
 }
 
 fn pixels_to_image(pixels: Vec<Vec<Rgb>>) -> RgbaImage {

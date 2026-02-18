@@ -139,15 +139,14 @@ fn test_full_pipeline_color_layer_only() {
     let generator = LithophaneGenerator::new(config).expect("config must be valid");
 
     // 4. Generate layers
-    let layers = generator.generate(&image, &palette).expect("generation must succeed");
+    let layers = generator
+        .generate(&image, &palette)
+        .expect("generation must succeed");
     assert!(!layers.is_empty(), "must produce at least one layer");
 
     // Every mesh must contain triangles
     for (name, mesh) in &layers {
-        assert!(
-            mesh.triangle_count() > 0,
-            "layer '{name}' has no triangles"
-        );
+        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
     }
 
     // 5. Export to ZIP
@@ -156,8 +155,8 @@ fn test_full_pipeline_color_layer_only() {
 
     // 6. Verify ZIP structure
     let zip_bytes = std::fs::read(zip_tmp.path()).unwrap();
-    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip_bytes))
-        .expect("output must be a valid ZIP");
+    let mut archive =
+        zip::ZipArchive::new(std::io::Cursor::new(zip_bytes)).expect("output must be a valid ZIP");
 
     assert_eq!(
         archive.len(),
@@ -202,28 +201,27 @@ fn test_full_pipeline_texture_layer_only() {
         dest_width_mm: 8.0,
         dest_height_mm: 8.0,
         texture_pixel_width: 1.0,
-        color_layer: false,  // only texture layer
+        color_layer: false, // only texture layer
         texture_layer: true,
         ..LithophaneConfig::default()
     };
     let generator = LithophaneGenerator::new(config).expect("config must be valid");
 
-    let layers = generator.generate(&image, &palette).expect("generation must succeed");
+    let layers = generator
+        .generate(&image, &palette)
+        .expect("generation must succeed");
     assert!(!layers.is_empty(), "must produce at least one layer");
 
     for (name, mesh) in &layers {
-        assert!(
-            mesh.triangle_count() > 0,
-            "layer '{name}' has no triangles"
-        );
+        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();
     export_to_zip(&layers, zip_tmp.path(), StlFormat::Ascii).expect("ZIP export must succeed");
 
     let zip_bytes = std::fs::read(zip_tmp.path()).unwrap();
-    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip_bytes))
-        .expect("output must be a valid ZIP");
+    let mut archive =
+        zip::ZipArchive::new(std::io::Cursor::new(zip_bytes)).expect("output must be a valid ZIP");
 
     assert_eq!(archive.len(), layers.len());
     for i in 0..archive.len() {
@@ -260,7 +258,9 @@ fn test_full_pipeline_both_layers() {
     };
     let generator = LithophaneGenerator::new(config).expect("config must be valid");
 
-    let layers = generator.generate(&image, &palette).expect("generation must succeed");
+    let layers = generator
+        .generate(&image, &palette)
+        .expect("generation must succeed");
 
     // Expect: support plate + at least one color layer + one texture layer
     assert!(
@@ -275,18 +275,15 @@ fn test_full_pipeline_both_layers() {
     assert!(has_texture, "texture layer must be present");
 
     for (name, mesh) in &layers {
-        assert!(
-            mesh.triangle_count() > 0,
-            "layer '{name}' has no triangles"
-        );
+        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();
     export_to_zip(&layers, zip_tmp.path(), StlFormat::Binary).expect("ZIP export must succeed");
 
     let zip_bytes = std::fs::read(zip_tmp.path()).unwrap();
-    let archive = zip::ZipArchive::new(std::io::Cursor::new(zip_bytes))
-        .expect("output must be a valid ZIP");
+    let archive =
+        zip::ZipArchive::new(std::io::Cursor::new(zip_bytes)).expect("output must be a valid ZIP");
     assert_eq!(
         archive.len(),
         layers.len(),

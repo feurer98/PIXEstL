@@ -96,7 +96,11 @@ pub fn check_ratio(
 /// let img = load_image(Path::new("input.png")).unwrap();
 /// let resized = resize_image(&img, 100.0, 0.0, 0.8).unwrap();
 /// ```
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 #[allow(clippy::float_cmp)]
 pub fn resize_image(
     image: &DynamicImage,
