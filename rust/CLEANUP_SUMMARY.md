@@ -12,7 +12,7 @@ Durchgeführt am 2026-02-18 auf Branch `claude/review-pixestl-rust-mN426`.
 | Hinzugefügte Zeilen | 297 |
 | Entfernte Zeilen | 387 |
 | **Netto (Code reduziert)** | **−90 Zeilen** |
-| Tests vorher / nachher | 205 ✅ / 219 ✅ |
+| Tests vorher / nachher | 205 ✅ / 222 ✅ |
 | Clippy-Warnungen vorher | ~60 |
 | Clippy-Warnungen nachher | **0** |
 | cargo doc Warnungen | **0** |
@@ -163,9 +163,11 @@ Float-Vergleiche die intentional sind (`== 0.0` als Sentinel-Wert), mit `#[allow
    `layer_offset: i32` und `layer_max: i32` nutzen `-1` als Sentinel für "nicht gesetzt".
    Idiomatisches Rust wäre `Option<u32>`. Änderung würde interne API brechen.
 
-5. **Keine Integration Tests für die volle Pipeline**
-   `tests/integration_test.rs` testet nur `LithophaneConfig`. Ein Ende-zu-Ende-Test
-   (Bild → Palette laden → Lithophan generieren → STL schreiben) fehlt.
+5. ~~**Keine Integration Tests für die volle Pipeline**~~ ✅ **Implementiert**
+   `tests/integration_test.rs` enthält jetzt drei Ende-zu-Ende-Tests:
+   - `test_full_pipeline_color_layer_only`: Bild → Palette → Farb-Layer → ZIP-Export
+   - `test_full_pipeline_texture_layer_only`: Bild → Textur-Layer → ZIP-Export
+   - `test_full_pipeline_both_layers`: Vollständige Pipeline mit Stützplatte + Farb-Layer + Textur-Layer
 
 6. **Viele `pub` Items mit noch fehlenden `# Panics`-Abschnitten**
    Clippy-Pedantic meldet einige Funktionen die via `.expect()` paniken können aber keine
