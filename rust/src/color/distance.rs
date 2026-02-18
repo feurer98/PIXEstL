@@ -20,13 +20,14 @@ impl std::str::FromStr for ColorDistanceMethod {
         match s {
             "RGB" => Ok(Self::Rgb),
             "CIELab" => Ok(Self::CieLab),
-            _ => Err(format!("Invalid color distance method: {}", s)),
+            _ => Err(format!("Invalid color distance method: {s}")),
         }
     }
 }
 
 impl ColorDistanceMethod {
     /// Convert to string representation
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Rgb => "RGB",
@@ -60,11 +61,11 @@ impl ColorDistance for Rgb {
     /// assert!(distance > 0.0);
     /// ```
     fn distance(&self, other: &Self) -> f64 {
-        let dr = self.r as i32 - other.r as i32;
-        let dg = self.g as i32 - other.g as i32;
-        let db = self.b as i32 - other.b as i32;
+        let dr = i32::from(self.r) - i32::from(other.r);
+        let dg = i32::from(self.g) - i32::from(other.g);
+        let db = i32::from(self.b) - i32::from(other.b);
 
-        (dr * dr + dg * dg + db * db) as f64
+        f64::from(dr * dr + dg * dg + db * db)
     }
 }
 

@@ -30,6 +30,7 @@ const SQUARE_GAP: f64 = 2.0;
 ///   [  □  ]   [  □  ]   [  □  ]       [  □  ]   ← Filament 2
 ///   ...
 /// ```
+#[allow(clippy::cast_precision_loss)]
 pub fn generate_calibration_pattern(
     palette_data: &HashMap<String, PaletteColorEntry>,
     config: &LithophaneConfig,
@@ -88,6 +89,8 @@ pub fn generate_calibration_pattern(
 }
 
 /// Returns the grid dimensions (width_mm, depth_mm) for a calibration pattern.
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub fn calibration_grid_dimensions(num_filaments: usize, nb_layers: u32) -> (f64, f64) {
     let num_columns = nb_layers as usize;
     let width =

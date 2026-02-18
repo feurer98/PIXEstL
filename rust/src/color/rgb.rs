@@ -23,6 +23,7 @@ impl Rgb {
     /// let red = Rgb::new(255, 0, 0);
     /// assert_eq!(red.r, 255);
     /// ```
+    #[must_use]
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
@@ -64,20 +65,24 @@ impl Rgb {
     /// let red = Rgb::new(255, 0, 0);
     /// assert_eq!(red.to_hex(), "#FF0000");
     /// ```
+    #[must_use]
     pub fn to_hex(&self) -> String {
         format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
     }
 
     /// Converts RGB to normalized floating point values (0.0-1.0)
+    #[must_use]
     pub fn to_f64(&self) -> (f64, f64, f64) {
         (
-            self.r as f64 / 255.0,
-            self.g as f64 / 255.0,
-            self.b as f64 / 255.0,
+            f64::from(self.r) / 255.0,
+            f64::from(self.g) / 255.0,
+            f64::from(self.b) / 255.0,
         )
     }
 
     /// Creates RGB from normalized floating point values (0.0-1.0)
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_f64(r: f64, g: f64, b: f64) -> Self {
         Self::new(
             (r * 255.0).round().clamp(0.0, 255.0) as u8,
@@ -89,6 +94,7 @@ impl Rgb {
     /// Converts RGB to CMYK color space
     ///
     /// Based on Java ColorUtil.colorToCMYK implementation
+    #[must_use]
     pub fn to_cmyk(&self) -> Cmyk {
         let (r, g, b) = self.to_f64();
 
@@ -109,6 +115,7 @@ impl Rgb {
     /// Creates RGB from CMYK color space
     ///
     /// Based on Java ColorUtil.cmykToColor implementation
+    #[must_use]
     pub fn from_cmyk(cmyk: Cmyk) -> Self {
         let cmyk = cmyk.clamp();
 

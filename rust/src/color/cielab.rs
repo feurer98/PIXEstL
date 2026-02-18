@@ -1,4 +1,49 @@
-//! CIELab color space - perceptually uniform color representation
+//! CIELab-Farbraum – wahrnehmungsgleichmäßige Farbdarstellung
+//!
+//! ## Was ist CIELab?
+//!
+//! CIELab (auch CIELAB oder L\*a\*b\* genannt) ist ein Farbraum, der so gestaltet ist,
+//! dass gleiche euklidische Abstände zwischen Farben annähernd gleichen Wahrnehmungsunterschieden
+//! entsprechen. Das heißt: Ein Delta E von 1.0 bedeutet überall im Farbraum ungefähr denselben
+//! wahrnehmbaren Farbunterschied.
+//!
+//! ## Umrechnungs-Pipeline: RGB → XYZ → CIELab
+//!
+//! **Schritt 1: RGB → Lineares RGB (Gamma-Korrektur entfernen)**
+//!
+//! sRGB-Werte (0–255) werden zunächst auf `[0,1]` normiert, dann linearisiert:
+//! - Wenn `n > 0.04045`:  `n_linear = ((n + 0.055) / 1.055)^2.4`
+//! - Sonst:               `n_linear = n / 12.92`
+//!
+//! **Schritt 2: Lineares RGB → XYZ (D65-Beleuchtung)**
+//!
+//! Multiplikation mit der ICC-Standardmatrix für D65:
+//! ```text
+//! X = 0.412456 * R + 0.357576 * G + 0.180438 * B
+//! Y = 0.212673 * R + 0.715152 * G + 0.072175 * B
+//! Z = 0.019334 * R + 0.119192 * G + 0.950304 * B
+//! ```
+//! Der Weißpunkt D65 entspricht Tageslicht (X=95.047, Y=100.0, Z=108.883).
+//!
+//! **Schritt 3: XYZ → L\*a\*b\***
+//!
+//! Nach Division durch den Weißpunkt wird die nichtlineare Funktion f(t) angewendet:
+//! - Wenn `t > ε = (6/29)³ ≈ 0.008856`:  `f(t) = t^(1/3)` (Kubikwurzel)
+//! - Sonst: `f(t) = t/3 * (29/6)² + 4/29`
+//!
+//! Daraus folgen die Lab-Koordinaten:
+//! ```text
+//! L* = 116 * f(Y/Yn) - 16        (Helligkeit: 0=Schwarz, 100=Weiß)
+//! a* = 500 * (f(X/Xn) - f(Y/Yn)) (Grün–Rot-Achse)
+//! b* = 200 * (f(Y/Yn) - f(Z/Zn)) (Blau–Gelb-Achse)
+//! ```
+//!
+//! ## Delta E (CIE76)
+//!
+//! Der Farbabstand wird als euklidischer Abstand im Lab-Raum berechnet:
+//! `ΔE = √(ΔL² + Δa² + Δb²)`
+//!
+//! Faustregel: ΔE < 2.3 gilt als für Menschen kaum wahrnehmbar.
 
 use crate::color::Rgb;
 use std::fmt;
@@ -14,10 +59,10 @@ const D65_Z: f64 = 108.883;
 const SRGB_THRESHOLD: f64 = 0.04045;
 
 /// CIELab linearization epsilon: (6/29)^3
-const LAB_EPSILON: f64 = 0.008856;
+const LAB_EPSILON: f64 = 0.008_856;
 
 /// CIELab linearization kappa: 1 / (3 * (6/29)^2)
-const LAB_KAPPA: f64 = 7.787037; // 1.0 / (3.0 * (6.0/29.0)^2)
+const LAB_KAPPA: f64 = 7.787_037; // 1.0 / (3.0 * (6.0/29.0)^2)
 
 /// CIELab color representation
 ///
@@ -37,6 +82,7 @@ pub struct CieLab {
 
 impl CieLab {
     /// Creates a new CIELab color
+    #[must_use]
     pub fn new(l: f64, a: f64, b: f64) -> Self {
         Self { l, a, b }
     }
@@ -59,6 +105,7 @@ impl CieLab {
     /// let distance = red.delta_e(&orange);
     /// assert!(distance > 0.0);
     /// ```
+    #[must_use]
     pub fn delta_e(&self, other: &CieLab) -> f64 {
         let dl = self.l - other.l;
         let da = self.a - other.a;
@@ -100,6 +147,7 @@ struct Xyz {
 /// Converts RGB to XYZ color space using D65 illuminant
 ///
 /// Based on Java ColorUtil.rgbToXyz implementation
+#[allow(clippy::many_single_char_names)]
 fn rgb_to_xyz(rgb: Rgb) -> Xyz {
     let (r, g, b) = rgb.to_f64();
 
@@ -109,9 +157,9 @@ fn rgb_to_xyz(rgb: Rgb) -> Xyz {
     let b_linear = pivot_rgb_to_xyz(b);
 
     // Convert to XYZ using D65 illuminant transformation matrix
-    let x = r_linear * 0.4124564 + g_linear * 0.3575761 + b_linear * 0.1804375;
-    let y = r_linear * 0.2126729 + g_linear * 0.7151522 + b_linear * 0.0721750;
-    let z = r_linear * 0.0193339 + g_linear * 0.1191920 + b_linear * 0.9503041;
+    let x = r_linear * 0.412_456_4 + g_linear * 0.357_576_1 + b_linear * 0.180_437_5;
+    let y = r_linear * 0.212_672_9 + g_linear * 0.715_152_2 + b_linear * 0.072_175_0;
+    let z = r_linear * 0.019_333_9 + g_linear * 0.119_192_0 + b_linear * 0.950_304_1;
 
     Xyz {
         x: x * 100.0,
@@ -139,6 +187,7 @@ fn pivot_rgb_to_xyz(n: f64) -> f64 {
 /// - Z_n = 108.883
 ///
 /// Based on Java ColorUtil.xyzToLab implementation
+#[allow(clippy::many_single_char_names)]
 fn xyz_to_lab(xyz: Xyz) -> CieLab {
     let x = xyz.x / D65_X;
     let y = xyz.y / D65_Y;

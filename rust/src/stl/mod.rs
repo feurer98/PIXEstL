@@ -1,15 +1,43 @@
-//! STL file export
+//! STL-Dateiexport (ASCII und Binär)
+//!
+//! Dieses Modul schreibt 3D-Meshes im STL-Format, das von den meisten
+//! 3D-Druckern und Slicern unterstützt wird.
+//!
+//! - **ASCII-STL**: Lesbar, aber größer (~10× mehr Speicher als Binär)
+//! - **Binär-STL**: Kompaktes Format, geringere Dateigröße
+//!
+//! Für die Ausgabe mehrerer Layer (Farbschichten + Textur) wird ein ZIP-Archiv
+//! erstellt, das je eine `.stl`-Datei pro Layer enthält.
 
 use crate::error::{PixestlError, Result};
 use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
 use std::io::Write;
 
+/// STL-Ausgabeformat
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StlFormat {
+    /// Menschenlesbares Text-Format
     Ascii,
+    /// Kompaktes Binärformat (empfohlen)
     Binary,
 }
 
+/// Schreibt ein 3D-Mesh als STL-Datei in den angegebenen Writer.
+///
+/// # Arguments
+///
+/// * `mesh`   - Das zu exportierende 3D-Mesh
+/// * `writer` - Ziel-Writer (z.B. `File`, `Vec<u8>`)
+/// * `format` - Ausgabeformat (`Ascii` oder `Binary`)
+/// * `name`   - Name des Solids (erscheint im STL-Header)
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` zurück, wenn das Schreiben fehlschlägt.
+///
+/// # Returns
+///
+/// `Ok(())` bei Erfolg.
 pub fn write_stl<W: Write>(
     mesh: &Mesh,
     writer: &mut W,
@@ -97,6 +125,25 @@ fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
     Ok(())
 }
 
+/// Exportiert mehrere Layer (je eine STL-Datei) in ein ZIP-Archiv.
+///
+/// Jeder Layer wird als eigene `.stl`-Datei im Archiv abgelegt.
+/// Das ZIP-Archiv wird mit Deflate-Kompression erstellt.
+///
+/// # Arguments
+///
+/// * `layers`      - Slice aus `(Name, Mesh)`-Paaren; jedes Paar wird eine `.stl`-Datei
+/// * `output_path` - Pfad zur Ausgabe-ZIP-Datei
+/// * `format`      - STL-Ausgabeformat für alle Layer
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` zurück, wenn die Datei nicht erstellt werden kann,
+/// oder `PixestlError::Zip` bei ZIP-Schreibfehlern.
+///
+/// # Returns
+///
+/// `Ok(())` bei Erfolg.
 pub fn export_to_zip<P: AsRef<std::path::Path>>(
     layers: &[(String, Mesh)],
     output_path: P,

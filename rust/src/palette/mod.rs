@@ -1,10 +1,28 @@
-//! Palette management and color quantization
+//! Farbpaletten-Verwaltung und Pixel-Quantisierung
 //!
-//! This module provides functionality for:
-//! - Loading color palettes from JSON files
-//! - Combining colors additively using CMYK color space
-//! - Quantizing images to palette colors
-//! - Managing AMS (Automatic Material System) color groups
+//! ## CMYK-Stacking-Algorithmus
+//!
+//! PIXEstL druckt Farben durch Schichten von Filamenten in verschiedenen Farben (AMS-System).
+//! Die Farbmischung ist subtraktiv: Jede Schicht absorbiert Licht.
+//!
+//! ### Schritt-für-Schritt-Erklärung:
+//!
+//! 1. **Palette laden**: Aus einer JSON-Datei werden Filament-Einträge gelesen.
+//!    Jeder Eintrag hat einen Hex-Code und für jede Schichtzahl (1–N) eine HSL-Farbe,
+//!    die die optische Erscheinung nach dem Druck beschreibt.
+//!
+//! 2. **ColorLayer erzeugen**: Jeder Filament-Eintrag wird in einen `ColorLayer` umgewandelt.
+//!    Der CMYK-Wert wird aus der HSL-Farbe berechnet und beschreibt die Deckkraft des Filaments.
+//!
+//! 3. **Kombinationen berechnen** (`create_multi_combi`): Alle gültigen Stapel von ColorLayern
+//!    werden rekursiv berechnet, sodass die Gesamtschichtzahl genau dem Zielwert entspricht.
+//!    Beispiel bei 5 Schichten: `Rot[3]+Weiß[2]`, `Cyan[2]+Magenta[1]+Weiß[2]`, usw.
+//!
+//! 4. **RGB-Farbe berechnen**: Für jede Kombination wird die resultierende Mischfarbe als
+//!    RGB-Wert berechnet. Die CMYK-Werte werden addiert und dann in RGB umgerechnet.
+//!
+//! 5. **Quantisierung**: Jeder Pixel des Eingangsbildes wird der ähnlichsten Palette-Farbe
+//!    zugeordnet (via Delta-E-Abstand im CIELab-Farbraum oder euklidischem RGB-Abstand).
 
 pub mod color_combi;
 pub mod color_layer;

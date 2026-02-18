@@ -116,7 +116,7 @@ impl PaletteLoader {
 
         // Sort entries for deterministic output
         let mut entries: Vec<_> = palette_data.iter().collect();
-        entries.sort_by_key(|(hex, _)| hex.to_string());
+        entries.sort_by_key(|(hex, _)| (*hex).clone());
 
         for (hex_code, entry) in &entries {
             if !entry.active {
@@ -220,7 +220,7 @@ impl PaletteLoader {
         let mut hex_color_list: Vec<String> = palette_data
             .iter()
             .filter(|(_, entry)| entry.active && entry.layers.is_some())
-            .map(|(hex, _): (&String, &PaletteColorEntry)| hex.clone())
+            .map(|(hex, _)| hex.clone())
             .collect();
 
         // Sort by hex code for deterministic order
@@ -262,8 +262,7 @@ impl PaletteLoader {
                         for (layer_key, layer_def) in layers {
                             let layer_num: u32 = layer_key.parse().map_err(|_| {
                                 PixestlError::InvalidPalette(format!(
-                                    "Invalid layer number: {}",
-                                    layer_key
+                                    "Invalid layer number: {layer_key}"
                                 ))
                             })?;
 

@@ -142,6 +142,7 @@ fn compute_combination(
 /// # Returns
 ///
 /// Vector of all pairwise combinations
+#[cfg(test)]
 pub fn combine_combi_groups(group1: &[ColorCombi], group2: &[ColorCombi]) -> Vec<ColorCombi> {
     let mut result = Vec::new();
 

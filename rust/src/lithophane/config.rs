@@ -1,33 +1,72 @@
-//! Configuration for lithophane generation
+//! Konfiguration für die Lithophan-Generierung
+//!
+//! Dieses Modul enthält alle Parameter, die steuern, wie ein 3D-druckbares
+//! Lithophan aus einem Bild erzeugt wird. Die wichtigsten Konzepte:
+//!
+//! - **Farbschicht** (`color_layer`): Gestapelte Kunststoffwürfel kodieren Farben via AMS.
+//!   Die Schichtdicke bestimmt die optische Farbintensität.
+//! - **Texturschicht** (`texture_layer`): Eine Relief-Oberfläche, deren Dicke umgekehrt
+//!   proportional zur Bildhelligkeit ist – dunkle Pixel werden dicker (undurchsichtiger).
+//! - **Stützplatte** (`plate`): Eine flache Basis, die alle Farbschichten trägt.
 
 use crate::color::ColorDistanceMethod;
 
+/// Methode zur Pixel-Erstellung beim Drucken der Farbschichten
+///
+/// Steuert, wie die einzelnen Farbpixel als 3D-Geometrie erzeugt werden:
+/// - `Additive`: Nur die tatsächlich benötigten Schichten werden hinzugefügt.
+/// - `Full`: Jeder Pixel wird vollständig mit allen Schichten befüllt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PixelCreationMethod {
+    /// Nur die benötigten Schichten werden additiv aufgebaut (spart Material).
     Additive,
+    /// Jeder Pixel wird mit der vollständigen Schichtzahl befüllt.
     Full,
 }
 
+/// Vollständige Konfiguration für die Lithophan-Generierung
+///
+/// Alle Felder steuern gemeinsam die Geometrie und das Druckverhalten.
+/// Der Standardwert (`Default`) ist für die meisten Anwendungsfälle geeignet.
 #[derive(Debug, Clone)]
 pub struct LithophaneConfig {
+    /// Zielbreite des Lithophans in Millimetern (0 = aus Seitenverhältnis berechnen)
     pub dest_width_mm: f64,
+    /// Zielhöhe des Lithophans in Millimetern (0 = aus Seitenverhältnis berechnen)
     pub dest_height_mm: f64,
+    /// Breite eines Farbpixels in mm (entspricht der Nozzle-Größe, z.B. 0.8)
     pub color_pixel_width: f64,
+    /// Dicke einer einzelnen Druckschicht in mm (z.B. 0.1)
     pub color_pixel_layer_thickness: f64,
+    /// Anzahl der Farbschichten pro Pixel (bestimmt Farbintensität, z.B. 5)
     pub color_pixel_layer_number: u32,
+    /// Ob eine Farbschicht generiert werden soll
     pub color_layer: bool,
+    /// Breite eines Texturpixels in mm (kleiner als color_pixel_width für mehr Detail)
     pub texture_pixel_width: f64,
+    /// Minimale Texturdicke in mm (für weiße/helle Pixel)
     pub texture_min_thickness: f64,
+    /// Maximale Texturdicke in mm (für schwarze/dunkle Pixel)
     pub texture_max_thickness: f64,
+    /// Ob eine Texturschicht generiert werden soll
     pub texture_layer: bool,
+    /// Dicke der Basisplatte in mm
     pub plate_thickness: f64,
+    /// Methode zur Pixel-Erstellung (Additive oder Full)
     pub pixel_creation_method: PixelCreationMethod,
+    /// Anzahl der zu verwendenden Farben (0 = alle aktiven Farben)
     pub color_number: usize,
+    /// Methode zur Farbabstandsberechnung (RGB oder CIELab)
     pub color_distance_method: ColorDistanceMethod,
+    /// Krümmungswinkel in Grad (0 = flach, 90 = Viertelzylinder, 360 = voller Zylinder)
     pub curve: f64,
+    /// Debug-Ausgaben aktivieren
     pub debug: bool,
+    /// Speichersparender Modus (weniger parallele Verarbeitung)
     pub low_memory: bool,
+    /// Maximale Thread-Anzahl für Layer-Verarbeitung (0 = unbegrenzt)
     pub layer_thread_max_number: usize,
+    /// Thread-Anzahl für Zeilen-Verarbeitung (Standard: CPU-Anzahl)
     pub row_thread_number: usize,
 }
 
@@ -58,10 +97,18 @@ impl Default for LithophaneConfig {
 }
 
 impl LithophaneConfig {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
+    /// Prüft die Konfiguration auf Gültigkeit.
+    ///
+    /// # Errors
+    ///
+    /// Gibt einen `PixestlError::Config`-Fehler zurück, wenn:
+    /// - `color_pixel_width`, `texture_pixel_width` oder `color_pixel_layer_thickness` nicht positiv sind
+    /// - `color_pixel_layer_number` null ist
+    /// - `texture_min_thickness` nicht positiv ist
+    /// - `texture_max_thickness` nicht größer als `texture_min_thickness` ist
+    /// - `plate_thickness` negativ ist
+    /// - weder `color_layer` noch `texture_layer` aktiviert ist
+    /// - `curve` außerhalb des Bereichs [0, 360] liegt
     pub fn validate(&self) -> crate::error::Result<()> {
         if self.color_pixel_width <= 0.0 {
             return Err(crate::error::PixestlError::Config(
@@ -111,6 +158,11 @@ impl LithophaneConfig {
         Ok(())
     }
 
+    /// Berechnet die Gesamthöhe aller Farbschichten in mm.
+    ///
+    /// # Returns
+    ///
+    /// `color_pixel_layer_thickness * color_pixel_layer_number` als `f64`-Wert in Millimetern.
     pub fn total_color_layer_height(&self) -> f64 {
         self.color_pixel_layer_thickness * self.color_pixel_layer_number as f64
     }

@@ -43,6 +43,8 @@ pub fn load_image(path: &Path) -> Result<DynamicImage> {
 /// Based on Java ImageUtil.checkRatio
 ///
 /// Prints a warning if the source and destination aspect ratios differ
+#[must_use]
+#[allow(clippy::float_cmp)]
 pub fn check_ratio(
     image_width: u32,
     image_height: u32,
@@ -53,7 +55,7 @@ pub fn check_ratio(
         return None;
     }
 
-    let ratio_src = image_width as f64 / image_height as f64;
+    let ratio_src = f64::from(image_width) / f64::from(image_height);
     let ratio_dest = dest_width_mm / dest_height_mm;
 
     // Round to 2 decimal places for comparison
@@ -94,6 +96,8 @@ pub fn check_ratio(
 /// let img = load_image(Path::new("input.png")).unwrap();
 /// let resized = resize_image(&img, 100.0, 0.0, 0.8).unwrap();
 /// ```
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#[allow(clippy::float_cmp)]
 pub fn resize_image(
     image: &DynamicImage,
     width_mm: f64,
@@ -105,13 +109,13 @@ pub fn resize_image(
     let (nb_pixel_width, nb_pixel_height) = if width_mm != 0.0 && height_mm == 0.0 {
         // Width specified, calculate height proportionally
         let nb_pixel_width = (width_mm / pixel_mm) as u32;
-        let height_mm_calc = (src_height as f64 * width_mm) / src_width as f64;
+        let height_mm_calc = (f64::from(src_height) * width_mm) / f64::from(src_width);
         let nb_pixel_height = (height_mm_calc / pixel_mm) as u32;
         (nb_pixel_width, nb_pixel_height)
     } else if width_mm == 0.0 && height_mm != 0.0 {
         // Height specified, calculate width proportionally
         let nb_pixel_height = (height_mm / pixel_mm) as u32;
-        let width_mm_calc = (src_width as f64 * height_mm) / src_height as f64;
+        let width_mm_calc = (f64::from(src_width) * height_mm) / f64::from(src_height);
         let nb_pixel_width = (width_mm_calc / pixel_mm) as u32;
         (nb_pixel_width, nb_pixel_height)
     } else {
@@ -140,6 +144,7 @@ pub fn resize_image(
 /// Checks if an image has any transparent pixels
 ///
 /// Based on Java ImageUtil.hasATransparentPixel
+#[must_use]
 pub fn has_transparent_pixel(image: &RgbaImage) -> bool {
     image.pixels().any(|pixel| pixel[3] < 255)
 }
@@ -147,6 +152,7 @@ pub fn has_transparent_pixel(image: &RgbaImage) -> bool {
 /// Checks if a specific pixel is transparent
 ///
 /// Based on Java ColorUtil.transparentPixel
+#[must_use]
 #[inline]
 pub fn is_pixel_transparent(pixel: &Rgba<u8>) -> bool {
     pixel[3] < 255
@@ -160,6 +166,7 @@ pub fn is_pixel_transparent(pixel: &Rgba<u8>) -> bool {
 /// L = 0.2126*R + 0.7152*G + 0.0722*B
 ///
 /// Preserves alpha channel for transparent pixels
+#[must_use]
 pub fn convert_to_grayscale(image: &RgbaImage) -> RgbaImage {
     let (width, height) = image.dimensions();
     let mut result = ImageBuffer::new(width, height);
@@ -170,9 +177,10 @@ pub fn convert_to_grayscale(image: &RgbaImage) -> RgbaImage {
             result.put_pixel(x, y, Rgba([0, 0, 0, 0]));
         } else {
             // Calculate luminance
-            let luminance = (0.2126 * pixel[0] as f64
-                + 0.7152 * pixel[1] as f64
-                + 0.0722 * pixel[2] as f64) as u8;
+            #[allow(clippy::cast_possible_truncation)]
+            let luminance = (0.2126 * f64::from(pixel[0])
+                + 0.7152 * f64::from(pixel[1])
+                + 0.0722 * f64::from(pixel[2])) as u8;
 
             result.put_pixel(x, y, Rgba([luminance, luminance, luminance, 255]));
         }
@@ -184,6 +192,7 @@ pub fn convert_to_grayscale(image: &RgbaImage) -> RgbaImage {
 /// Flips an image vertically (for 3D printing)
 ///
 /// Based on Java ImageUtil.flipImage
+#[must_use]
 pub fn flip_vertical(image: &RgbaImage) -> RgbaImage {
     image::imageops::flip_vertical(image)
 }
@@ -194,7 +203,8 @@ pub fn flip_vertical(image: &RgbaImage) -> RgbaImage {
 ///
 /// # Returns
 ///
-/// 2D vector of Option<Rgb> where None indicates transparent pixel
+/// 2D vector of `Option<Rgb>` where `None` indicates transparent pixel
+#[must_use]
 pub fn extract_pixels(image: &RgbaImage) -> Vec<Vec<Option<Rgb>>> {
     let (width, height) = image.dimensions();
     let mut pixels = Vec::with_capacity(height as usize);
@@ -219,6 +229,7 @@ pub fn extract_pixels(image: &RgbaImage) -> Vec<Vec<Option<Rgb>>> {
 /// Extracts pixels as a flat RGB vector (for quantization)
 ///
 /// Transparent pixels are excluded
+#[must_use]
 pub fn extract_pixels_flat(image: &RgbaImage) -> Vec<Rgb> {
     image
         .pixels()

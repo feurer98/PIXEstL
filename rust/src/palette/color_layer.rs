@@ -42,6 +42,7 @@ impl ColorLayer {
     /// let red_layer = ColorLayer::new("#FF0000".to_string(), 5, 0.0, 100.0, 50.0);
     /// assert_eq!(red_layer.layer(), 5);
     /// ```
+    #[must_use]
     pub fn new(hex_code: String, layer: u32, h: f64, s: f64, l: f64) -> Self {
         let hsl = Hsl::new(h, s, l);
         let cmyk = hsl.to_cmyk();
@@ -56,6 +57,7 @@ impl ColorLayer {
     /// Creates a ColorLayer from hex code and CMYK values directly
     ///
     /// Based on Java ColorLayer constructor with CMYK
+    #[must_use]
     pub fn from_cmyk(hex_code: String, layer: u32, c: f64, m: f64, y: f64, k: f64) -> Self {
         Self {
             hex_code,
@@ -65,36 +67,43 @@ impl ColorLayer {
     }
 
     /// Gets the hex code
+    #[must_use]
     pub fn hex_code(&self) -> &str {
         &self.hex_code
     }
 
     /// Gets the number of layers
+    #[must_use]
     pub fn layer(&self) -> u32 {
         self.layer
     }
 
     /// Gets the CMYK values
+    #[must_use]
     pub fn cmyk(&self) -> &Cmyk {
         &self.cmyk
     }
 
     /// Gets the Cyan component
+    #[must_use]
     pub fn c(&self) -> f64 {
         self.cmyk.c
     }
 
     /// Gets the Magenta component
+    #[must_use]
     pub fn m(&self) -> f64 {
         self.cmyk.m
     }
 
     /// Gets the Yellow component
+    #[must_use]
     pub fn y(&self) -> f64 {
         self.cmyk.y
     }
 
     /// Gets the Key (Black) component
+    #[must_use]
     pub fn k(&self) -> f64 {
         self.cmyk.k
     }
@@ -103,6 +112,7 @@ impl ColorLayer {
     ///
     /// Based on Java ColorLayer.LayerComparator
     /// Sorts by K value in descending order (darker colors first)
+    #[must_use]
     pub fn compare_by_k(&self, other: &Self) -> Ordering {
         // Reverse comparison for descending order
         other.k().partial_cmp(&self.k()).unwrap_or(Ordering::Equal)
@@ -116,6 +126,7 @@ impl ColorLayer {
     /// # Panics
     ///
     /// Panics if the hex codes don't match
+    #[must_use]
     pub fn combine_with(&self, other: &Self) -> Self {
         assert_eq!(
             self.hex_code, other.hex_code,

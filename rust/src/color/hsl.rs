@@ -28,6 +28,7 @@ impl Hsl {
     ///
     /// let red = Hsl::new(0.0, 100.0, 50.0);
     /// ```
+    #[must_use]
     pub fn new(h: f64, s: f64, l: f64) -> Self {
         Self { h, s, l }
     }
@@ -35,6 +36,8 @@ impl Hsl {
     /// Converts HSL to RGB
     ///
     /// Based on Java ColorUtil.hslToCmyk and hueToRgb implementation
+    #[must_use]
+    #[allow(clippy::float_cmp)]
     pub fn to_rgb(&self) -> Rgb {
         let s = self.s / 100.0;
         let l = self.l / 100.0;
@@ -63,6 +66,8 @@ impl Hsl {
     /// Converts HSL to CMYK
     ///
     /// Based on Java ColorUtil.hslToCmyk implementation
+    #[must_use]
+    #[allow(clippy::float_cmp)]
     pub fn to_cmyk(&self) -> Cmyk {
         let s = self.s / 100.0;
         let l = self.l / 100.0;
@@ -101,6 +106,8 @@ impl Hsl {
     }
 }
 
+#[allow(clippy::manual_midpoint)]
+#[allow(clippy::float_cmp)]
 impl From<Rgb> for Hsl {
     /// Converts RGB to HSL
     ///
