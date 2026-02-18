@@ -38,7 +38,7 @@ Steuert die physische Groesse der Lithophanie in Millimetern.
 | Parameter    | Kurzform | Standard | Beschreibung                        |
 |--------------|----------|----------|-------------------------------------|
 | `--width`    | `-w`     | `0`      | Breite der Lithophanie in mm        |
-| `--height`   | `-h`     | `0`      | Hoehe der Lithophanie in mm         |
+| `--height`   | `-H`     | `0`      | Hoehe der Lithophanie in mm         |
 
 !!! note "Automatische Groesse"
     Der Wert `0` bedeutet **automatisch**: Die jeweilige Dimension wird proportional zur anderen berechnet. Wird nur `--width 100` angegeben, ergibt sich die Hoehe automatisch aus dem Seitenverhaeltnis des Bildes.
@@ -49,10 +49,10 @@ Steuert die physische Groesse der Lithophanie in Millimetern.
     pixestl -i foto.jpg -p palette.json -o out.zip -w 100
 
     # Hoehe 80mm, Breite automatisch (proportional)
-    pixestl -i foto.jpg -p palette.json -o out.zip -h 80
+    pixestl -i foto.jpg -p palette.json -o out.zip -H 80
 
     # Exakte Groesse 100x80mm (kann verzerren)
-    pixestl -i foto.jpg -p palette.json -o out.zip -w 100 -h 80
+    pixestl -i foto.jpg -p palette.json -o out.zip -w 100 -H 80
     ```
 
 ---

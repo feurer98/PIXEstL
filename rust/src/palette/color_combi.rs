@@ -20,6 +20,7 @@ impl ColorCombi {
     /// Creates a new ColorCombi with a single layer
     ///
     /// Based on Java ColorCombi constructor
+    #[must_use]
     pub fn new(layer: ColorLayer) -> Self {
         let mut layers = vec![layer];
         layers.sort_by(|a, b| a.compare_by_k(b));
@@ -39,6 +40,7 @@ impl ColorCombi {
     ///
     /// * `layer` - The layer to add
     /// * `nb_layer_max` - Maximum total layer count allowed
+    #[must_use]
     pub fn combine_with_layer(&self, layer: ColorLayer, nb_layer_max: u32) -> Option<Self> {
         // Check if hex code already exists
         if self.layers.iter().any(|l| l.hex_code() == layer.hex_code()) {
@@ -59,6 +61,7 @@ impl ColorCombi {
     /// Combines this ColorCombi with another ColorCombi
     ///
     /// Based on Java ColorCombi.combineLithoColorCombi
+    #[must_use]
     pub fn combine_with_combi(&self, other: &Self) -> Self {
         let mut new_combi = self.duplicate();
         new_combi.layers.extend(other.layers.clone());
@@ -71,6 +74,7 @@ impl ColorCombi {
     }
 
     /// Gets the total number of unique colors in this combination
+    #[must_use]
     pub fn total_colors(&self) -> usize {
         self.layers.len()
     }
@@ -78,6 +82,7 @@ impl ColorCombi {
     /// Gets the total number of layers (sum of all layer counts)
     ///
     /// Based on Java ColorCombi.getTotalLayers
+    #[must_use]
     pub fn total_layers(&self) -> u32 {
         self.layers.iter().map(|l| l.layer()).sum()
     }
@@ -91,6 +96,7 @@ impl ColorCombi {
     /// 1. Sum all CMYK components from each layer
     /// 2. Clamp each component to maximum 1.0
     /// 3. Convert CMYK to RGB
+    #[must_use]
     pub fn compute_rgb(&self) -> Rgb {
         let mut c = 0.0;
         let mut m = 0.0;
@@ -128,7 +134,7 @@ impl ColorCombi {
     ///
     /// # Example
     ///
-    /// [Red[2], Red[3], Blue[1]] → [Red[5], Blue[1]]
+    /// `[Red[2], Red[3], Blue[1]]` → `[Red[5], Blue[1]]`
     pub fn factorize(&mut self) {
         if self.layers.is_empty() {
             return;
@@ -160,6 +166,7 @@ impl ColorCombi {
     /// Gets all layers with a specific hex code
     ///
     /// Based on Java ColorCombi.getLayerList
+    #[must_use]
     pub fn layers_with_hex(&self, hex_code: &str) -> Vec<&ColorLayer> {
         self.layers
             .iter()
@@ -178,6 +185,7 @@ impl ColorCombi {
     /// # Returns
     ///
     /// The number of layers before the target layer, or None if not found
+    #[must_use]
     pub fn layer_position(&self, target_hex: &str, target_index: usize) -> Option<usize> {
         let mut count = 0;
         let mut hex_index = 0;
@@ -196,6 +204,7 @@ impl ColorCombi {
     }
 
     /// Gets the layers
+    #[must_use]
     pub fn layers(&self) -> &[ColorLayer] {
         &self.layers
     }

@@ -139,10 +139,6 @@ impl LithophaneGenerator {
 
         Ok(layers)
     }
-
-    pub fn config(&self) -> &LithophaneConfig {
-        &self.config
-    }
 }
 
 fn pixels_to_image(pixels: Vec<Vec<Rgb>>) -> RgbaImage {

@@ -57,7 +57,7 @@ Wenn nur `-w` oder nur `-h` angegeben wird, berechnet PIXEstL die andere Dimensi
 pixestl -i bild.jpg -p palette.json -o ausgabe.zip -w 120
 
 # Hoehe 80mm, Breite wird automatisch berechnet
-pixestl -i bild.jpg -p palette.json -o ausgabe.zip -h 80
+pixestl -i bild.jpg -p palette.json -o ausgabe.zip -H 80
 ```
 
 ### Farbpixel
