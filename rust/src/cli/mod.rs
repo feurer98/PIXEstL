@@ -77,6 +77,7 @@ pub struct Cli {
     #[arg(long)]
     pub palette_info: bool,
 
+    /// Input image file (PNG, JPG, WebP). Not required for --calibrate or --palette-info.
     #[arg(
         short = 'i',
         long,
@@ -85,9 +86,11 @@ pub struct Cli {
     )]
     pub input: Option<PathBuf>,
 
+    /// Palette JSON file with filament color definitions
     #[arg(short = 'p', long, value_name = "FILE")]
     pub palette: PathBuf,
 
+    /// Output ZIP file containing the generated STL layers. Not required for --palette-info.
     #[arg(
         short = 'o',
         long,
@@ -96,49 +99,64 @@ pub struct Cli {
     )]
     pub output: Option<PathBuf>,
 
-    #[arg(short = 'w', long, default_value = "0")]
+    /// Destination width in millimeters (0 = derive from height and aspect ratio)
+    #[arg(short = 'w', long, default_value = "0", value_name = "MM")]
     pub width: f64,
 
-    #[arg(short = 'h', long, default_value = "0")]
+    /// Destination height in millimeters (0 = derive from width and aspect ratio)
+    #[arg(short = 'H', long, default_value = "0", value_name = "MM")]
     pub height: f64,
 
-    #[arg(long, default_value = "0.8")]
+    /// Width of each color pixel in mm. Smaller = more detail, larger files. (0.8 = good default)
+    #[arg(long, default_value = "0.8", value_name = "MM")]
     pub color_pixel_width: f64,
 
-    #[arg(long, default_value = "0.1")]
+    /// Thickness of one printed color layer in mm. Match your slicer layer height.
+    #[arg(long, default_value = "0.1", value_name = "MM")]
     pub color_layer_thickness: f64,
 
-    #[arg(long, default_value = "5")]
+    /// Number of color layers stacked per pixel. More layers = richer colors, taller print.
+    #[arg(long, default_value = "5", value_name = "N")]
     pub color_layers: u32,
 
-    #[arg(long, default_value = "0.25")]
+    /// Width of each texture pixel in mm. Controls brightness-relief resolution.
+    #[arg(long, default_value = "0.25", value_name = "MM")]
     pub texture_pixel_width: f64,
 
-    #[arg(long, default_value = "0.3")]
+    /// Minimum texture thickness in mm (brightest image areas)
+    #[arg(long, default_value = "0.3", value_name = "MM")]
     pub texture_min: f64,
 
-    #[arg(long, default_value = "1.8")]
+    /// Maximum texture thickness in mm (darkest image areas)
+    #[arg(long, default_value = "1.8", value_name = "MM")]
     pub texture_max: f64,
 
-    #[arg(long, default_value = "0.2")]
+    /// Base plate thickness in mm (solid backing layer under the color stack)
+    #[arg(long, default_value = "0.2", value_name = "MM")]
     pub plate_thickness: f64,
 
+    /// Disable color layers (generate texture/brightness layer only)
     #[arg(long)]
     pub no_color: bool,
 
+    /// Disable texture layer (generate color layers only)
     #[arg(long)]
     pub no_texture: bool,
 
+    /// STL output format: ascii (human-readable) or binary (smaller, faster)
     #[arg(long, value_enum, default_value = "ascii")]
     pub format: CliStlFormat,
 
+    /// Color matching algorithm: cie-lab (perceptually uniform, recommended) or rgb (faster)
     #[arg(long, value_enum, default_value = "cie-lab")]
     pub color_distance: CliColorDistance,
 
+    /// Pixel color method: additive (stack layers for more colors) or full (one filament per pixel)
     #[arg(long, value_enum, default_value = "additive")]
     pub pixel_method: CliPixelMethod,
 
-    #[arg(long, default_value = "0")]
+    /// Maximum number of filament colors per AMS group (0 = use all). Set to 4 for single AMS.
+    #[arg(long, default_value = "0", value_name = "N")]
     pub color_number: usize,
 
     /// Curve angle in degrees (0=flat, 90=quarter cylinder, 180=half, 360=full cylinder)
@@ -149,6 +167,7 @@ pub struct Cli {
     #[arg(long)]
     pub calibrate: bool,
 
+    /// Print extra diagnostic output during generation
     #[arg(long)]
     pub debug: bool,
 }
