@@ -296,6 +296,6 @@ Die Generierungszeit und der Speicherbedarf haengen von mehreren Faktoren ab:
 
 ## Naechste Schritte
 
-- [Slicer-Einrichtung](slicer.md) -- STL-Dateien in Bambu Studio laden und konfigurieren
-- [Drucken & Nachbearbeitung](druck.md) -- Druckeinstellungen und Tipps fuer das fertige Ergebnis
-- [CLI-Referenz](../cli-referenz.md) -- Vollstaendige Liste aller Parameter
+- [Slicer-Einrichtung →](slicer.md) – STL-Dateien in Bambu Studio laden und konfigurieren
+- [Drucken & Nachbearbeitung →](druck.md) – Druckeinstellungen und Tipps für das fertige Ergebnis
+- [Alle Parameter →](../referenz/parameter.md) – Vollständige Referenz aller CLI-Parameter

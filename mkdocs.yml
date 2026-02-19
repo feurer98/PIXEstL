@@ -1,6 +1,6 @@
 site_name: PIXEstL - Farb-Lithophanie-Generator
 site_url: https://feurer98.github.io/PIXEstL
-site_description: Generiere farbige Lithophanien fuer den 3D-Druck mit CMYK-basierter additiver Farbmischung
+site_description: Verwandle deine Fotos in farbige Lithophanien für den 3D-Druck – mit CMYK-basierter additiver Farbmischung und AMS-Unterstützung
 repo_url: https://github.com/feurer98/PIXEstL
 repo_name: feurer98/PIXEstL
 
@@ -55,20 +55,22 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - Start: index.md
-  - Installation: installation.md
+  - Startseite: index.md
   - Schnellstart: schnellstart.md
+  - Installation:
+    - Windows: installation/windows.md
+    - macOS / Linux: installation/unix.md
   - Anleitung:
-    - Filament-Kalibrierung: anleitung/kalibrierung.md
-    - Palette-Format: anleitung/palette.md
-    - Lithophanie generieren: anleitung/generierung.md
-    - Slicer-Einrichtung: anleitung/slicer.md
-    - Drucken & Nachbearbeitung: anleitung/druck.md
-  - Konzepte:
-    - CMYK Farbmischung: konzepte/farbmischung.md
-    - Technische Architektur: konzepte/architektur.md
+    - Übersicht: anleitung/uebersicht.md
+    - 1. Palette kalibrieren: anleitung/kalibrierung.md
+    - 2. Bild vorbereiten: anleitung/bild-vorbereiten.md
+    - 3. PIXEstL ausführen: anleitung/generierung.md
+    - 4. Slicer einrichten: anleitung/slicer.md
+    - 5. Drucken: anleitung/druck.md
+  - Referenz:
+    - Alle Parameter: referenz/parameter.md
+    - Palette-Format: referenz/palette-format.md
   - Galerie: galerie.md
-  - CLI-Referenz: cli-referenz.md
   - FAQ: faq.md
 
 extra:

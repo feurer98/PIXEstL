@@ -1,169 +1,200 @@
-# FAQ & Fehlerbehebung
+# FAQ – Häufige Fragen
 
-Haeufig gestellte Fragen und Loesungen fuer typische Probleme bei der Arbeit mit PIXEstL.
+Antworten auf die häufigsten Fragen rund um PIXEstL, Kalibrierung, Farben und Druck.
 
 ---
 
-## Allgemeine Fragen
+## Farben und Qualität
 
-### Welche Filamente eignen sich?
+### Meine Farben sehen falsch aus – was tun?
 
-Transparente oder transluzente Filamente aus **PLA** oder **PETG** sind am besten geeignet. Das Filament muss ausreichend lichtdurchlaessig sein, damit Licht durch 1 bis 5 gestapelte Schichten hindurchscheint.
+Das ist der häufigste Fehler und hat meist eine dieser Ursachen:
 
-!!! tip "Empfehlung"
-    **Bambu Lab PLA Basic** (transparent) hat sich in der Praxis bewaehrt und liefert sehr gute Ergebnisse. Die Farben Cyan, Magenta, Yellow und White sind ideal fuer CMYK-Lithophanien.
+**1. Palette nicht oder schlecht kalibriert**
+Die mitgelieferte Beispiel-Palette ist für Bambu Lab PLA Basic kalibriert. Für andere Filamente weichen die Farben stark ab.
+→ [Kalibrierung neu durchführen](anleitung/kalibrierung.md)
 
-| Eigenschaft       | Geeignet                          | Ungeeignet                      |
-|--------------------|-----------------------------------|---------------------------------|
-| Transparenz        | Transparent / Transluzent         | Opak / Deckend                  |
-| Material           | PLA, PETG                         | ABS, TPU (zu wenig transparent) |
-| Oberflaechenfinish | Glatt                             | Matt (streut Licht zu stark)    |
+**2. Falsche Filament-Zuweisung im Slicer**
+Jede STL-Datei muss dem richtigen Filament-Slot zugewiesen sein. Der Dateiname verrät die Farbe, z.B. `layer-Cyan[...].stl` → Cyan-Slot.
+→ [Slicer-Anleitung](anleitung/slicer.md)
+
+**3. Inkonsistente Beleuchtung beim Kalibrieren**
+Wenn beim Kalibrieren andere Lichtverhältnisse herrschten als beim späteren Betrachten, stimmen die Farben nicht.
+→ Immer dieselbe Lichtquelle (idealerweise ein LED-Panel mit ~6000K) verwenden.
+
+**4. Falsches Infill**
+Infill muss auf 100% gesetzt sein. Bei weniger strömt Licht unkontrolliert durch die Hohlräume und verfälscht die Farbwiedergabe.
 
 ---
 
 ### Wie viele Farben kann ich verwenden?
 
-Die Farbanzahl haengt von der Anzahl der verfuegbaren AMS-Einheiten (Automatic Material System) ab:
+Das hängt von deiner AMS-Konfiguration ab:
 
-| AMS-Konfiguration | Maximale Farben | Parameter              |
-|---------------------|----------------|------------------------|
-| 1 AMS               | 4 Farben       | `--color-number 4`     |
-| 2 AMS               | 8 Farben       | `--color-number 8`     |
-| 4 AMS               | 16 Farben      | `--color-number 16`    |
-| Unbegrenzt           | Alle           | `--color-number 0`     |
+| AMS-Konfiguration | Max. gleichzeitige Farben | Parameter |
+|-------------------|--------------------------|-----------|
+| 1 AMS (4 Slots) | 4 Farben | `--color-number 4` |
+| 2 AMS (8 Slots) | 8 Farben | `--color-number 8` |
+| 4 AMS (16 Slots) | 16 Farben | `--color-number 16` |
+| Theoretisch unbegrenzt | Alle Palette-Farben | `--color-number 0` |
 
-Mit `--color-number` werden die Farben automatisch in Gruppen aufgeteilt. Jede Gruppe kann separat gedruckt werden.
-
----
-
-### Muss ich Weiss verwenden?
-
-**Ja**, im additiven Modus ist Weiss **zwingend erforderlich**. Weiss dient als Fuellmaterial: Nicht alle Schichten eines Pixels muessen eingefaerbt sein. Die verbleibenden Schichten werden mit Weiss aufgefuellt, um eine gleichmaessige Gesamtdicke sicherzustellen.
-
-!!! note "Ausnahme"
-    Im Full-Pixel-Modus (`--pixel-method full`) ist Weiss nicht zwingend noetig, da jeder Pixel nur eine einzige Filamentfarbe verwendet. Allerdings ist die Farbvielfalt dann stark eingeschraenkt.
-
----
-
-### Welcher Slicer wird unterstuetzt?
-
-**Bambu Studio** ist der empfohlene Slicer und wurde am ausfuehrlichsten getestet. Weitere kompatible Slicer:
-
-| Slicer          | Kompatibilitaet | Anmerkung                              |
-|-----------------|-----------------|----------------------------------------|
-| Bambu Studio    | Voll            | Empfohlen, beste AMS-Integration       |
-| OrcaSlicer      | Voll            | Open-Source-Alternative zu Bambu Studio |
-| PrusaSlicer     | Gut             | Fuer Prusa-Drucker mit MMU             |
-
-Grundsaetzlich funktioniert PIXEstL mit jedem Slicer, der **Multi-Material-Druck** unterstuetzt und mehrere STL-Dateien als separate Objekte importieren kann.
-
----
-
-### Kann ich ohne AMS drucken?
-
-**Ja**, das ist moeglich. Ohne AMS muss der Filamentwechsel **manuell** erfolgen. Der Drucker pausiert an den konfigurierten Schichtwechseln, und das Filament wird von Hand gewechselt.
-
-!!! warning "Aufwand"
-    Manueller Filamentwechsel bei Farb-Lithophanien ist sehr zeitaufwaendig, da pro Zeile mehrere Wechsel noetig sein koennen. Fuer den Einstieg empfiehlt sich ein AMS oder alternativ der Modus `--no-color` fuer reine Graustufen-Lithophanien.
-
----
-
-### Was bedeutet "additive" vs "full"?
-
-Die beiden Pixel-Methoden unterscheiden sich grundlegend in der Art der Farberzeugung:
-
-| Eigenschaft        | Additive (`--pixel-method additive`)        | Full (`--pixel-method full`)         |
-|---------------------|---------------------------------------------|--------------------------------------|
-| **Prinzip**         | Verschiedene Farbschichten werden gestapelt  | Jeder Pixel besteht aus einer Farbe  |
-| **Farbvielfalt**    | Hoch (viele Mischfarben)                    | Gering (nur Grundfarben)             |
-| **Weiss noetig**    | Ja (als Fuellmaterial)                       | Nein                                 |
-| **Empfehlung**      | Fotorealistische Bilder                     | Einfache Grafiken, Logos             |
-
-!!! tip "Standard"
-    Die additive Methode ist der Standard und wird fuer die meisten Anwendungsfaelle empfohlen. Sie erzeugt aus wenigen Filamenten eine Vielzahl von Mischfarben.
-
-Siehe auch: [CMYK Farbmischung](konzepte/farbmischung.md)
-
----
-
-## Fehlerbehebung
-
-### Die Farben stimmen nicht
-
-Wenn die gedruckten Farben nicht mit dem Originalbild uebereinstimmen, pruefe folgende Punkte:
-
-1. **Palette neu kalibrieren** - Die HSL-Werte in der Palette-Datei muessen exakt zu deinen Filamenten passen
-2. **Konsistente Hintergrundbeleuchtung** - Verwende bei der Kalibrierung dieselbe Lichtquelle wie beim spaeteren Betrachten
-3. **Korrekte HSL-Werte** - Messe die Filamentfarben mit einem Colorimeter oder gegen eine Referenz
-4. **Filamentzuweisung im Slicer** - Stelle sicher, dass jede STL-Datei dem richtigen Filament zugewiesen ist
-
-!!! warning "Haeufiger Fehler"
-    Eine falsche Filamentzuweisung im Slicer ist die haeufigste Ursache fuer Farbfehler. Die Dateinamen enthalten die Filamentfarbe (z.B. `layer-Cyan[PLA Basic].stl`) - achte auf korrekte Zuordnung.
-
----
-
-### Die STL-Dateien sind sehr gross
-
-Grosse STL-Dateien koennen den Slicer verlangsamen. Zwei Massnahmen helfen:
-
-1. **Binaeres Format verwenden**:
-    ```bash
-    pixestl -i foto.jpg -p palette.json -o out.zip --format binary
-    ```
-    Binaere STL-Dateien sind ca. 50-80% kleiner als ASCII-Dateien.
-
-2. **Pixelbreite erhoehen**:
-    ```bash
-    pixestl -i foto.jpg -p palette.json -o out.zip --color-pixel-width 1.0
-    ```
-    Groessere Pixel erzeugen weniger Dreiecke, allerdings auf Kosten der Detailgenauigkeit.
+Mit mehr Farben als AMS-Slots kannst du trotzdem drucken – PIXEstL teilt die Farben in Gruppen auf. Der Drucker pausiert dann zwischen den Gruppen für einen manuellen Filamentwechsel.
 
 ---
 
 ### Wie lange dauert die Generierung?
 
-Die Generierungszeit haengt von Bildgroesse und Parametern ab:
+| Szenario | Typische Zeit |
+|----------|-------------|
+| 100 mm breit, Standardeinstellungen | 5–15 Sekunden |
+| 150 mm breit, feine Pixel (0.5 mm) | 30–60 Sekunden |
+| 200 mm breit, sehr fein (0.3 mm) | 2–5 Minuten |
+| Sehr großes Eingabebild (> 4K) | 15–60 Sekunden |
 
-| Bildgroesse      | Typische Zeit  | Anmerkung                        |
-|-------------------|---------------|----------------------------------|
-| Klein (< 1000px)  | 2-5 Sekunden  | Standardfall                     |
-| Mittel (1000-2000px) | 5-15 Sekunden | 100mm Lithophanie             |
-| Gross (2000-4000px) | 15-60 Sekunden | Detaillierte Lithophanien     |
-| Sehr gross (> 4K)  | 1-5 Minuten   | Selten noetig                   |
-
-!!! tip "Performance-Tipp"
-    PIXEstL nutzt automatisch alle verfuegbaren CPU-Kerne. Auf Mehrkern-Prozessoren ist die Generierung deutlich schneller.
+PIXEstL nutzt automatisch alle CPU-Kerne – auf modernen Mehrkern-Prozessoren ist die Generierung deutlich schneller.
 
 ---
 
-### Welche Bildgroesse ist optimal?
+### Kann ich JPG statt PNG verwenden?
 
-Fuer die meisten Lithophanien ist eine Bildgroesse von **500 bis 2000 Pixeln** auf der laengeren Seite optimal.
+Ja, PIXEstL unterstützt JPG, PNG und WebP. JPG funktioniert gut, solange die Qualitätsstufe hoch ist.
 
-| Aspekt                   | Empfehlung                                      |
-|--------------------------|--------------------------------------------------|
-| Minimale Groesse          | 300px (fuer kleine Lithophanien bis 50mm)       |
-| Optimale Groesse          | 500-2000px (bestes Verhaeltnis Qualitaet/Speed) |
-| Maximale sinnvolle Groesse | 3000-4000px (darueber kaum Qualitaetsgewinn)   |
-
-!!! note "Warum nicht groesser?"
-    Bei einem 100mm breiten Druck mit 0.8mm Pixelbreite werden nur 125 Pixel in der Breite benoetigt. Ein 4000px breites Eingabebild wird auf diese 125 Pixel heruntergerechnet - die zusaetzlichen Pixel erzeugen nur laengere Verarbeitungszeiten, aber keinen sichtbaren Qualitaetsunterschied am fertigen Druck.
+Stark komprimierte JPEGs (erkennbar an sichtbarer Blockbildung) können zu sichtbaren Artefakten in der Lithophanie führen. Im Zweifel die PNG-Version des Bildes verwenden.
 
 ---
 
-### Kann ich auch nur Graustufen drucken?
+### Was ist der Unterschied zwischen Farb-Ebene und Textur-Ebene?
 
-**Ja**, mit dem Parameter `--no-color` wird nur die Texturschicht generiert. Das Ergebnis ist eine klassische Graustufen-Lithophanie ohne Farbschichten.
+Eine Farb-Lithophanie besteht aus zwei übereinanderliegenden Schichten-Systemen:
+
+| Ebene | Funktion | Steuert |
+|-------|----------|---------|
+| **Farb-Ebene** | Erzeugt die Farben durch Stapeln transparenter Filamente (CMYK-Prinzip) | Welche Farbe ein Pixel hat |
+| **Textur-Ebene** | Erzeugt das klassische Lithophanie-Relief (dicker = dunkler) | Wie hell/dunkel ein Pixel erscheint |
+
+Beide Ebenen zusammen ergeben eine vollständige Farb-Lithophanie. Mit `--no-color` erhältst du eine klassische Graustufen-Lithophanie (nur Textur), mit `--no-texture` nur eine flache Farbschicht (selten sinnvoll).
+
+---
+
+### Mein Slicer erkennt die Farben nicht richtig
+
+Häufige Ursachen:
+
+- **Dateien nicht als einzelnes Objekt geladen:** In Bambu Studio beim Import *"Load as single object?"* → **Yes** auswählen.
+- **Falsche Filament-Slot-Zuweisung:** Im Objects Panel jeden Eintrag prüfen und das richtige Filament zuweisen.
+- **Platte, Weiß und Textur auf demselben Slot:** `layer-plate.stl`, `layer-White[...].stl` und `layer-texture-[...].stl` müssen alle auf Slot 1 (Weiß).
+
+[Detaillierte Slicer-Anleitung →](anleitung/slicer.md)
+
+---
+
+## Drucker und Hardware
+
+### Funktioniert PIXEstL ohne AMS / mit einem anderen Drucker?
+
+**Ja!** PIXEstL erzeugt Standard-STL-Dateien und ist drucker-unabhängig.
+
+Ohne AMS musst du die Filamente **manuell** wechseln – zeitaufwändig, aber machbar:
+
+1. Pausen an den richtigen Schichten im Slicer eintragen
+2. Drucker pausieren lassen
+3. Filament manuell wechseln und Druck fortsetzen
+
+**Andere Slicer:** OrcaSlicer, PrusaSlicer und Cura funktionieren ebenfalls. Wichtig: Multi-Material-Druck muss unterstützt werden.
+
+!!! tip "Ohne AMS – einfacher Einstieg"
+    Verwende `--no-color`, um nur eine klassische Graustufen-Lithophanie zu erzeugen. Diese benötigt nur weißes Filament und keinen Farbwechsel.
+
+---
+
+### Welche Filamente eignen sich?
+
+Transparente oder transluzente Filamente aus PLA oder PETG sind ideal.
+
+| Eigenschaft | Geeignet | Weniger geeignet |
+|-------------|---------|-----------------|
+| Transparenz | Transparent / transluzent | Opak / deckend |
+| Material | PLA, PETG | ABS, TPU |
+| Oberfläche | Glatt (Standard PLA) | Matt (streut Licht zu stark) |
+
+**Empfehlung:** Bambu Lab PLA Basic (Transparent) liefert sehr gute Ergebnisse.
+
+---
+
+### Welche Nozzle-Größe wird empfohlen?
+
+Eine **0.2 mm Nozzle** liefert die besten Ergebnisse. Eine 0.4 mm Nozzle funktioniert ebenfalls, sollte aber mit gröberen Pixel-Einstellungen kombiniert werden (`--color-pixel-width 1.0`).
+
+---
+
+## Technische Fragen
+
+### Was bedeutet "additive" vs. "full" Pixel-Methode?
+
+| Methode | Prinzip | Wann verwenden? |
+|---------|---------|----------------|
+| `additive` (Standard) | Transparente Farbschichten werden gestapelt. Durch Mischung entstehen viele Farbtöne. | Fotos und Bilder mit Farbverläufen |
+| `full` | Jeder Pixel besteht aus nur einer einzigen Filamentfarbe – keine Mischung. | Einfache Logos mit wenigen satten Farben |
+
+---
+
+### Muss ich Weiß als Filament haben?
+
+Im additiven Modus (Standard) **ja** – Weiß ist Pflicht. Es füllt die Pixel-Schichten auf, die keine andere Farbe benötigen, und sorgt für gleichmäßige Dicke.
+
+Im `full`-Modus ist Weiß optional (dann nur als weitere Farboption).
+
+---
+
+### Wie groß werden die STL-Dateien?
+
+| Einstellung | Auswirkung auf Dateigröße |
+|-------------|--------------------------|
+| `--color-pixel-width` kleiner | Viel größere Dateien |
+| `--texture-pixel-width` kleiner | Größere Textur-STL |
+| `--format binary` | 50–80 % kleiner als ASCII |
+| Lithophanie-Breite größer | Proportional mehr Geometrie |
+
+Typische Gesamtgröße: 20–100 MB (ASCII), 5–20 MB (binary).
+
+---
+
+### Kann ich eine Lithophanie auch als Zylinder oder Lampenschirm drucken?
+
+Ja! Mit dem Parameter `-C` (oder `--curve`) krümmst du die Lithophanie:
 
 ```bash
-pixestl -i foto.jpg -p palette.json -o out.zip -w 100 --no-color
+# Halbzylinder (steht frei aufgestellt)
+pixestl -i foto.jpg -p palette.json -o out.zip -w 200 -C 180
+
+# Vollzylinder (Lampenschirm)
+pixestl -i foto.jpg -p palette.json -o out.zip -w 300 -C 360
 ```
 
-Dies ist ideal fuer:
+---
 
-- Erste Versuche mit Lithophanien
-- Drucke ohne AMS oder mit nur einem Filament
-- Bilder, die auch in Graustufen gut wirken (z.B. Portraits, Landschaften)
+### Warum ändert sich die Qualität nicht, wenn ich ein größeres Bild verwende?
 
-!!! info "Umgekehrt"
-    Mit `--no-texture` kann die Texturschicht weggelassen werden, sodass nur die Farbschichten generiert werden. Dies ist vor allem fuer Tests und Debugging nuetzlich.
+Die physische Auflösung der Lithophanie ist durch `--color-pixel-width` begrenzt, nicht durch die Bildauflösung. Bei 100 mm Breite und 0.8 mm Pixelbreite gibt es nur 125 Pixel in der Breite – egal ob das Eingabebild 500 oder 4000 Pixel breit ist.
+
+Größere Bilder sorgen nur für etwas besseres Antialiasing beim Herunterskalieren – ein 4000-Pixel-Bild ist hier kaum besser als ein 1000-Pixel-Bild.
+
+**Empfehlung:** Bilder zwischen 500 und 2000 Pixeln Breite für optimale Rechenzeit.
+
+---
+
+### Warum brauche ich `--color-layer-thickness`? Kann ich das ignorieren?
+
+Im Normalfall (0.10 mm Schichthöhe im Slicer) kannst du den Standardwert verwenden.
+
+Wenn du eine andere Schichthöhe verwendest (z.B. 0.08 mm), **musst** du:
+1. Eine neue Palette für diese Schichthöhe kalibrieren
+2. `--color-layer-thickness 0.08` beim Aufruf setzen
+
+Die Kalibrierungswerte gelten exakt nur für die gemessene Schichthöhe.
+
+---
+
+## Nächster Schritt
+
+Noch Fragen? Schau in die [vollständige Anleitung →](anleitung/uebersicht.md) oder öffne ein [Issue auf GitHub](https://github.com/feurer98/PIXEstL/issues).

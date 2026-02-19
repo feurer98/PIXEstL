@@ -1,66 +1,106 @@
 # Galerie
 
-Beispiele von Farb-Lithophanien, die mit PIXEstL generiert wurden. Alle Bilder zeigen hinterleuchtete Drucke aus transparentem PLA-Filament.
+Hier siehst du, was mit PIXEstL möglich ist – alles hinterleuchtete Lithophanien aus transparentem PLA-Filament.
 
 ---
 
 ## Kunst und Klassiker
 
-![Nachtcafe (van Gogh)](assets/images/galerie/Terrace_at_Night.jpg){ width="300" loading=lazy }
-&nbsp;
-![Die grosse Welle (Hokusai)](assets/images/galerie/tsunami_hokusai.jpg){ width="300" loading=lazy }
-&nbsp;
-![Geisha](assets/images/galerie/memory_geisha.jpg){ width="300" loading=lazy }
-&nbsp;
-![Marilyn Monroe](assets/images/galerie/marilyn.jpg){ width="300" loading=lazy }
+<div class="grid" markdown>
+
+![Nachtcafe (van Gogh)](assets/images/galerie/Terrace_at_Night.jpg){ width="280" loading=lazy }
+
+![Die große Welle (Hokusai)](assets/images/galerie/tsunami_hokusai.jpg){ width="280" loading=lazy }
+
+![Geisha](assets/images/galerie/memory_geisha.jpg){ width="280" loading=lazy }
+
+![Marilyn Monroe](assets/images/galerie/marilyn.jpg){ width="280" loading=lazy }
+
+</div>
 
 ---
 
 ## Charaktere und Popkultur
 
-![Ahsoka Tano](assets/images/galerie/ahsoka.jpg){ width="300" loading=lazy }
-&nbsp;
-![Deku (My Hero Academia)](assets/images/galerie/deku.webp){ width="300" loading=lazy }
-&nbsp;
-![Vegeta](assets/images/galerie/vegeta.webp){ width="300" loading=lazy }
-&nbsp;
-![Marvel](assets/images/galerie/marvel.webp){ width="300" loading=lazy }
-&nbsp;
-![Star Wars](assets/images/galerie/starwars.webp){ width="300" loading=lazy }
-&nbsp;
-![Hello Kitty Aufsteller](assets/images/galerie/hello_kitty_stand.webp){ width="300" loading=lazy }
+<div class="grid" markdown>
+
+![Ahsoka Tano](assets/images/galerie/ahsoka.jpg){ width="280" loading=lazy }
+
+![Deku (My Hero Academia)](assets/images/galerie/deku.webp){ width="280" loading=lazy }
+
+![Vegeta](assets/images/galerie/vegeta.webp){ width="280" loading=lazy }
+
+![Marvel](assets/images/galerie/marvel.webp){ width="280" loading=lazy }
+
+![Star Wars](assets/images/galerie/starwars.webp){ width="280" loading=lazy }
+
+![Hello Kitty Aufsteller](assets/images/galerie/hello_kitty_stand.webp){ width="280" loading=lazy }
+
+</div>
 
 ---
 
 ## Natur und Motive
 
-![Schmetterling](assets/images/galerie/butterfly.jpg){ width="300" loading=lazy }
-&nbsp;
-![Delphin](assets/images/galerie/dolphin.webp){ width="300" loading=lazy }
-&nbsp;
-![Bluetenblaetter](assets/images/galerie/petals.jpg){ width="300" loading=lazy }
-&nbsp;
-![Infinity](assets/images/galerie/infinity.jpg){ width="300" loading=lazy }
+<div class="grid" markdown>
+
+![Schmetterling](assets/images/galerie/butterfly.jpg){ width="280" loading=lazy }
+
+![Delphin](assets/images/galerie/dolphin.webp){ width="280" loading=lazy }
+
+![Blütenblätter](assets/images/galerie/petals.jpg){ width="280" loading=lazy }
+
+![Infinity](assets/images/galerie/infinity.jpg){ width="280" loading=lazy }
+
+</div>
 
 ---
 
 ## Portraits
 
-![Portrait](assets/images/galerie/ryan.jpg){ width="300" loading=lazy }
-&nbsp;
-![Halloween Kugel](assets/images/galerie/halloween_globe.webp){ width="300" loading=lazy }
+<div class="grid" markdown>
+
+![Portrait](assets/images/galerie/ryan.jpg){ width="280" loading=lazy }
+
+![Halloween Kugel](assets/images/galerie/halloween_globe.webp){ width="280" loading=lazy }
+
+</div>
 
 ---
 
-## Druckvarianten
+## Druckvarianten im Vergleich
 
-Die folgenden Bilder zeigen unterschiedliche Druckeinstellungen und Methoden im Vergleich.
+Die folgenden Bilder zeigen unterschiedliche Druckeinstellungen und Methoden im direkten Vergleich.
 
-![Leon (1 AMS)](assets/images/galerie/Leon_1AMS.jpg){ width="300" loading=lazy }
-&nbsp;
-![Nachtcafe (1 AMS)](assets/images/galerie/Terrace_at_Night_1AMS.jpg){ width="300" loading=lazy }
-&nbsp;
-![Die grosse Welle (Pixel-Ansicht)](assets/images/galerie/tsunami_hokusai_pixel.jpg){ width="300" loading=lazy }
+<div class="grid" markdown>
+
+![Leon (1 AMS = 4 Farben)](assets/images/galerie/Leon_1AMS.jpg){ width="280" loading=lazy }
+
+![Nachtcafe (1 AMS = 4 Farben)](assets/images/galerie/Terrace_at_Night_1AMS.jpg){ width="280" loading=lazy }
+
+![Die große Welle – Pixel-Ansicht](assets/images/galerie/tsunami_hokusai_pixel.jpg){ width="280" loading=lazy }
+
+</div>
 
 !!! info "1 AMS = 4 Farben"
-    Bilder mit dem Zusatz "1 AMS" wurden mit nur 4 Filamenten (einem einzelnen AMS) gedruckt. Trotz der reduzierten Farbpalette sind die Ergebnisse beeindruckend. Verwende `--color-number 4`, um die Farbanzahl auf eine AMS-Gruppe zu beschraenken.
+    Bilder mit dem Zusatz *"1 AMS"* wurden mit nur 4 Filamenten (einem einzelnen AMS) gedruckt.
+    Trotz der reduzierten Farbpalette sind die Ergebnisse beeindruckend.
+    Verwende `--color-number 4`, um die Farbanzahl auf eine AMS-Gruppe zu begrenzen.
+
+---
+
+## Teile dein Ergebnis!
+
+Hast du eine Lithophanie mit PIXEstL gedruckt? Wir freuen uns über dein Ergebnis!
+
+[Ergebnis auf GitHub zeigen](https://github.com/feurer98/PIXEstL/issues/new?title=Galerie-Beitrag&body=Beschreibe+dein+Projekt+und+hänge+Fotos+an){ .md-button .md-button--primary }
+
+---
+
+## Nächster Schritt
+
+Inspiriert? Dann starte jetzt mit deiner eigenen Lithophanie:
+
+[Schnellstart →](schnellstart.md){ .md-button }
+&nbsp;
+[Anleitung →](anleitung/uebersicht.md){ .md-button }

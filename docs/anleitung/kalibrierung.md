@@ -162,8 +162,8 @@ Hier ein vollstaendiges Beispiel fuer Cyan:
 - **Saturation (S)** steigt meist mit zunehmender Schichtanzahl.
 - **Lightness (L)** sinkt mit zunehmender Schichtanzahl.
 
-!!! info "Vollstaendige Palette"
-    Eine vollstaendige Palette enthaelt Eintraege fuer alle verwendeten Filamentfarben, einschliesslich Weiss. Details zum Palette-Format findest du unter [Palette-Format](palette.md).
+!!! info "Vollständige Palette"
+    Eine vollständige Palette enthält Einträge für alle verwendeten Filamentfarben, einschließlich Weiß. Details zum Palette-Format findest du unter [Palette-Format](../referenz/palette-format.md).
 
 ---
 
@@ -181,8 +181,8 @@ Hier ein vollstaendiges Beispiel fuer Cyan:
 
 ---
 
-## Naechste Schritte
+## Nächste Schritte
 
-- [Palette-Format](palette.md) -- Detaillierte Beschreibung der JSON-Struktur
-- [Best Practices](best-practices.md) -- Tipps und Tricks fuer bessere Ergebnisse
-- [Lithophanie generieren](generierung.md) -- Die kalibrierte Palette verwenden
+- [Palette-Format →](../referenz/palette-format.md) – Detaillierte Beschreibung der JSON-Struktur
+- [Bild vorbereiten →](bild-vorbereiten.md) – Welches Foto eignet sich am besten?
+- [Lithophanie generieren →](generierung.md) – Die kalibrierte Palette verwenden

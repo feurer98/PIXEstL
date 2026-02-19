@@ -1,61 +1,70 @@
-# PIXEstL - Farb-Lithophanie-Generator
+# PIXEstL – Farb-Lithophanie-Generator
 
 ![PIXEstL Banner](assets/images/PIXEstL_channel.png)
 
-**PIXEstL** verwandelt deine Fotos in beeindruckende, farbige Lithophanien fuer den 3D-Druck. Durch CMYK-basierte additive Farbmischung mit transparenten Filamenten entstehen hinterleuchtete Kunstwerke mit erstaunlicher Farbtiefe.
+**PIXEstL** verwandelt deine Fotos in hinterleuchtete Farbbilder aus dem 3D-Drucker.
+Durch clevere Farbmischung aus transparenten Filamenten entstehen Kunstwerke, die im Dunkeln erstrahlen.
 
-[Schnellstart](schnellstart.md){ .md-button .md-button--primary }
+[Jetzt loslegen](schnellstart.md){ .md-button .md-button--primary }
 &nbsp;
-[Installation](installation.md){ .md-button }
+[Installation](installation/windows.md){ .md-button }
+&nbsp;
+[Galerie ansehen](galerie.md){ .md-button }
 
 ---
 
-## Was ist eine Farb-Lithophanie?
+## Was macht PIXEstL besonders?
 
-Eine Lithophanie ist ein duenner, lichtdurchlaessiger 3D-Druck, der erst durch Hintergrundbeleuchtung sein Bild zeigt. PIXEstL geht einen Schritt weiter: Durch das Stapeln transparenter Filamente in Cyan, Magenta, Gelb und Weiss entstehen **echte Farbbilder** - aehnlich wie beim klassischen CMYK-Druck, nur dreidimensional.
+<div class="grid cards" markdown>
+
+-   **CMYK-Farbmischung**
+
+    ---
+
+    Wie beim klassischen Vierfarbdruck werden Cyan, Magenta, Gelb und Weiß zu tausenden Farbtönen gemischt – nur eben in 3D und aus transparentem Filament.
+
+-   **Bambu Lab AMS-Unterstützung**
+
+    ---
+
+    Volle Unterstützung für das Automatic Material System (AMS). PIXEstL teilt die Farben automatisch in Gruppen auf, die perfekt in 1, 2 oder 4 AMS-Einheiten passen.
+
+-   **Hochperformant**
+
+    ---
+
+    In Rust geschrieben mit paralleler Verarbeitung über alle CPU-Kerne. Typische Bilder werden in Sekunden verarbeitet – 2–3× schneller als die Java-Vorgängerversion.
+
+</div>
 
 ---
 
-## Features
+## So funktioniert es – in 5 Schritten
 
-!!! tip "CMYK-Farbmischung"
-    Additive Farbmischung mit transparenten Filamenten erzeugt tausende Farbtoene aus nur 4-8 Grundfarben.
+```mermaid
+graph LR
+    A["📷 Foto wählen"] --> B["🎨 Palette kalibrieren"]
+    B --> C["⚙️ PIXEstL ausführen"]
+    C --> D["🖨️ Slicer einrichten"]
+    D --> E["✅ Drucken & beleuchten"]
+```
 
-!!! tip "Hochperformant"
-    In Rust geschrieben mit paralleler Verarbeitung (Rayon). 2-3x schneller als die Java-Vorgaengerversion.
-
-!!! tip "AMS-Unterstuetzung"
-    Volle Unterstuetzung fuer Bambu Lab AMS mit automatischer Farbgruppen-Aufteilung (4/8/16 Farben).
-
-!!! tip "Kalibrierbar"
-    Eigene Filament-Paletten fuer exakte Farbreproduktion mit jedem Drucker und Filament-Hersteller.
+| Schritt | Was passiert | Mehr erfahren |
+|---------|-------------|---------------|
+| **1. Palette kalibrieren** | Du misst einmalig, wie deine Filamente hinterleuchtet aussehen, und trägst die Werte in eine JSON-Datei ein. | [Kalibrierung →](anleitung/kalibrierung.md) |
+| **2. Bild vorbereiten** | Du wählst ein passendes Foto und optimierst es kurz (Kontrast, Ausschnitt, Größe). | [Bild vorbereiten →](anleitung/bild-vorbereiten.md) |
+| **3. PIXEstL ausführen** | Ein einzelner Befehl rechnet das Bild in mehrere STL-Dateien um – je eine pro Filamentfarbe. | [Generierung →](anleitung/generierung.md) |
+| **4. Slicer einrichten** | Du lädst die STL-Dateien in Bambu Studio und weist jeder Datei das richtige Filament zu. | [Slicer →](anleitung/slicer.md) |
+| **5. Drucken & beleuchten** | Der Drucker übernimmt – danach einfach eine Lichtquelle dahinter und staunen. | [Drucken →](anleitung/druck.md) |
 
 ---
 
 ## Beispiele
 
-![Cafe Terrace at Night](assets/images/galerie/Terrace_at_Night.jpg){ width="300" }
+![Cafe Terrace at Night](assets/images/galerie/Terrace_at_Night.jpg){ width="300" loading=lazy }
 &nbsp;
-![Schmetterling](assets/images/galerie/butterfly.jpg){ width="300" }
+![Schmetterling](assets/images/galerie/butterfly.jpg){ width="300" loading=lazy }
 &nbsp;
-![Ahsoka](assets/images/galerie/ahsoka.jpg){ width="300" }
+![Ahsoka Tano](assets/images/galerie/ahsoka.jpg){ width="300" loading=lazy }
 
-[Mehr Beispiele in der Galerie](galerie.md){ .md-button }
-
----
-
-## Workflow-Uebersicht
-
-```mermaid
-graph LR
-    A[Bild waehlen] --> B[Palette kalibrieren]
-    B --> C[PIXEstL ausfuehren]
-    C --> D[STL in Slicer laden]
-    D --> E[Drucken]
-    E --> F[Hinterleuchten]
-```
-
-1. **[Kalibrierung](anleitung/kalibrierung.md)** - Filament-Farben messen und Palette erstellen
-2. **[Generierung](anleitung/generierung.md)** - Bild mit PIXEstL in STL-Dateien umwandeln
-3. **[Slicer](anleitung/slicer.md)** - STL-Dateien in Bambu Studio einrichten
-4. **[Druck](anleitung/druck.md)** - Drucken und hinterleuchten
+[Alle Beispiele in der Galerie →](galerie.md){ .md-button }
