@@ -1,0 +1,2778 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Verwandle deine Fotos in farbige Lithophanien für den 3D-Druck – mit CMYK-basierter additiver Farbmischung und AMS-Unterstützung">
+      
+      
+      
+        <link rel="canonical" href="https://feurer98.github.io/PIXEstL/IMPLEMENTATION_PLAN/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>PIXEstL Rust Implementation Plan - PIXEstL - Farb-Lithophanie-Generator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pixestl-rust-implementation-plan" class="md-skip">
+          Zum Inhalt
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href=".." title="PIXEstL - Farb-Lithophanie-Generator" class="md-header__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PIXEstL - Farb-Lithophanie-Generator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PIXEstL Rust Implementation Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Dunkles Design aktivieren"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dunkles Design aktivieren" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Helles Design aktivieren"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Helles Design aktivieren" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Suche" placeholder="Suche" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Suche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Zurücksetzen" aria-label="Zurücksetzen" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Suche wird initialisiert
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Startseite
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../schnellstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Schnellstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/windows/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../anleitung/uebersicht/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Anleitung
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../referenz/parameter/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Referenz
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../galerie/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Galerie
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PIXEstL - Farb-Lithophanie-Generator" class="md-nav__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PIXEstL - Farb-Lithophanie-Generator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Startseite
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schnellstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schnellstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/unix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    macOS / Linux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anleitung
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Anleitung
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/uebersicht/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Übersicht
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/kalibrierung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Palette kalibrieren
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/bild-vorbereiten/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Bild vorbereiten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/generierung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. PIXEstL ausführen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/slicer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Slicer einrichten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anleitung/druck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Drucken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Referenz
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Referenz
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referenz/parameter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alle Parameter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referenz/palette-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Palette-Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../galerie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Galerie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#project-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#approach-incremental-bottom-up-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Approach: Incremental Bottom-Up Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#success-criteria-per-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Success Criteria Per Phase
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1-foundation-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Foundation &amp; Infrastructure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 1: Foundation &amp; Infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-11-project-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 1.1: Project Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-12-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 1.2: Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-color-processing-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Color Processing Core
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Color Processing Core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-21-rgb-color-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 2.1: RGB Color Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-22-hsl-color-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 2.2: HSL Color Space
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-23-cielab-color-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 2.3: CIELab Color Space
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-24-cmyk-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 2.4: CMYK Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-25-color-distance-trait" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 2.5: Color Distance Trait
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-palette-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Palette System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: Palette System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-31-data-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 3.1: Data Structures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-32-json-palette-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 3.2: JSON Palette Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-33-colorcombi-generation-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 3.3: ColorCombi Generation Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-34-color-quantization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 3.4: Color Quantization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-image-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Image Processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Image Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-41-image-loading-basic-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 4.1: Image Loading &amp; Basic Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-42-grayscale-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 4.2: Grayscale Conversion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-5-3d-geometry-mesh-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: 3D Geometry &amp; Mesh Generation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 5: 3D Geometry &amp; Mesh Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-51-basic-mesh-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 5.1: Basic Mesh Structures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-52-cuboid-primitive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 5.2: Cuboid Primitive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-53-heightmap-to-mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 5.3: Heightmap to Mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-54-stl-binary-writer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 5.4: STL Binary Writer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-6-lithophane-generation-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 6: Lithophane Generation Logic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 6: Lithophane Generation Logic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-61-color-layer-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 6.1: Color Layer Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-62-texture-layer-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 6.2: Texture Layer Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-63-support-plate-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 6.3: Support Plate Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-64-main-generator-orchestration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 6.4: Main Generator Orchestration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-7-cli-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 7: CLI Interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 7: CLI Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-71-argument-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 7.1: Argument Parsing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-72-configuration-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 7.2: Configuration Builder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-8-output-packaging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 8: Output &amp; Packaging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 8: Output &amp; Packaging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-81-stl-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 8.1: STL Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-82-zip-archive-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 8.2: ZIP Archive Creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-83-preview-image-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 8.3: Preview Image Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-9-testing-quality-assurance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 9: Testing &amp; Quality Assurance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 9: Testing &amp; Quality Assurance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-91-unit-test-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 9.1: Unit Test Completion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-92-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 9.2: Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-93-benchmark-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 9.3: Benchmark Suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-94-validation-against-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 9.4: Validation Against Java
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-10-documentation-polish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 10: Documentation &amp; Polish
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 10: Documentation &amp; Polish">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-101-api-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 10.1: API Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-102-user-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 10.2: User Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-103-code-quality-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 10.3: Code Quality Audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-11-cicd-release-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 11: CI/CD &amp; Release Preparation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 11: CI/CD &amp; Release Preparation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone-111-github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 11.1: GitHub Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#milestone-112-release-binary-builds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestone 11.2: Release Binary Builds
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#risk-assessment-mitigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risk Assessment &amp; Mitigation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Risk Assessment &amp; Mitigation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-risk-areas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Risk Areas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-risk-areas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium-Risk Areas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Development Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code Style
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#milestones-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Milestones Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Success Metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Success Metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pixestl-rust-implementation-plan">PIXEstL Rust Implementation Plan<a class="headerlink" href="#pixestl-rust-implementation-plan" title="Permanent link">&para;</a></h1>
+<h2 id="project-goals">Project Goals<a class="headerlink" href="#project-goals" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Complete Feature Parity:</strong> Rust version must produce identical output to Java version</li>
+<li><strong>Performance:</strong> Match or exceed Java performance</li>
+<li><strong>Code Quality:</strong> Idiomatic Rust with comprehensive tests</li>
+<li><strong>Documentation:</strong> Full API documentation and usage guides</li>
+<li><strong>Maintainability:</strong> Clean architecture following Rust best practices</li>
+</ol>
+<h2 id="implementation-strategy">Implementation Strategy<a class="headerlink" href="#implementation-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="approach-incremental-bottom-up-development">Approach: Incremental Bottom-Up Development<a class="headerlink" href="#approach-incremental-bottom-up-development" title="Permanent link">&para;</a></h3>
+<p>We'll build from foundational modules upward, testing each layer before proceeding. This ensures:
+- Early validation of core algorithms
+- Easier debugging
+- Modular development with clear milestones</p>
+<h3 id="success-criteria-per-phase">Success Criteria Per Phase<a class="headerlink" href="#success-criteria-per-phase" title="Permanent link">&para;</a></h3>
+<p>Each phase must meet these before proceeding:
+- ✅ All unit tests pass
+- ✅ Code compiles without warnings (<code>cargo clippy</code>)
+- ✅ Formatted correctly (<code>cargo fmt</code>)
+- ✅ Documentation complete (<code>cargo doc</code>)
+- ✅ Benchmarks (where applicable) meet targets</p>
+<hr />
+<h2 id="phase-1-foundation-infrastructure">Phase 1: Foundation &amp; Infrastructure<a class="headerlink" href="#phase-1-foundation-infrastructure" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 1-2 days
+<strong>Complexity:</strong> Low</p>
+<h3 id="milestone-11-project-setup">Milestone 1.1: Project Setup<a class="headerlink" href="#milestone-11-project-setup" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Initialize Rust project with Cargo
+2. Configure <code>Cargo.toml</code> with all dependencies
+3. Set up project structure (all directories and module files)
+4. Create placeholder modules with empty implementations
+5. Set up basic error types</p>
+<p><strong>Deliverables:</strong>
+- <code>Cargo.toml</code> with dependencies
+- Directory structure matching architecture
+- Compiling (but non-functional) project
+- <code>src/error.rs</code> with main error types</p>
+<p><strong>Validation:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cargo<span class="w"> </span>build
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cargo<span class="w"> </span>clippy
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>cargo<span class="w"> </span>fmt<span class="w"> </span>--<span class="w"> </span>--check
+</code></pre></div></p>
+<h3 id="milestone-12-error-handling">Milestone 1.2: Error Handling<a class="headerlink" href="#milestone-12-error-handling" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define comprehensive error types using <code>thiserror</code>
+2. Implement error conversions
+3. Add unit tests for error propagation</p>
+<p><strong>Deliverables:</strong>
+- <code>src/error.rs</code> complete
+- Error types for: IO, ImageLoad, PaletteParse, Config, StlGeneration
+- Result type alias: <code>pub type Result&lt;T&gt; = std::result::Result&lt;T, PixestlError&gt;</code></p>
+<p><strong>Test Coverage:</strong>
+- Error conversion from external crates
+- Error display messages</p>
+<hr />
+<h2 id="phase-2-color-processing-core">Phase 2: Color Processing Core<a class="headerlink" href="#phase-2-color-processing-core" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 3-4 days
+<strong>Complexity:</strong> Medium-High (Math-heavy)</p>
+<h3 id="milestone-21-rgb-color-type">Milestone 2.1: RGB Color Type<a class="headerlink" href="#milestone-21-rgb-color-type" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement <code>Rgb</code> struct with u8 components
+2. Add conversions: from/to hex string
+3. Basic operations: equality, debug formatting
+4. Unit tests with known values</p>
+<p><strong>Deliverables:</strong>
+- <code>src/color/rgb.rs</code>
+- Tests: hex parsing, round-trip conversions</p>
+<p><strong>Key Implementation:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="cp">#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Rgb</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">r</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">g</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">impl</span><span class="w"> </span><span class="n">Rgb</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">r</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">..</span><span class="p">.</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">from_hex</span><span class="p">(</span><span class="n">hex</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="bp">Self</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">..</span><span class="p">.</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">to_hex</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">..</span><span class="p">.</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="milestone-22-hsl-color-space">Milestone 2.2: HSL Color Space<a class="headerlink" href="#milestone-22-hsl-color-space" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement <code>Hsl</code> struct with f64 components
+2. RGB → HSL conversion
+3. HSL → RGB conversion
+4. Unit tests with reference values</p>
+<p><strong>Deliverables:</strong>
+- <code>src/color/hsl.rs</code>
+- Tests: conversion accuracy (known test vectors)</p>
+<p><strong>Algorithm Source:</strong> Java ColorUtil.colorToHSL, hueToRgb</p>
+<p><strong>Critical Test Cases:</strong>
+- Pure colors (red, green, blue)
+- Grayscale (R=G=B)
+- Edge cases (H wrap-around at 360°)</p>
+<h3 id="milestone-23-cielab-color-space">Milestone 2.3: CIELab Color Space<a class="headerlink" href="#milestone-23-cielab-color-space" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement <code>CieLab</code> struct
+2. RGB → XYZ conversion (D65 illuminant)
+3. XYZ → CIELab conversion
+4. Delta E (CIE76) distance calculation
+5. Comprehensive unit tests</p>
+<p><strong>Deliverables:</strong>
+- <code>src/color/cielab.rs</code>
+- Tests: standard color conversions, Delta E symmetry</p>
+<p><strong>Algorithm Source:</strong> Java ColorUtil.rgbToXyz, xyzToLab, deltaE</p>
+<p><strong>Critical Test Cases:</strong>
+- White (L=100, a=0, b=0)
+- Black (L=0, a≈0, b≈0)
+- Distance symmetry: d(a,b) = d(b,a)
+- Distance non-negativity: d(a,b) ≥ 0
+- Same color: d(a,a) = 0</p>
+<h3 id="milestone-24-cmyk-support">Milestone 2.4: CMYK Support<a class="headerlink" href="#milestone-24-cmyk-support" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement CMYK struct
+2. HSL → CMYK conversion
+3. CMYK → RGB conversion
+4. Unit tests</p>
+<p><strong>Deliverables:</strong>
+- <code>src/color/cmyk.rs</code> (or in rgb.rs)
+- Tests: conversion round-trips</p>
+<p><strong>Usage:</strong> Required for additive color mixing in ColorCombi</p>
+<h3 id="milestone-25-color-distance-trait">Milestone 2.5: Color Distance Trait<a class="headerlink" href="#milestone-25-color-distance-trait" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define <code>ColorDistance</code> trait
+2. Implement for RGB (Euclidean)
+3. Implement for CIELab (Delta E)
+4. Benchmarks comparing both methods</p>
+<p><strong>Deliverables:</strong>
+- <code>src/color/distance.rs</code>
+- Property-based tests (using <code>proptest</code> crate)</p>
+<p><strong>Trait Definition:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">ColorDistance</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">distance</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">other</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">f64</span><span class="p">;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">}</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">impl</span><span class="w"> </span><span class="n">ColorDistance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Rgb</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">..</span><span class="p">.</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">impl</span><span class="w"> </span><span class="n">ColorDistance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">CieLab</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">..</span><span class="p">.</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Benchmarks:</strong>
+- 1,000 color comparisons
+- RGB vs CIELab performance</p>
+<hr />
+<h2 id="phase-3-palette-system">Phase 3: Palette System<a class="headerlink" href="#phase-3-palette-system" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 3-4 days
+<strong>Complexity:</strong> High (Complex data structures)</p>
+<h3 id="milestone-31-data-structures">Milestone 3.1: Data Structures<a class="headerlink" href="#milestone-31-data-structures" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define <code>ColorLayer</code> struct
+2. Define <code>ColorCombi</code> struct
+3. Define <code>Filament</code> struct
+4. Implement builders/constructors</p>
+<p><strong>Deliverables:</strong>
+- <code>src/palette/layer.rs</code>
+- <code>src/palette/filament.rs</code>
+- Basic creation and access methods</p>
+<p><strong>Structures:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">ColorLayer</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="n">hex_code</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">layer</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="n">c</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">ColorCombi</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="n">layers</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">ColorLayer</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="n">cached_color</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">Rgb</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="p">}</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Filament</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">    </span><span class="n">hex_code</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span><span class="n">active</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">    </span><span class="n">layers</span><span class="p">:</span><span class="w"> </span><span class="nc">HashMap</span><span class="o">&lt;</span><span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">ColorLayer</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="milestone-32-json-palette-loading">Milestone 3.2: JSON Palette Loading<a class="headerlink" href="#milestone-32-json-palette-loading" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define JSON schema with <code>serde</code>
+2. Implement palette file parser
+3. Handle hex code or HSL layer values
+4. Validation (required fields, #FFFFFF check)
+5. Unit tests with example palette</p>
+<p><strong>Deliverables:</strong>
+- <code>src/palette/loader.rs</code>
+- Tests: valid/invalid JSON, error handling</p>
+<p><strong>Validation Rules:</strong>
+- <code>#FFFFFF</code> must exist in ADDITIVE mode
+- HSL values in valid ranges
+- Hex codes are valid format</p>
+<h3 id="milestone-33-colorcombi-generation-algorithm">Milestone 3.3: ColorCombi Generation Algorithm<a class="headerlink" href="#milestone-33-colorcombi-generation-algorithm" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement recursive combination generator
+2. Handle ADDITIVE mode (no duplicate colors)
+3. Handle FULL mode (single color per pixel)
+4. Factorize adjacent same-color layers
+5. Unit tests with small palettes</p>
+<p><strong>Deliverables:</strong>
+- <code>src/palette/mod.rs</code> - main algorithm
+- Tests: count of combinations, correctness</p>
+<p><strong>Algorithm Complexity:</strong>
+- Exponential but pruned (early exit)
+- Test with 3-color palette → verify count
+- Test with real palette → check performance</p>
+<p><strong>Critical Tests:</strong>
+- 2 colors, 5 layers → count combinations
+- Verify no duplicate colors in combination (ADDITIVE)
+- Verify sum of layers equals target</p>
+<h3 id="milestone-34-color-quantization">Milestone 3.4: Color Quantization<a class="headerlink" href="#milestone-34-color-quantization" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement parallel color matching
+2. Use Rayon for pixel iteration
+3. Handle transparency
+4. Return quantized image</p>
+<p><strong>Deliverables:</strong>
+- <code>src/palette/mod.rs</code> - quantize function
+- Benchmark: 1000x1000 image quantization</p>
+<p><strong>Algorithm:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">quantize_colors</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RgbaImage</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">combis</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="n">ColorCombi</span><span class="p">],</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">ColorDistanceMethod</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">RgbaImage</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="p">.</span><span class="n">width</span><span class="p">();</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="p">.</span><span class="n">height</span><span class="p">();</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">pixels</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">_</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="o">..</span><span class="n">height</span><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">        </span><span class="p">.</span><span class="n">into_par_iter</span><span class="p">()</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">        </span><span class="p">.</span><span class="n">flat_map</span><span class="p">(</span><span class="o">|</span><span class="n">y</span><span class="o">|</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">            </span><span class="p">(</span><span class="mi">0</span><span class="o">..</span><span class="n">width</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">x</span><span class="o">|</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">pixel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="p">.</span><span class="n">get_pixel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">);</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">pixel</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rgb</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">pixel</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">closest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">find_closest_color</span><span class="p">(</span><span class="o">&amp;</span><span class="n">color</span><span class="p">,</span><span class="w"> </span><span class="n">combis</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">);</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">                </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">Rgba</span><span class="p">([</span><span class="n">closest</span><span class="p">.</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">closest</span><span class="p">.</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">closest</span><span class="p">.</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]))</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">            </span><span class="p">})</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">        </span><span class="p">})</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">        </span><span class="p">.</span><span class="n">collect</span><span class="p">();</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="c1">// Construct result image from pixels</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">    </span><span class="o">..</span><span class="p">.</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="phase-4-image-processing">Phase 4: Image Processing<a class="headerlink" href="#phase-4-image-processing" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 2-3 days
+<strong>Complexity:</strong> Medium</p>
+<h3 id="milestone-41-image-loading-basic-operations">Milestone 4.1: Image Loading &amp; Basic Operations<a class="headerlink" href="#milestone-41-image-loading-basic-operations" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Load images using <code>image</code> crate
+2. Implement resize with aspect ratio preservation
+3. Image flipping (vertical mirror)
+4. Transparency detection</p>
+<p><strong>Deliverables:</strong>
+- <code>src/image/loader.rs</code>
+- Tests: load different formats (PNG, JPG), resize accuracy</p>
+<p><strong>Key Functions:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">load_image</span><span class="p">(</span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Path</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">RgbaImage</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">resize_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RgbaImage</span><span class="p">,</span><span class="w"> </span><span class="n">width_mm</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">                    </span><span class="n">height_mm</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">pixel_size_mm</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">RgbaImage</span><span class="p">;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">flip_vertical</span><span class="p">(</span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RgbaImage</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">RgbaImage</span><span class="p">;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">has_transparency</span><span class="p">(</span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RgbaImage</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">bool</span><span class="p">;</span>
+</code></pre></div></p>
+<h3 id="milestone-42-grayscale-conversion">Milestone 4.2: Grayscale Conversion<a class="headerlink" href="#milestone-42-grayscale-conversion" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement luminance formula (BT.709)
+2. Handle transparency in grayscale
+3. Unit tests with known values</p>
+<p><strong>Deliverables:</strong>
+- <code>src/image/processor.rs</code>
+- Tests: luminance calculation</p>
+<p><strong>Formula:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+</code></pre></div></p>
+<p><strong>Test Cases:</strong>
+- Pure white (255,255,255) → 255
+- Pure black (0,0,0) → 0
+- Pure red (255,0,0) → 54</p>
+<hr />
+<h2 id="phase-5-3d-geometry-mesh-generation">Phase 5: 3D Geometry &amp; Mesh Generation<a class="headerlink" href="#phase-5-3d-geometry-mesh-generation" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 4-5 days
+<strong>Complexity:</strong> High</p>
+<h3 id="milestone-51-basic-mesh-structures">Milestone 5.1: Basic Mesh Structures<a class="headerlink" href="#milestone-51-basic-mesh-structures" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define <code>Vertex</code> type (3D point)
+2. Define <code>Triangle</code> type (3 vertices + normal)
+3. Define <code>Mesh</code> type (collection of triangles)
+4. Basic mesh operations (add triangle, calculate bounds)</p>
+<p><strong>Deliverables:</strong>
+- <code>src/geometry/mesh.rs</code>
+- <code>src/geometry/triangle.rs</code>
+- Tests: basic operations</p>
+<p><strong>Structures:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Vertex</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">z</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">}</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Triangle</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">vertices</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">Vertex</span><span class="p">;</span><span class="w"> </span><span class="mi">3</span><span class="p">],</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">normal</span><span class="p">:</span><span class="w"> </span><span class="nc">Vertex</span><span class="p">,</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">}</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Mesh</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">triangles</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Triangle</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="milestone-52-cuboid-primitive">Milestone 5.2: Cuboid Primitive<a class="headerlink" href="#milestone-52-cuboid-primitive" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Generate cuboid at position (x, y, z)
+2. Parameterize width, height, depth
+3. Generate 12 triangles (2 per face)
+4. Calculate normals</p>
+<p><strong>Deliverables:</strong>
+- <code>src/geometry/primitives.rs</code>
+- Tests: vertex count, normal directions</p>
+<p><strong>Usage:</strong> Foundation for pixel cuboids in color layers</p>
+<h3 id="milestone-53-heightmap-to-mesh">Milestone 5.3: Heightmap to Mesh<a class="headerlink" href="#milestone-53-heightmap-to-mesh" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Accept 2D array of heights
+2. Generate mesh with varying Z values
+3. Handle transparency (skip pixels)
+4. Optimize for STL export</p>
+<p><strong>Deliverables:</strong>
+- <code>src/geometry/heightmap.rs</code>
+- Tests: small heightmap → verify triangles</p>
+<p><strong>Algorithm:</strong>
+For each pixel (x, y) with height h:
+- Create top face at Z = h
+- Create side faces to adjacent pixels
+- Skip if transparent</p>
+<h3 id="milestone-54-stl-binary-writer">Milestone 5.4: STL Binary Writer<a class="headerlink" href="#milestone-54-stl-binary-writer" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Use <code>stl_io</code> crate or manual implementation
+2. Write binary STL format
+3. Correct byte ordering (little-endian)
+4. Add unit tests with reference files</p>
+<p><strong>Deliverables:</strong>
+- <code>src/stl/writer.rs</code>
+- <code>src/stl/binary.rs</code>
+- Tests: write mesh, verify file structure</p>
+<p><strong>STL Binary Format:</strong>
+- 80-byte header
+- 4-byte triangle count (u32)
+- Per triangle: normal (3×f32), vertices (3×3×f32), attribute (u16)</p>
+<hr />
+<h2 id="phase-6-lithophane-generation-logic">Phase 6: Lithophane Generation Logic<a class="headerlink" href="#phase-6-lithophane-generation-logic" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 4-5 days
+<strong>Complexity:</strong> High</p>
+<h3 id="milestone-61-color-layer-generation">Milestone 6.1: Color Layer Generation<a class="headerlink" href="#milestone-61-color-layer-generation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. For each unique color in palette:
+   - Iterate over quantized image
+   - For each pixel with this color:
+     - Get ColorCombi
+     - Find layers for this color in combo
+     - Create cuboid at (x, y) with appropriate Z-offset and thickness
+2. Combine all cuboids into single mesh
+3. Handle multiple layer groups (AMS mode)</p>
+<p><strong>Deliverables:</strong>
+- <code>src/lithophane/color_layer.rs</code>
+- Tests: small test image → verify cuboid count</p>
+<p><strong>Algorithm Outline:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">generate_color_layer</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RgbaImage</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="n">palette</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Palette</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="n">hex_code</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="n">config</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Config</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Mesh</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">mesh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Mesh</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="o">..</span><span class="n">image</span><span class="p">.</span><span class="n">height</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="o">..</span><span class="n">image</span><span class="p">.</span><span class="n">width</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">pixel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="p">.</span><span class="n">get_pixel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">);</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">continue</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rgb</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">pixel</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">pixel</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">combi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">palette</span><span class="p">.</span><span class="n">get_combi</span><span class="p">(</span><span class="o">&amp;</span><span class="n">color</span><span class="p">);</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">layer_thickness</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">combi</span><span class="p">.</span><span class="n">thickness_for_color</span><span class="p">(</span><span class="n">hex_code</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">z_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">combi</span><span class="p">.</span><span class="n">z_offset_for_color</span><span class="p">(</span><span class="n">hex_code</span><span class="p">);</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">cuboid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_cuboid</span><span class="p">(</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">                    </span><span class="n">x</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">color_pixel_width</span><span class="p">,</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">                    </span><span class="n">y</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">color_pixel_width</span><span class="p">,</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="w">                    </span><span class="n">z_offset</span><span class="p">,</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="w">                    </span><span class="n">config</span><span class="p">.</span><span class="n">color_pixel_width</span><span class="p">,</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="w">                    </span><span class="n">config</span><span class="p">.</span><span class="n">color_pixel_width</span><span class="p">,</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="w">                    </span><span class="n">layer_thickness</span><span class="p">,</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="w">                </span><span class="p">);</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="w">                </span><span class="n">mesh</span><span class="p">.</span><span class="n">add_triangles</span><span class="p">(</span><span class="n">cuboid</span><span class="p">.</span><span class="n">triangles</span><span class="p">);</span>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="w">    </span><span class="n">mesh</span>
+<a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="milestone-62-texture-layer-generation">Milestone 6.2: Texture Layer Generation<a class="headerlink" href="#milestone-62-texture-layer-generation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Iterate over grayscale image
+2. Map luminance to height (min_thickness to max_thickness)
+3. Generate heightmap
+4. Convert heightmap to mesh
+5. Handle transparency</p>
+<p><strong>Deliverables:</strong>
+- <code>src/lithophane/texture_layer.rs</code>
+- Tests: gradient image → verify heights</p>
+<p><strong>Height Mapping:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kd">let</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">texture_min_thickness</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="p">(</span><span class="n">luminance</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">255.0</span><span class="p">)</span><span class="w"> </span><span class="o">*</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="p">(</span><span class="n">config</span><span class="p">.</span><span class="n">texture_max_thickness</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">texture_min_thickness</span><span class="p">);</span>
+</code></pre></div></p>
+<h3 id="milestone-63-support-plate-generation">Milestone 6.3: Support Plate Generation<a class="headerlink" href="#milestone-63-support-plate-generation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Generate flat plate at Z=0
+2. Thickness = config.plate_thickness
+3. Handle transparency (create holes)
+4. Fast generation (simple rectangle or complex with holes)</p>
+<p><strong>Deliverables:</strong>
+- <code>src/lithophane/plate.rs</code>
+- Tests: with/without transparency</p>
+<p><strong>Two Modes:</strong>
+- No transparency: Single large cuboid (fast)
+- With transparency: Per-pixel cuboids with holes</p>
+<h3 id="milestone-64-main-generator-orchestration">Milestone 6.4: Main Generator Orchestration<a class="headerlink" href="#milestone-64-main-generator-orchestration" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Implement main <code>LithophaneGenerator</code> struct
+2. Coordinate all layer generation
+3. Handle parallelization (Rayon)
+4. Progress reporting (optional)</p>
+<p><strong>Deliverables:</strong>
+- <code>src/lithophane/generator.rs</code>
+- Integration test: small end-to-end example</p>
+<p><strong>Structure:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LithophaneGenerator</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">config</span><span class="p">:</span><span class="w"> </span><span class="nc">Config</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">palette</span><span class="p">:</span><span class="w"> </span><span class="nc">Palette</span><span class="p">,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">impl</span><span class="w"> </span><span class="n">LithophaneGenerator</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">image_path</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Path</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">GeneratedLayers</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">        </span><span class="c1">// 1. Load and process image</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">        </span><span class="c1">// 2. Quantize colors</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">        </span><span class="c1">// 3. Generate color layers (parallel)</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">        </span><span class="c1">// 4. Generate texture layer</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">        </span><span class="c1">// 5. Generate support plate</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="w">        </span><span class="c1">// Return all meshes</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="phase-7-cli-interface">Phase 7: CLI Interface<a class="headerlink" href="#phase-7-cli-interface" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 2 days
+<strong>Complexity:</strong> Medium</p>
+<h3 id="milestone-71-argument-parsing">Milestone 7.1: Argument Parsing<a class="headerlink" href="#milestone-71-argument-parsing" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Define CLI arguments using <code>clap</code> derive macros
+2. Match all Java CLI arguments exactly
+3. Add validation
+4. Help text and examples</p>
+<p><strong>Deliverables:</strong>
+- <code>src/cli.rs</code>
+- Tests: parse valid/invalid arguments</p>
+<p><strong>Argument Structure:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="cp">#[derive(Parser, Debug)]</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="cp">#[command(name = </span><span class="s">&quot;pixestl&quot;</span><span class="cp">)]</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="cp">#[command(about = </span><span class="s">&quot;Color lithophane generator for 3D printing&quot;</span><span class="cp">)]</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Args</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="cp">#[arg(short = &#39;i&#39;, long)]</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">src_image_path</span><span class="p">:</span><span class="w"> </span><span class="nc">PathBuf</span><span class="p">,</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="cp">#[arg(short = &#39;p&#39;, long)]</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">palette_path</span><span class="p">:</span><span class="w"> </span><span class="nc">PathBuf</span><span class="p">,</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span><span class="c1">// ... all other arguments matching Java version</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="milestone-72-configuration-builder">Milestone 7.2: Configuration Builder<a class="headerlink" href="#milestone-72-configuration-builder" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Convert CLI args to <code>Config</code> struct
+2. Apply defaults
+3. Validate combinations (e.g., width or height required)
+4. Comprehensive unit tests</p>
+<p><strong>Deliverables:</strong>
+- <code>src/config.rs</code>
+- Tests: default values, validation</p>
+<hr />
+<h2 id="phase-8-output-packaging">Phase 8: Output &amp; Packaging<a class="headerlink" href="#phase-8-output-packaging" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 2 days
+<strong>Complexity:</strong> Low-Medium</p>
+<h3 id="milestone-81-stl-export">Milestone 8.1: STL Export<a class="headerlink" href="#milestone-81-stl-export" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Write each mesh to STL file
+2. Use parallel writing if beneficial
+3. Progress indicators</p>
+<p><strong>Deliverables:</strong>
+- <code>src/output/exporter.rs</code>
+- Tests: verify STL files loadable in external tools</p>
+<h3 id="milestone-82-zip-archive-creation">Milestone 8.2: ZIP Archive Creation<a class="headerlink" href="#milestone-82-zip-archive-creation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Create ZIP using <code>zip</code> crate
+2. Add all STL files
+3. Add preview PNG images
+4. Add instructions.txt (for AMS mode)</p>
+<p><strong>Deliverables:</strong>
+- <code>src/output/exporter.rs</code> (extend)
+- Tests: verify ZIP contents</p>
+<p><strong>ZIP Contents:</strong>
+- <code>layer-&lt;color&gt;.stl</code> (per color)
+- <code>layer-plate.stl</code>
+- <code>layer-texture-&lt;color&gt;.stl</code>
+- <code>image-color-preview.png</code>
+- <code>image-texture-preview.png</code>
+- <code>instructions.txt</code> (if colorNumber set)</p>
+<h3 id="milestone-83-preview-image-generation">Milestone 8.3: Preview Image Generation<a class="headerlink" href="#milestone-83-preview-image-generation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Save quantized color image as PNG
+2. Save grayscale texture image as PNG
+3. Use <code>image</code> crate for PNG encoding</p>
+<p><strong>Deliverables:</strong>
+- <code>src/output/preview.rs</code>
+- Tests: verify PNG files created</p>
+<hr />
+<h2 id="phase-9-testing-quality-assurance">Phase 9: Testing &amp; Quality Assurance<a class="headerlink" href="#phase-9-testing-quality-assurance" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 3-4 days
+<strong>Complexity:</strong> Medium</p>
+<h3 id="milestone-91-unit-test-completion">Milestone 9.1: Unit Test Completion<a class="headerlink" href="#milestone-91-unit-test-completion" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Ensure every module has &gt;80% coverage
+2. Add missing edge case tests
+3. Property-based tests for math functions</p>
+<p><strong>Deliverables:</strong>
+- Tests passing: <code>cargo test</code>
+- Coverage report (using <code>tarpaulin</code> or similar)</p>
+<p><strong>Critical Modules:</strong>
+- Color conversions (most important!)
+- Palette combinatorics
+- Mesh generation</p>
+<h3 id="milestone-92-integration-tests">Milestone 9.2: Integration Tests<a class="headerlink" href="#milestone-92-integration-tests" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. End-to-end test with small test image
+2. Verify output ZIP structure
+3. Compare with Java output (manually)</p>
+<p><strong>Deliverables:</strong>
+- <code>tests/integration/</code> directory
+- Test fixtures in <code>tests/fixtures/</code></p>
+<p><strong>Test Images:</strong>
+- 10x10 solid color
+- 10x10 gradient
+- 10x10 with transparency
+- Small version of example image</p>
+<h3 id="milestone-93-benchmark-suite">Milestone 9.3: Benchmark Suite<a class="headerlink" href="#milestone-93-benchmark-suite" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Benchmark color distance calculations
+2. Benchmark image quantization
+3. Benchmark mesh generation
+4. Compare with Java timings</p>
+<p><strong>Deliverables:</strong>
+- <code>benches/benchmarks.rs</code>
+- Performance report</p>
+<p><strong>Targets:</strong>
+- 100x100 image: &lt; 1 second
+- 1000x1000 image: &lt; 30 seconds</p>
+<h3 id="milestone-94-validation-against-java">Milestone 9.4: Validation Against Java<a class="headerlink" href="#milestone-94-validation-against-java" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Run same inputs through both versions
+2. Compare quantized images (pixel-perfect match expected)
+3. Compare STL vertex counts (within tolerance)
+4. Compare color layer assignments</p>
+<p><strong>Deliverables:</strong>
+- Validation script or test
+- Report of any differences</p>
+<p><strong>Acceptance Criteria:</strong>
+- Quantized images: Identical
+- STL sizes: Within 1% (floating point differences acceptable)
+- Processing time: Rust ≤ Java</p>
+<hr />
+<h2 id="phase-10-documentation-polish">Phase 10: Documentation &amp; Polish<a class="headerlink" href="#phase-10-documentation-polish" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 2-3 days
+<strong>Complexity:</strong> Low</p>
+<h3 id="milestone-101-api-documentation">Milestone 10.1: API Documentation<a class="headerlink" href="#milestone-101-api-documentation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Add <code>///</code> doc comments to all public items
+2. Add examples to complex functions
+3. Generate with <code>cargo doc --no-deps</code>
+4. Review for completeness</p>
+<p><strong>Deliverables:</strong>
+- Complete rustdoc
+- Examples in docstrings</p>
+<h3 id="milestone-102-user-documentation">Milestone 10.2: User Documentation<a class="headerlink" href="#milestone-102-user-documentation" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Write comprehensive README.md
+2. Usage examples
+3. Installation instructions
+4. Comparison with Java version</p>
+<p><strong>Deliverables:</strong>
+- <code>README.md</code> in project root
+- <code>docs/USAGE.md</code></p>
+<h3 id="milestone-103-code-quality-audit">Milestone 10.3: Code Quality Audit<a class="headerlink" href="#milestone-103-code-quality-audit" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Run <code>cargo clippy</code> - fix all warnings
+2. Run <code>cargo fmt</code> - ensure consistent style
+3. Review <code>unsafe</code> blocks (should be none)
+4. Review error handling (no <code>unwrap</code> in library code)</p>
+<p><strong>Deliverables:</strong>
+- Clean <code>clippy</code> output
+- Formatted codebase</p>
+<hr />
+<h2 id="phase-11-cicd-release-preparation">Phase 11: CI/CD &amp; Release Preparation<a class="headerlink" href="#phase-11-cicd-release-preparation" title="Permanent link">&para;</a></h2>
+<p><strong>Duration Estimate:</strong> 1-2 days
+<strong>Complexity:</strong> Low</p>
+<h3 id="milestone-111-github-actions">Milestone 11.1: GitHub Actions<a class="headerlink" href="#milestone-111-github-actions" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Create <code>.github/workflows/ci.yml</code>
+2. Run tests on push/PR
+3. Build on multiple platforms (Linux, Windows, macOS)
+4. Run clippy and format checks</p>
+<p><strong>Deliverables:</strong>
+- Working CI pipeline</p>
+<h3 id="milestone-112-release-binary-builds">Milestone 11.2: Release Binary Builds<a class="headerlink" href="#milestone-112-release-binary-builds" title="Permanent link">&para;</a></h3>
+<p><strong>Tasks:</strong>
+1. Set up release workflow
+2. Cross-compile for major platforms
+3. Create GitHub releases with binaries</p>
+<p><strong>Deliverables:</strong>
+- Automated release process</p>
+<hr />
+<h2 id="risk-assessment-mitigation">Risk Assessment &amp; Mitigation<a class="headerlink" href="#risk-assessment-mitigation" title="Permanent link">&para;</a></h2>
+<h3 id="high-risk-areas">High-Risk Areas<a class="headerlink" href="#high-risk-areas" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Probability</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CIELab conversion errors</td>
+<td>Medium</td>
+<td>High</td>
+<td>Extensive unit tests with reference values</td>
+</tr>
+<tr>
+<td>ColorCombi explosion</td>
+<td>Low</td>
+<td>High</td>
+<td>Add limit checks, test with real palettes</td>
+</tr>
+<tr>
+<td>Mesh generation bugs</td>
+<td>Medium</td>
+<td>High</td>
+<td>Incremental testing, visualization tools</td>
+</tr>
+<tr>
+<td>Performance &lt; Java</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Profile early, optimize hot paths with SIMD</td>
+</tr>
+<tr>
+<td>Platform compatibility</td>
+<td>Low</td>
+<td>Low</td>
+<td>CI on all platforms, integration tests</td>
+</tr>
+</tbody>
+</table>
+<h3 id="medium-risk-areas">Medium-Risk Areas<a class="headerlink" href="#medium-risk-areas" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Probability</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Floating point precision</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Use epsilon comparisons in tests</td>
+</tr>
+<tr>
+<td>Memory usage on large images</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Profile, optimize, use streaming if needed</td>
+</tr>
+<tr>
+<td>Palette JSON edge cases</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Fuzz testing, manual review of format</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="development-best-practices">Development Best Practices<a class="headerlink" href="#development-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="code-style">Code Style<a class="headerlink" href="#code-style" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Follow Rust API guidelines</li>
+<li>Use <code>clippy::pedantic</code> for extra checks</li>
+<li>Prefer immutability and owned types</li>
+<li>Use <code>&amp;str</code> for string parameters, <code>String</code> for returns</li>
+</ul>
+<h3 id="testing-strategy">Testing Strategy<a class="headerlink" href="#testing-strategy" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>TDD for Algorithms:</strong> Write tests before implementing complex logic</li>
+<li><strong>Fast Tests:</strong> Unit tests should run in &lt;1s total</li>
+<li><strong>Integration Tests:</strong> Separate from unit tests, can be slower</li>
+<li><strong>Benchmarks:</strong> Run separately, track over time</li>
+</ol>
+<h3 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use <code>Result&lt;T, PixestlError&gt;</code> throughout</li>
+<li>Provide context with <code>.context()</code> from <code>anyhow</code></li>
+<li>Never <code>panic!</code> in library code</li>
+<li>Only <code>unwrap()</code> when mathematically impossible to fail</li>
+</ul>
+<h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Profile before optimizing (use <code>cargo flamegraph</code>)</li>
+<li>Start with simple, correct code</li>
+<li>Optimize hot paths after profiling</li>
+<li>Consider SIMD only if measurements show benefit</li>
+</ul>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>All public items must have doc comments</li>
+<li>Add examples for complex functions</li>
+<li>Link to related items with <code>[</code>Module<code>]</code> syntax</li>
+<li>Reference Java implementation in comments where useful</li>
+</ul>
+<hr />
+<h2 id="milestones-summary">Milestones Summary<a class="headerlink" href="#milestones-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Milestones</th>
+<th>Duration</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Foundation</td>
+<td>1.1-1.2</td>
+<td>1-2 days</td>
+<td>None</td>
+</tr>
+<tr>
+<td>2. Color</td>
+<td>2.1-2.5</td>
+<td>3-4 days</td>
+<td>Phase 1</td>
+</tr>
+<tr>
+<td>3. Palette</td>
+<td>3.1-3.4</td>
+<td>3-4 days</td>
+<td>Phase 2</td>
+</tr>
+<tr>
+<td>4. Image</td>
+<td>4.1-4.2</td>
+<td>2-3 days</td>
+<td>Phase 2</td>
+</tr>
+<tr>
+<td>5. Geometry</td>
+<td>5.1-5.4</td>
+<td>4-5 days</td>
+<td>Phase 1</td>
+</tr>
+<tr>
+<td>6. Generator</td>
+<td>6.1-6.4</td>
+<td>4-5 days</td>
+<td>Phases 3, 4, 5</td>
+</tr>
+<tr>
+<td>7. CLI</td>
+<td>7.1-7.2</td>
+<td>2 days</td>
+<td>Phase 6</td>
+</tr>
+<tr>
+<td>8. Output</td>
+<td>8.1-8.3</td>
+<td>2 days</td>
+<td>Phase 5, 6</td>
+</tr>
+<tr>
+<td>9. Testing</td>
+<td>9.1-9.4</td>
+<td>3-4 days</td>
+<td>All phases</td>
+</tr>
+<tr>
+<td>10. Docs</td>
+<td>10.1-10.3</td>
+<td>2-3 days</td>
+<td>All phases</td>
+</tr>
+<tr>
+<td>11. CI/CD</td>
+<td>11.1-11.2</td>
+<td>1-2 days</td>
+<td>Phase 9</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total Estimated Duration:</strong> 27-37 days</p>
+<p><strong>Critical Path:</strong> Phase 1 → 2 → 3 → 6 → 7 → 8 → 9</p>
+<hr />
+<h2 id="success-metrics">Success Metrics<a class="headerlink" href="#success-metrics" title="Permanent link">&para;</a></h2>
+<h3 id="functional">Functional<a class="headerlink" href="#functional" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ All CLI arguments from Java version supported</li>
+<li>✅ Same palette JSON format accepted</li>
+<li>✅ Identical quantized image output</li>
+<li>✅ STL files loadable in slicer software</li>
+<li>✅ ZIP contains all expected files</li>
+</ul>
+<h3 id="quality">Quality<a class="headerlink" href="#quality" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ 80%+ code coverage</li>
+<li>✅ Zero clippy warnings</li>
+<li>✅ All tests pass on Linux, Windows, macOS</li>
+<li>✅ Complete rustdoc for public API</li>
+</ul>
+<h3 id="performance_1">Performance<a class="headerlink" href="#performance_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ 100x100 image: &lt; 1s</li>
+<li>✅ 1000x1000 image: &lt; 30s</li>
+<li>✅ Memory usage: &lt; 500MB for typical images</li>
+</ul>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>After reading this plan:
+1. <strong>Setup Phase 1:</strong> Initialize Rust project
+2. <strong>Create Skeleton:</strong> All module files with empty impls
+3. <strong>Start Phase 2:</strong> Begin with color modules (most critical)</p>
+<p><strong>Ready to begin implementation!</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Zurück zum Seitenanfang
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/feurer98/PIXEstL" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "In Zwischenablage kopiert", "clipboard.copy": "In Zwischenablage kopieren", "search.result.more.one": "1 weiteres Suchergebnis auf dieser Seite", "search.result.more.other": "# weitere Suchergebnisse auf dieser Seite", "search.result.none": "Keine Suchergebnisse", "search.result.one": "1 Suchergebnis", "search.result.other": "# Suchergebnisse", "search.result.placeholder": "Suchbegriff eingeben", "search.result.term.missing": "Es fehlt", "select.version": "Version ausw\u00e4hlen"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

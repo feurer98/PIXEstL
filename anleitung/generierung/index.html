@@ -1,0 +1,2147 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Verwandle deine Fotos in farbige Lithophanien für den 3D-Druck – mit CMYK-basierter additiver Farbmischung und AMS-Unterstützung">
+      
+      
+      
+        <link rel="canonical" href="https://feurer98.github.io/PIXEstL/anleitung/generierung/">
+      
+      
+        <link rel="prev" href="../bild-vorbereiten/">
+      
+      
+        <link rel="next" href="../slicer/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>3. PIXEstL ausführen - PIXEstL - Farb-Lithophanie-Generator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lithophanie-generieren" class="md-skip">
+          Zum Inhalt
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="../.." title="PIXEstL - Farb-Lithophanie-Generator" class="md-header__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PIXEstL - Farb-Lithophanie-Generator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              3. PIXEstL ausführen
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Dunkles Design aktivieren"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dunkles Design aktivieren" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Helles Design aktivieren"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Helles Design aktivieren" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Suche" placeholder="Suche" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Suche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Zurücksetzen" aria-label="Zurücksetzen" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Suche wird initialisiert
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Startseite
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../schnellstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Schnellstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/windows/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../uebersicht/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Anleitung
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../referenz/parameter/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Referenz
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../galerie/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Galerie
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PIXEstL - Farb-Lithophanie-Generator" class="md-nav__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PIXEstL - Farb-Lithophanie-Generator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Startseite
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schnellstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schnellstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/unix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    macOS / Linux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anleitung
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Anleitung
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uebersicht/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Übersicht
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kalibrierung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Palette kalibrieren
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bild-vorbereiten/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Bild vorbereiten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. PIXEstL ausführen
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. PIXEstL ausführen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#grundbefehl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grundbefehl
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bildauswahl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bildauswahl
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wichtige-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wichtige Parameter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wichtige Parameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#groesse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groesse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#farbpixel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Farbpixel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#textur" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Textur
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ausgabeformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ausgabeformat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#farbalgorithmus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Farbalgorithmus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ams-modus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AMS-Modus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kruemmung-curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kruemmung (Curve)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weitere-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weitere Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#praxis-beispiele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Praxis-Beispiele
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Praxis-Beispiele">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-standard-portrait-100-mm-breit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Standard-Portrait (100 mm breit)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hochaufloesend-mit-feinen-pixeln" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Hochaufloesend mit feinen Pixeln
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-binary-format-fuer-kleinere-dateien" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Binary-Format fuer kleinere Dateien
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-ams-modus-mit-4-farben" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. AMS-Modus mit 4 Farben
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-nur-textur-graustufen-ohne-farbe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Nur Textur (Graustufen, ohne Farbe)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-gekruemmte-lithophanie-halbzylinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Gekruemmte Lithophanie (Halbzylinder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-kalibrierungs-testmuster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Kalibrierungs-Testmuster
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ausgabe-verstehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ausgabe verstehen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leistungshinweise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leistungshinweise
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naechste-schritte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naechste Schritte
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slicer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Slicer einrichten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../druck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Drucken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Referenz
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Referenz
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../referenz/parameter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alle Parameter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../referenz/palette-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Palette-Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../galerie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Galerie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#grundbefehl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grundbefehl
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bildauswahl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bildauswahl
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wichtige-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wichtige Parameter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wichtige Parameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#groesse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groesse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#farbpixel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Farbpixel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#textur" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Textur
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ausgabeformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ausgabeformat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#farbalgorithmus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Farbalgorithmus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ams-modus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AMS-Modus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kruemmung-curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kruemmung (Curve)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weitere-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weitere Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#praxis-beispiele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Praxis-Beispiele
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Praxis-Beispiele">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-standard-portrait-100-mm-breit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Standard-Portrait (100 mm breit)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hochaufloesend-mit-feinen-pixeln" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Hochaufloesend mit feinen Pixeln
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-binary-format-fuer-kleinere-dateien" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Binary-Format fuer kleinere Dateien
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-ams-modus-mit-4-farben" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. AMS-Modus mit 4 Farben
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-nur-textur-graustufen-ohne-farbe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Nur Textur (Graustufen, ohne Farbe)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-gekruemmte-lithophanie-halbzylinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Gekruemmte Lithophanie (Halbzylinder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-kalibrierungs-testmuster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Kalibrierungs-Testmuster
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ausgabe-verstehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ausgabe verstehen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leistungshinweise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leistungshinweise
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naechste-schritte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naechste Schritte
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="lithophanie-generieren">Lithophanie generieren<a class="headerlink" href="#lithophanie-generieren" title="Permanent link">&para;</a></h1>
+<p>Diese Seite erklaert, wie du mit PIXEstL eine Farb-Lithophanie aus einem Bild erzeugst. Du erfaehrst, welche Parameter zur Verfuegung stehen, wie du sie kombinierst und was die Ausgabe enthaelt.</p>
+<hr />
+<h2 id="grundbefehl">Grundbefehl<a class="headerlink" href="#grundbefehl" title="Permanent link">&para;</a></h2>
+<p>Der minimale Befehl fuer eine Lithophanie-Generierung lautet:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>ausgabe.zip<span class="w"> </span>-w<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-i bild.jpg</code></td>
+<td>Eingabebild (JPG, PNG oder WebP)</td>
+</tr>
+<tr>
+<td><code>-p palette.json</code></td>
+<td>Palette-Datei mit den kalibrierten Filamentfarben</td>
+</tr>
+<tr>
+<td><code>-o ausgabe.zip</code></td>
+<td>Ausgabe-Datei (ZIP-Archiv mit STL-Dateien)</td>
+</tr>
+<tr>
+<td><code>-w 100</code></td>
+<td>Breite der Lithophanie in Millimetern</td>
+</tr>
+</tbody>
+</table>
+<p>Damit generiert PIXEstL eine 100 mm breite Farb-Lithophanie mit den Standardeinstellungen.</p>
+<hr />
+<h2 id="bildauswahl">Bildauswahl<a class="headerlink" href="#bildauswahl" title="Permanent link">&para;</a></h2>
+<p>Die Qualitaet des Eingabebildes beeinflusst das Ergebnis erheblich. Beachte folgende Hinweise:</p>
+<div class="admonition tip">
+<p class="admonition-title">Geeignete Bilder</p>
+<ul>
+<li><strong>Hoher Kontrast:</strong> Bilder mit deutlichen Hell-Dunkel-Unterschieden erzeugen die eindrucksvollsten Lithophanien.</li>
+<li><strong>Gute Aufloesung:</strong> 500 bis 2000 Pixel Breite sind ideal. Kleinere Bilder verlieren Details, groessere erhoehen die Rechenzeit ohne sichtbaren Gewinn.</li>
+<li><strong>Portraits und Landschaften</strong> funktionieren besonders gut, da sie natuerliche Helligkeitsverlaeufe enthalten.</li>
+<li><strong>Farbsaettigung:</strong> Kraeftige Farben im Eingabebild ergeben kraeftigere Farben in der Lithophanie.</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Ungeeignete Bilder</p>
+<ul>
+<li><strong>Sehr dunkle Bilder:</strong> Wenig Licht scheint durch -- das Ergebnis wirkt flach.</li>
+<li><strong>Geringe Aufloesung (unter 300px):</strong> Zu wenig Detail fuer eine scharfe Lithophanie.</li>
+<li><strong>Stark komprimierte JPEGs:</strong> Kompressionsartefakte werden in der Lithophanie sichtbar.</li>
+<li><strong>Bilder mit wenig Kontrast:</strong> Die Texturschicht kann kaum Helligkeitsunterschiede darstellen.</li>
+</ul>
+</div>
+<hr />
+<h2 id="wichtige-parameter">Wichtige Parameter<a class="headerlink" href="#wichtige-parameter" title="Permanent link">&para;</a></h2>
+<h3 id="groesse">Groesse<a class="headerlink" href="#groesse" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-w</code> / <code>--width</code></td>
+<td>0</td>
+<td>Breite der Lithophanie in mm</td>
+</tr>
+<tr>
+<td><code>-h</code> / <code>--height</code></td>
+<td>0</td>
+<td>Hoehe der Lithophanie in mm</td>
+</tr>
+</tbody>
+</table>
+<p>Wenn nur <code>-w</code> oder nur <code>-h</code> angegeben wird, berechnet PIXEstL die andere Dimension automatisch, um das Seitenverhaeltnis des Eingabebildes beizubehalten. Typische Breiten liegen zwischen 80 und 150 mm.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Breite 120mm, Hoehe wird automatisch berechnet</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>ausgabe.zip<span class="w"> </span>-w<span class="w"> </span><span class="m">120</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Hoehe 80mm, Breite wird automatisch berechnet</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>ausgabe.zip<span class="w"> </span>-H<span class="w"> </span><span class="m">80</span>
+</code></pre></div>
+<h3 id="farbpixel">Farbpixel<a class="headerlink" href="#farbpixel" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-pixel-width</code></td>
+<td>0.8 mm</td>
+<td>Breite eines einzelnen Farbpixels. Kleinere Werte ergeben feinere Details, aber groessere STL-Dateien und laengere Druckzeiten.</td>
+</tr>
+<tr>
+<td><code>--color-layers</code></td>
+<td>5</td>
+<td>Anzahl der Farbschichten (1-5). Mehr Schichten ermoeglichen mehr Farbtiefe, erhoehen aber die Druckzeit.</td>
+</tr>
+<tr>
+<td><code>--color-layer-thickness</code></td>
+<td>0.1 mm</td>
+<td>Dicke pro Farbschicht. <strong>Muss mit der Kalibrierung uebereinstimmen.</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Schichtdicke und Kalibrierung</p>
+<p>Der Wert von <code>--color-layer-thickness</code> muss exakt der Schichthoehe entsprechen, fuer die deine Palette kalibriert wurde. Die mitgelieferte Palette ist fuer 0.10mm kalibriert. Wenn du 0.08mm im Slicer verwendest, muss eine dafuer kalibrierte Palette erstellt werden.</p>
+</div>
+<h3 id="textur">Textur<a class="headerlink" href="#textur" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--texture-pixel-width</code></td>
+<td>0.25 mm</td>
+<td>Aufloesung der Texturschicht. Feiner als die Farbpixel, um Helligkeitsverlaeufe detailliert abzubilden.</td>
+</tr>
+<tr>
+<td><code>--texture-min</code></td>
+<td>0.3 mm</td>
+<td>Minimale Texturdicke (hellste Stelle)</td>
+</tr>
+<tr>
+<td><code>--texture-max</code></td>
+<td>1.8 mm</td>
+<td>Maximale Texturdicke (dunkelste Stelle)</td>
+</tr>
+</tbody>
+</table>
+<p>Die Texturschicht codiert die Helligkeit des Bildes als Schichtdicke. Duenne Bereiche lassen mehr Licht durch (hell), dicke Bereiche weniger (dunkel). Der Bereich zwischen <code>--texture-min</code> und <code>--texture-max</code> bestimmt den Kontrastumfang.</p>
+<h3 id="ausgabeformat">Ausgabeformat<a class="headerlink" href="#ausgabeformat" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--format</code></td>
+<td>ascii</td>
+<td><code>ascii</code> oder <code>binary</code>. Binary erzeugt deutlich kleinere Dateien und ist schneller beim Export.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Binary-Format fuer kleinere Dateien</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>ausgabe.zip<span class="w"> </span>-w<span class="w"> </span><span class="m">100</span><span class="w"> </span>--format<span class="w"> </span>binary
+</code></pre></div>
+<h3 id="farbalgorithmus">Farbalgorithmus<a class="headerlink" href="#farbalgorithmus" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-distance</code></td>
+<td>cie-lab</td>
+<td>Methode zur Farbabstandsberechnung. <code>cie-lab</code> ist perzeptuell genauer, <code>rgb</code> ist schneller.</td>
+</tr>
+<tr>
+<td><code>--pixel-method</code></td>
+<td>additive</td>
+<td><code>additive</code> = Farben werden durch uebereinanderliegende transparente Schichten gemischt. <code>full</code> = Jedes Pixel wird aus einem einzigen, vollfarbigen Block gedruckt.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">CIE-Lab vs. RGB</p>
+<p>CIE-Lab beruecksichtigt die menschliche Farbwahrnehmung und liefert in der Regel natuerlichere Ergebnisse. RGB ist mathematisch einfacher und kann in seltenen Faellen bei bestimmten Farbpaletten besser funktionieren. Im Zweifelsfall den Standard <code>cie-lab</code> verwenden.</p>
+</div>
+<h3 id="ams-modus">AMS-Modus<a class="headerlink" href="#ams-modus" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-number</code></td>
+<td>0</td>
+<td>Farbgruppierung fuer AMS. <code>0</code> = alle Farben in einer Gruppe. <code>4</code> = Farben werden in Gruppen zu je 4 aufgeteilt (passend fuer einen Bambu Lab AMS mit 4 Slots).</td>
+</tr>
+</tbody>
+</table>
+<p>Wenn du mehr Farben in der Palette hast, als dein AMS gleichzeitig aufnehmen kann, teilt <code>--color-number 4</code> die Farbschichten in mehrere Gruppen auf. Jede Gruppe kann als separater Druckauftrag nacheinander gedruckt werden.</p>
+<h3 id="kruemmung-curve">Kruemmung (Curve)<a class="headerlink" href="#kruemmung-curve" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-C</code> / <code>--curve</code></td>
+<td>0</td>
+<td>Kruemmungswinkel in Grad. 0 = flach (Standard), 90 = Viertelzylinder, 180 = Halbzylinder, 360 = Vollzylinder.</td>
+</tr>
+</tbody>
+</table>
+<p>Die Kruemmung wickelt die Lithophanie um einen Zylinder. Der Radius wird automatisch aus der Breite und dem Winkel berechnet, sodass die Bogenlaenge der eingestellten Breite entspricht.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Halbzylinder, 150mm breit</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>panorama.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>panorama.zip<span class="w"> </span>-w<span class="w"> </span><span class="m">150</span><span class="w"> </span>-C<span class="w"> </span><span class="m">180</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Vollzylinder (Lampe), 250mm Umfang</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>pixestl<span class="w"> </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span>-p<span class="w"> </span>palette.json<span class="w"> </span>-o<span class="w"> </span>lampe.zip<span class="w"> </span>-w<span class="w"> </span><span class="m">250</span><span class="w"> </span>-C<span class="w"> </span><span class="m">360</span>
+</code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">Wann Kruemmung verwenden?</p>
+<p>Gekruemmte Lithophanien eignen sich besonders fuer:</p>
+<ul>
+<li><strong>Panoramafotos</strong> als freistehendes Halbzylinder-Bild</li>
+<li><strong>Lampenschirme</strong> als Vollzylinder (360 Grad)</li>
+<li><strong>Bilderrahmen-Effekt</strong> mit leichter Kruemmung (20-45 Grad)</li>
+</ul>
+</div>
+<h3 id="weitere-parameter">Weitere Parameter<a class="headerlink" href="#weitere-parameter" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Standard</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--plate-thickness</code></td>
+<td>0.2 mm</td>
+<td>Dicke der Grundplatte</td>
+</tr>
+<tr>
+<td><code>--no-color</code></td>
+<td>(Flag)</td>
+<td>Erzeugt keine Farbschichten (nur Textur, Graustufenlithophanie)</td>
+</tr>
+<tr>
+<td><code>--no-texture</code></td>
+<td>(Flag)</td>
+<td>Erzeugt keine Texturschicht (nur Farbe, flach)</td>
+</tr>
+<tr>
+<td><code>--calibrate</code></td>
+<td>(Flag)</td>
+<td>Kalibrierungsmodus: Generiert Testmuster statt Lithophanie (kein Bild noetig)</td>
+</tr>
+<tr>
+<td><code>--debug</code></td>
+<td>(Flag)</td>
+<td>Gibt zusaetzliche Debug-Informationen aus</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="praxis-beispiele">Praxis-Beispiele<a class="headerlink" href="#praxis-beispiele" title="Permanent link">&para;</a></h2>
+<h3 id="1-standard-portrait-100-mm-breit">1. Standard-Portrait (100 mm breit)<a class="headerlink" href="#1-standard-portrait-100-mm-breit" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-i<span class="w"> </span>portrait.jpg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>-o<span class="w"> </span>portrait.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p>Erzeugt eine 100 mm breite Lithophanie mit allen Standardeinstellungen. Gut fuer einen ersten Test.</p>
+<h3 id="2-hochaufloesend-mit-feinen-pixeln">2. Hochaufloesend mit feinen Pixeln<a class="headerlink" href="#2-hochaufloesend-mit-feinen-pixeln" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-i<span class="w"> </span>landschaft.png<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>-o<span class="w"> </span>landschaft_fein.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">150</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--color-pixel-width<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--texture-pixel-width<span class="w"> </span><span class="m">0</span>.2
+</code></pre></div>
+<p>Feinere Farbpixel (0.5 mm statt 0.8 mm) und feinere Textur (0.2 mm statt 0.25 mm) fuer mehr Detail. Die Dateigroesse und Rechenzeit steigen deutlich.</p>
+<h3 id="3-binary-format-fuer-kleinere-dateien">3. Binary-Format fuer kleinere Dateien<a class="headerlink" href="#3-binary-format-fuer-kleinere-dateien" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-i<span class="w"> </span>foto.jpg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-o<span class="w"> </span>foto_binary.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>--format<span class="w"> </span>binary
+</code></pre></div>
+<p>Binary-STL-Dateien sind typischerweise 5-10x kleiner als ASCII-STL-Dateien. Empfohlen fuer groessere Lithophanien.</p>
+<h3 id="4-ams-modus-mit-4-farben">4. AMS-Modus mit 4 Farben<a class="headerlink" href="#4-ams-modus-mit-4-farben" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-o<span class="w"> </span>bild_ams.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>--color-number<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Teilt die Farbschichten in Gruppen zu je 4 Farben auf. Jede Gruppe passt in einen Bambu Lab AMS-Slot-Satz und kann nacheinander gedruckt werden.</p>
+<h3 id="5-nur-textur-graustufen-ohne-farbe">5. Nur Textur (Graustufen, ohne Farbe)<a class="headerlink" href="#5-nur-textur-graustufen-ohne-farbe" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>-i<span class="w"> </span>bild.jpg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-o<span class="w"> </span>bild_grau.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span>--no-color
+</code></pre></div>
+<p>Erzeugt eine klassische Graustufen-Lithophanie ohne Farbschichten. Die Helligkeit wird ausschliesslich ueber die Texturdicke gesteuert. Benoetigt nur weisses Filament.</p>
+<h3 id="6-gekruemmte-lithophanie-halbzylinder">6. Gekruemmte Lithophanie (Halbzylinder)<a class="headerlink" href="#6-gekruemmte-lithophanie-halbzylinder" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pixestl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>-i<span class="w"> </span>panorama.jpg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>-o<span class="w"> </span>panorama_curved.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>-w<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span>-C<span class="w"> </span><span class="m">180</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span>--format<span class="w"> </span>binary
+</code></pre></div>
+<p>Erzeugt eine 200mm breite Halbzylinder-Lithophanie. Die Kruemmung von 180 Grad wickelt das Bild um einen Halbkreis. Besonders geeignet fuer Panoramafotos, die als freistehendes Leuchtbild aufgestellt werden.</p>
+<h3 id="7-kalibrierungs-testmuster">7. Kalibrierungs-Testmuster<a class="headerlink" href="#7-kalibrierungs-testmuster" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>pixestl<span class="w"> </span>--calibrate<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-p<span class="w"> </span>palette/filament-palette-0.10mm.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-o<span class="w"> </span>kalibrierung.zip<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>--color-layers<span class="w"> </span><span class="m">7</span>
+</code></pre></div>
+<p>Generiert Kalibrierungs-Testfelder (10 x 10 mm) fuer alle aktiven Filamente der Palette. Jedes Filament erhaelt eine Reihe mit Quadraten bei aufsteigender Schichtanzahl (1 bis 7). Die Ausgabe enthaelt separate STL-Dateien pro Filament, sodass jedem das richtige Filament im Slicer zugewiesen werden kann.</p>
+<hr />
+<h2 id="ausgabe-verstehen">Ausgabe verstehen<a class="headerlink" href="#ausgabe-verstehen" title="Permanent link">&para;</a></h2>
+<p>PIXEstL erzeugt ein ZIP-Archiv mit mehreren STL-Dateien. Jede Datei entspricht einer separaten Druckschicht:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>ausgabe.zip
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>+-- layer-plate.stl                    # Grundplatte
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>+-- layer-Cyan[PLA Basic].stl          # Cyan-Farbschicht
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>+-- layer-Magenta[PLA Basic].stl       # Magenta-Farbschicht
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>+-- layer-Yellow[PLA Basic].stl        # Gelb-Farbschicht
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>+-- layer-White[PLA Basic].stl         # Weiss-Fuellschicht
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>+-- layer-texture-White[PLA Basic].stl # Textur-/Helligkeitsschicht
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Datei</th>
+<th>Funktion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layer-plate.stl</code></td>
+<td>Die Grundplatte, auf der alle anderen Schichten aufbauen. Wird in der Farbe des Texturfilaments (typischerweise Weiss) gedruckt.</td>
+</tr>
+<tr>
+<td><code>layer-[Farbe].stl</code></td>
+<td>Eine Farbschicht. Enthaelt die Pixel, die diese Filamentfarbe verwenden. Pro aktiver Farbe in der Palette wird eine STL-Datei erzeugt.</td>
+</tr>
+<tr>
+<td><code>layer-texture-[Farbe].stl</code></td>
+<td>Die Texturschicht, die die Helligkeitsinformation traegt. Wird in Weiss (oder einer anderen hellen Farbe) gedruckt.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="STL-Dateien" src="../../assets/images/anleitung/sample_result.png" /></p>
+<div class="admonition info">
+<p class="admonition-title">Alle Dateien importieren</p>
+<p>Im Slicer muessen <strong>alle</strong> STL-Dateien gleichzeitig als ein Objekt importiert werden. Jede Datei wird dann einem eigenen Filament-Slot zugewiesen. Details zur Slicer-Einrichtung findest du unter <a href="../slicer/">Slicer-Einrichtung</a>.</p>
+</div>
+<hr />
+<h2 id="leistungshinweise">Leistungshinweise<a class="headerlink" href="#leistungshinweise" title="Permanent link">&para;</a></h2>
+<p>Die Generierungszeit und der Speicherbedarf haengen von mehreren Faktoren ab:</p>
+<table>
+<thead>
+<tr>
+<th>Faktor</th>
+<th>Auswirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bildgroesse</strong></td>
+<td>Groessere Bilder erhoehen Rechenzeit und Speicherbedarf proportional.</td>
+</tr>
+<tr>
+<td><strong>Farbpixelgroesse</strong></td>
+<td>Kleinere Pixel (<code>--color-pixel-width</code>) erzeugen viel mehr Geometrie. Eine Halbierung der Pixelgroesse vervierfacht die Dreiecksanzahl.</td>
+</tr>
+<tr>
+<td><strong>Texturaufloesung</strong></td>
+<td>Kleinere Texturpixel (<code>--texture-pixel-width</code>) haben den gleichen Effekt wie kleinere Farbpixel.</td>
+</tr>
+<tr>
+<td><strong>Ausgabebreite</strong></td>
+<td>Groessere Lithophanien enthalten mehr Pixel und damit mehr Geometrie.</td>
+</tr>
+<tr>
+<td><strong>Anzahl Farben</strong></td>
+<td>Mehr aktive Farben erzeugen mehr separate STL-Dateien, aber die Gesamtgeometrie bleibt aehnlich.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Typische Richtwerte:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Szenario</th>
+<th>Rechenzeit</th>
+<th>RAM-Bedarf</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100 mm breit, Standardeinstellungen</td>
+<td>5-15 Sekunden</td>
+<td>~100 MB</td>
+</tr>
+<tr>
+<td>150 mm breit, feine Pixel (0.5 mm)</td>
+<td>30-60 Sekunden</td>
+<td>~200 MB</td>
+</tr>
+<tr>
+<td>200 mm breit, sehr fein (0.3 mm)</td>
+<td>2-5 Minuten</td>
+<td>~500 MB</td>
+</tr>
+<tr>
+<td>4K-Eingabebild, Standardeinstellungen</td>
+<td>15-30 Sekunden</td>
+<td>~500 MB</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Leistungsoptimierung</p>
+<ul>
+<li>Verwende <code>--format binary</code> fuer schnelleren Export und kleinere Dateien.</li>
+<li>Reduziere die Bildaufloesung auf maximal 2000 Pixel Breite, bevor du es an PIXEstL uebergibst.</li>
+<li>PIXEstL nutzt automatisch alle verfuegbaren CPU-Kerne fuer die parallele Verarbeitung.</li>
+</ul>
+</div>
+<hr />
+<h2 id="naechste-schritte">Naechste Schritte<a class="headerlink" href="#naechste-schritte" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../slicer/">Slicer-Einrichtung →</a> – STL-Dateien in Bambu Studio laden und konfigurieren</li>
+<li><a href="../druck/">Drucken &amp; Nachbearbeitung →</a> – Druckeinstellungen und Tipps für das fertige Ergebnis</li>
+<li><a href="../../referenz/parameter/">Alle Parameter →</a> – Vollständige Referenz aller CLI-Parameter</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Zurück zum Seitenanfang
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/feurer98/PIXEstL" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "In Zwischenablage kopiert", "clipboard.copy": "In Zwischenablage kopieren", "search.result.more.one": "1 weiteres Suchergebnis auf dieser Seite", "search.result.more.other": "# weitere Suchergebnisse auf dieser Seite", "search.result.none": "Keine Suchergebnisse", "search.result.one": "1 Suchergebnis", "search.result.other": "# Suchergebnisse", "search.result.placeholder": "Suchbegriff eingeben", "search.result.term.missing": "Es fehlt", "select.version": "Version ausw\u00e4hlen"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
