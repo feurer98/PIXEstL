@@ -130,6 +130,6 @@ Hier findest du Loesungen fuer die haeufigsten Probleme:
 
 ## Naechste Schritte
 
-- [Slicer-Einrichtung](slicer.md) -- Zurueck zur Slicer-Konfiguration
-- [CLI-Referenz](../cli-referenz.md) -- Alle Parameter und Optionen
-- [Galerie](../galerie.md) -- Beispiele zur Inspiration
+- [Slicer-Einrichtung →](slicer.md) – Zurück zur Slicer-Konfiguration
+- [Alle Parameter →](../referenz/parameter.md) – Vollständige CLI-Referenz
+- [Galerie →](../galerie.md) – Beispiele zur Inspiration
