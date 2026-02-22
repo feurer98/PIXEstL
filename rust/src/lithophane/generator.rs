@@ -27,8 +27,7 @@ impl LithophaneGenerator {
         // When neither --width nor --height is specified (both are 0), derive the physical
         // dimensions from the source image using color_pixel_width as the scale factor.
         // This ensures color and texture layers cover the same physical area.
-        let (eff_width_mm, eff_height_mm) =
-            self.effective_dimensions(image);
+        let (eff_width_mm, eff_height_mm) = self.effective_dimensions(image);
 
         let color_image = if self.config.color_layer {
             let resized = resize_image(
