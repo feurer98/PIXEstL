@@ -24,11 +24,17 @@ impl LithophaneGenerator {
     pub fn generate(&self, image: &DynamicImage, palette: &Palette) -> Result<Vec<(String, Mesh)>> {
         let mut layers = Vec::new();
 
+        // When neither --width nor --height is specified (both are 0), derive the physical
+        // dimensions from the source image using color_pixel_width as the scale factor.
+        // This ensures color and texture layers cover the same physical area.
+        let (eff_width_mm, eff_height_mm) =
+            self.effective_dimensions(image);
+
         let color_image = if self.config.color_layer {
             let resized = resize_image(
                 image,
-                self.config.dest_width_mm,
-                self.config.dest_height_mm,
+                eff_width_mm,
+                eff_height_mm,
                 self.config.color_pixel_width,
             )?;
 
@@ -51,8 +57,8 @@ impl LithophaneGenerator {
         let texture_image = if self.config.texture_layer {
             let resized = resize_image(
                 image,
-                self.config.dest_width_mm,
-                self.config.dest_height_mm,
+                eff_width_mm,
+                eff_height_mm,
                 self.config.texture_pixel_width,
             )?;
 
@@ -90,17 +96,29 @@ impl LithophaneGenerator {
         Ok(layers)
     }
 
+    /// Returns the effective physical dimensions (width_mm, height_mm) to use for resizing.
+    ///
+    /// When both `dest_width_mm` and `dest_height_mm` are 0 (not specified by the user),
+    /// derives the physical size from the source image at 1 source pixel per color pixel.
+    /// This prevents a zero-dimension crash and keeps color/texture layers physically aligned.
+    fn effective_dimensions(&self, image: &DynamicImage) -> (f64, f64) {
+        let w = self.config.dest_width_mm;
+        let h = self.config.dest_height_mm;
+        if w > 0.0 || h > 0.0 {
+            (w, h)
+        } else {
+            // No explicit size: map 1 source pixel → 1 color pixel
+            (
+                image.width() as f64 * self.config.color_pixel_width,
+                image.height() as f64 * self.config.color_pixel_width,
+            )
+        }
+    }
+
     /// Computes the total width of the lithophane in mm for curve transformation.
     fn compute_total_width(&self, image: &DynamicImage) -> f64 {
-        let (img_w, img_h) = (image.width() as f64, image.height() as f64);
-
-        if self.config.dest_width_mm > 0.0 {
-            self.config.dest_width_mm
-        } else if self.config.dest_height_mm > 0.0 && img_h > 0.0 {
-            (img_w / img_h) * self.config.dest_height_mm
-        } else {
-            img_w * self.config.color_pixel_width
-        }
+        let (w, _) = self.effective_dimensions(image);
+        w
     }
 
     fn generate_color_layers(
