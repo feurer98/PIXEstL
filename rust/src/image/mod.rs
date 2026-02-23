@@ -130,9 +130,10 @@ pub fn resize_image(
     };
 
     if nb_pixel_width == 0 || nb_pixel_height == 0 {
-        return Err(PixestlError::ImageProcess(
-            "Calculated image dimensions are zero".to_string(),
-        ));
+        return Err(PixestlError::ImageProcess(format!(
+            "Calculated image dimensions are zero (width_mm={width_mm}, height_mm={height_mm}, \
+             pixel_mm={pixel_mm}). Specify --width or --height to set the output size."
+        )));
     }
 
     // Use Lanczos3 for high-quality resizing

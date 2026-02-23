@@ -478,7 +478,16 @@ impl Cli {
         } else if self.height > 0.0 && image_height > 0 {
             (image_width as f64 * self.height) / image_height as f64
         } else {
-            return; // Cannot calculate without dimensions
+            // Neither --width nor --height given: natural size (1 source px = 1 color px)
+            let natural_width = image_width as f64 * self.color_pixel_width;
+            let natural_height = image_height as f64 * self.color_pixel_width;
+            eprintln!(
+                "  [Hinweis] Keine Ausgabegröße angegeben. \
+                 Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
+                 Verwende --width oder --height für eine bestimmte Größe.",
+                natural_width, natural_height
+            );
+            natural_width
         };
 
         if effective_width_mm <= 0.0 || self.color_pixel_width <= 0.0 {
