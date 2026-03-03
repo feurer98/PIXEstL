@@ -125,6 +125,40 @@ fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
     Ok(())
 }
 
+/// Exportiert mehrere Layer als einzelne `.stl`-Dateien in ein Verzeichnis.
+///
+/// Das Verzeichnis wird erstellt, falls es noch nicht existiert.
+/// Jeder Layer erhält eine eigene Datei `<name>.stl`.
+///
+/// # Arguments
+///
+/// * `layers`   - Slice aus `(Name, Mesh)`-Paaren
+/// * `dir_path` - Pfad zum Ausgabeverzeichnis
+/// * `format`   - STL-Ausgabeformat für alle Layer
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` zurück, wenn das Verzeichnis nicht erstellt oder
+/// eine Datei nicht geschrieben werden kann.
+pub fn export_to_dir<P: AsRef<std::path::Path>>(
+    layers: &[(String, Mesh)],
+    dir_path: P,
+    format: StlFormat,
+) -> Result<()> {
+    use std::fs;
+
+    let dir = dir_path.as_ref();
+    fs::create_dir_all(dir).map_err(PixestlError::Io)?;
+
+    for (layer_name, mesh) in layers {
+        let path = dir.join(format!("{}.stl", layer_name));
+        let mut file = fs::File::create(&path).map_err(PixestlError::Io)?;
+        write_stl(mesh, &mut file, format, layer_name)?;
+    }
+
+    Ok(())
+}
+
 /// Exportiert mehrere Layer (je eine STL-Datei) in ein ZIP-Archiv.
 ///
 /// Jeder Layer wird als eigene `.stl`-Datei im Archiv abgelegt.

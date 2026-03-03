@@ -8,7 +8,7 @@ use crate::palette::{
     PaletteColorEntry, PaletteLoader, PaletteLoaderConfig,
     PixelCreationMethod as PalettePixelMethod,
 };
-use crate::stl::{export_to_zip, StlFormat};
+use crate::stl::{export_to_dir, export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -90,7 +90,9 @@ pub struct Cli {
     #[arg(short = 'p', long, value_name = "FILE")]
     pub palette: PathBuf,
 
-    /// Output ZIP file containing the generated STL layers. Not required for --palette-info.
+    /// Output path for the generated STL layers. Not required for --palette-info.
+    /// Use a .zip extension to bundle all layers into a ZIP archive,
+    /// or any other path to write each layer as a separate .stl file into a directory.
     #[arg(
         short = 'o',
         long,
@@ -251,8 +253,7 @@ impl Cli {
 
         // --- Export ---
         println!("Exporting to: {}", output.display());
-        export_to_zip(&layers, output, self.format.into())?;
-        println!("  Format: {:?}\n", self.format);
+        self.export_layers(&layers, output)?;
 
         println!("Done!");
         Ok(())
@@ -308,8 +309,7 @@ impl Cli {
 
         // Export
         println!("Exportiere nach: {}", output.display());
-        export_to_zip(&layers, output, self.format.into())?;
-        println!("  Format: {:?}\n", self.format);
+        self.export_layers(&layers, output)?;
 
         println!("Fertig!");
         println!();
@@ -464,6 +464,21 @@ impl Cli {
             (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
         );
         eprintln!();
+    }
+
+    /// Exports layers to the given output path.
+    ///
+    /// If the path ends in `.zip` the layers are bundled into a ZIP archive.
+    /// Otherwise a directory is created and each layer is written as a separate `.stl` file.
+    fn export_layers(&self, layers: &[(String, crate::lithophane::geometry::Mesh)], output: &std::path::Path) -> Result<()> {
+        let is_zip = output.extension().and_then(|e| e.to_str()) == Some("zip");
+        if is_zip {
+            println!("  Format: ZIP ({:?})", self.format);
+            export_to_zip(layers, output, self.format.into())
+        } else {
+            println!("  Format: Verzeichnis ({:?})", self.format);
+            export_to_dir(layers, output, self.format.into())
+        }
     }
 
     /// Returns the effective output width in millimeters derived from CLI parameters,
