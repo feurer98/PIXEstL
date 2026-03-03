@@ -8,6 +8,7 @@
 use crate::error::Result;
 use crate::lithophane::config::LithophaneConfig;
 use crate::lithophane::geometry::{Mesh, Vector3};
+use crate::lithophane::layer::NamedLayer;
 use crate::palette::loader::PaletteColorEntry;
 use std::collections::HashMap;
 
@@ -34,7 +35,7 @@ const SQUARE_GAP: f64 = 2.0;
 pub fn generate_calibration_pattern(
     palette_data: &HashMap<String, PaletteColorEntry>,
     config: &LithophaneConfig,
-) -> Result<Vec<(String, Mesh)>> {
+) -> Result<Vec<NamedLayer>> {
     let mut layers = Vec::new();
 
     // Collect active filaments sorted by hex code for deterministic output
@@ -59,7 +60,7 @@ pub fn generate_calibration_pattern(
     // Generate base plate
     let plate_center = Vector3::new(grid_width / 2.0, grid_depth / 2.0, -plate_thickness / 2.0);
     let plate = Mesh::cube(grid_width, grid_depth, plate_thickness, plate_center);
-    layers.push(("calibration-plate".to_string(), plate));
+    layers.push(NamedLayer::without_color("calibration-plate".to_string(), plate));
 
     // Generate test squares for each filament
     for (row_idx, (hex_code, entry)) in active_filaments.iter().enumerate() {
@@ -82,7 +83,7 @@ pub fn generate_calibration_pattern(
         }
 
         let layer_name = format!("calibration-{}", sanitize_filename(&entry.name, hex_code));
-        layers.push((layer_name, filament_mesh));
+        layers.push(NamedLayer::new(layer_name, filament_mesh, Some(hex_code.to_string())));
     }
 
     Ok(layers)
@@ -201,8 +202,8 @@ mod tests {
 
         // Should have: 1 plate + 2 active filaments = 3 layers
         assert_eq!(layers.len(), 3);
-        assert_eq!(layers[0].0, "calibration-plate");
-        assert!(layers[0].1.triangle_count() > 0);
+        assert_eq!(layers[0].name, "calibration-plate");
+        assert!(layers[0].mesh.triangle_count() > 0);
     }
 
     #[test]
@@ -216,7 +217,7 @@ mod tests {
         // Blue is inactive and excluded
         let filament_layers: Vec<_> = layers
             .iter()
-            .filter(|(name, _)| name != "calibration-plate")
+            .filter(|l| l.name != "calibration-plate")
             .collect();
         assert_eq!(filament_layers.len(), 2);
     }
@@ -233,13 +234,13 @@ mod tests {
 
         // Each filament mesh should have 5 cubes (1 per layer count)
         // Each cube has 12 triangles → 5 * 12 = 60 triangles per filament
-        for (name, mesh) in &layers {
-            if name != "calibration-plate" {
+        for layer in &layers {
+            if layer.name != "calibration-plate" {
                 assert_eq!(
-                    mesh.triangle_count(),
+                    layer.mesh.triangle_count(),
                     60,
                     "Filament '{}' should have 60 triangles (5 cubes * 12)",
-                    name
+                    layer.name
                 );
             }
         }
@@ -253,8 +254,8 @@ mod tests {
         let layers = generate_calibration_pattern(&palette_data, &config).unwrap();
 
         let plate = &layers[0];
-        assert_eq!(plate.0, "calibration-plate");
-        assert_eq!(plate.1.triangle_count(), 12); // One cube = 12 triangles
+        assert_eq!(plate.name, "calibration-plate");
+        assert_eq!(plate.mesh.triangle_count(), 12); // One cube = 12 triangles
     }
 
     #[test]
@@ -304,6 +305,6 @@ mod tests {
         // 1 plate + 1 filament = 2 layers
         assert_eq!(result.len(), 2);
         // 1 cube = 12 triangles
-        assert_eq!(result[1].1.triangle_count(), 12);
+        assert_eq!(result[1].mesh.triangle_count(), 12);
     }
 }

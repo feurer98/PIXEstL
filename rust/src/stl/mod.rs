@@ -11,6 +11,7 @@
 
 use crate::error::{PixestlError, Result};
 use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
+use crate::lithophane::layer::NamedLayer;
 use std::io::Write;
 
 /// STL-Ausgabeformat
@@ -141,7 +142,7 @@ fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
 /// Gibt `PixestlError::Io` zurück, wenn das Verzeichnis nicht erstellt oder
 /// eine Datei nicht geschrieben werden kann.
 pub fn export_to_dir<P: AsRef<std::path::Path>>(
-    layers: &[(String, Mesh)],
+    layers: &[NamedLayer],
     dir_path: P,
     format: StlFormat,
 ) -> Result<()> {
@@ -150,10 +151,10 @@ pub fn export_to_dir<P: AsRef<std::path::Path>>(
     let dir = dir_path.as_ref();
     fs::create_dir_all(dir).map_err(PixestlError::Io)?;
 
-    for (layer_name, mesh) in layers {
-        let path = dir.join(format!("{}.stl", layer_name));
+    for layer in layers {
+        let path = dir.join(format!("{}.stl", layer.name));
         let mut file = fs::File::create(&path).map_err(PixestlError::Io)?;
-        write_stl(mesh, &mut file, format, layer_name)?;
+        write_stl(&layer.mesh, &mut file, format, &layer.name)?;
     }
 
     Ok(())
@@ -179,7 +180,7 @@ pub fn export_to_dir<P: AsRef<std::path::Path>>(
 ///
 /// `Ok(())` bei Erfolg.
 pub fn export_to_zip<P: AsRef<std::path::Path>>(
-    layers: &[(String, Mesh)],
+    layers: &[NamedLayer],
     output_path: P,
     format: StlFormat,
 ) -> Result<()> {
@@ -192,14 +193,159 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
 
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
-    for (layer_name, mesh) in layers {
-        let filename = format!("{}.stl", layer_name);
+    for layer in layers {
+        let filename = format!("{}.stl", layer.name);
         zip.start_file(filename, options)
             .map_err(PixestlError::Zip)?;
-        write_stl(mesh, &mut zip, format, layer_name)?;
+        write_stl(&layer.mesh, &mut zip, format, &layer.name)?;
     }
 
     zip.finish().map_err(PixestlError::Zip)?;
+    Ok(())
+}
+
+const CONTENT_TYPES_XML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>
+</Types>"#;
+
+const RELS_XML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"
+    Target="/3D/3dmodel.model" Id="rel0"/>
+</Relationships>"#;
+
+/// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
+///
+/// Jeder Layer mit einem `hex_color` wird als `<object>` mit `pid`/`pindex`-Attribut
+/// in der 3MF-Datei gespeichert. Bambu Studio erkennt diese Farben beim Import
+/// automatisch und ordnet sie den nächstgelegenen AMS-Slots zu.
+///
+/// Layer ohne Farbe (Grundplatte, Textur) werden als farblose Objekte exportiert.
+///
+/// # Arguments
+///
+/// * `layers`      - Slice aus `NamedLayer`; jedes Element wird ein 3MF-Objekt
+/// * `output_path` - Pfad zur Ausgabe-3MF-Datei
+/// * `_format`     - Wird ignoriert; 3MF-Objekte werden immer als ASCII-XML exportiert
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` oder `PixestlError::Zip` zurück bei Schreibfehlern.
+pub fn export_to_3mf<P: AsRef<std::path::Path>>(
+    layers: &[NamedLayer],
+    output_path: P,
+    _format: StlFormat,
+) -> Result<()> {
+    use std::fs::File;
+    use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
+
+    let file = File::create(output_path).map_err(PixestlError::Io)?;
+    let mut zip = ZipWriter::new(file);
+
+    let opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+    zip.start_file("[Content_Types].xml", opts).map_err(PixestlError::Zip)?;
+    zip.write_all(CONTENT_TYPES_XML.as_bytes()).map_err(PixestlError::Io)?;
+
+    zip.start_file("_rels/.rels", opts).map_err(PixestlError::Zip)?;
+    zip.write_all(RELS_XML.as_bytes()).map_err(PixestlError::Io)?;
+
+    zip.start_file("3D/3dmodel.model", opts).map_err(PixestlError::Zip)?;
+    write_3dmodel(&mut zip, layers)?;
+
+    zip.finish().map_err(PixestlError::Zip)?;
+    Ok(())
+}
+
+/// Schreibt das 3MF-Hauptdokument (`3dmodel.model`) in den Writer.
+fn write_3dmodel<W: Write>(writer: &mut W, layers: &[NamedLayer]) -> Result<()> {
+    // Collect unique hex colors in first-seen order.
+    // Using a Vec for lookup is fine: filament count is always small (≤32).
+    let mut colors: Vec<&str> = Vec::new();
+    for layer in layers {
+        if let Some(ref hex) = layer.hex_color {
+            if !colors.contains(&hex.as_str()) {
+                colors.push(hex.as_str());
+            }
+        }
+    }
+
+    writeln!(writer, r#"<?xml version="1.0" encoding="utf-8"?>"#).map_err(PixestlError::Io)?;
+    writeln!(
+        writer,
+        r#"<model unit="millimeter" xml:lang="en-US""#
+    ).map_err(PixestlError::Io)?;
+    writeln!(
+        writer,
+        r#"  xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02""#
+    ).map_err(PixestlError::Io)?;
+    writeln!(
+        writer,
+        r#"  xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02">"#
+    ).map_err(PixestlError::Io)?;
+    writeln!(writer, "  <resources>").map_err(PixestlError::Io)?;
+
+    if !colors.is_empty() {
+        writeln!(writer, r#"    <m:colorgroup id="1">"#).map_err(PixestlError::Io)?;
+        for color in &colors {
+            writeln!(writer, r#"      <m:color color="{color}"/>"#).map_err(PixestlError::Io)?;
+        }
+        writeln!(writer, "    </m:colorgroup>").map_err(PixestlError::Io)?;
+    }
+
+    for (idx, layer) in layers.iter().enumerate() {
+        let object_id = idx + 2; // id 1 is reserved for the colorgroup
+
+        let color_attrs = layer.hex_color.as_deref().and_then(|hex| {
+            colors.iter().position(|&c| c == hex).map(|pindex| {
+                format!(r#" pid="1" pindex="{pindex}""#)
+            })
+        }).unwrap_or_default();
+
+        writeln!(
+            writer,
+            r#"    <object id="{object_id}" type="model"{color_attrs}>"#
+        ).map_err(PixestlError::Io)?;
+        writeln!(writer, "      <mesh>").map_err(PixestlError::Io)?;
+
+        writeln!(writer, "        <vertices>").map_err(PixestlError::Io)?;
+        for tri in &layer.mesh.triangles {
+            for v in [&tri.v0, &tri.v1, &tri.v2] {
+                writeln!(
+                    writer,
+                    r#"          <vertex x="{}" y="{}" z="{}"/>"#,
+                    v.x, v.y, v.z
+                ).map_err(PixestlError::Io)?;
+            }
+        }
+        writeln!(writer, "        </vertices>").map_err(PixestlError::Io)?;
+
+        writeln!(writer, "        <triangles>").map_err(PixestlError::Io)?;
+        for (i, _) in layer.mesh.triangles.iter().enumerate() {
+            let base = i * 3;
+            writeln!(
+                writer,
+                r#"          <triangle v1="{}" v2="{}" v3="{}"/>"#,
+                base, base + 1, base + 2
+            ).map_err(PixestlError::Io)?;
+        }
+        writeln!(writer, "        </triangles>").map_err(PixestlError::Io)?;
+
+        writeln!(writer, "      </mesh>").map_err(PixestlError::Io)?;
+        writeln!(writer, "    </object>").map_err(PixestlError::Io)?;
+    }
+
+    writeln!(writer, "  </resources>").map_err(PixestlError::Io)?;
+    writeln!(writer, "  <build>").map_err(PixestlError::Io)?;
+    for (idx, _) in layers.iter().enumerate() {
+        writeln!(writer, r#"    <item objectid="{}"/>"#, idx + 2).map_err(PixestlError::Io)?;
+    }
+    writeln!(writer, "  </build>").map_err(PixestlError::Io)?;
+    writeln!(writer, "</model>").map_err(PixestlError::Io)?;
+
     Ok(())
 }
 

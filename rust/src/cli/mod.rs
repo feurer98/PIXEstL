@@ -3,12 +3,12 @@
 use crate::color::ColorDistanceMethod;
 use crate::error::Result;
 use crate::image::load_image;
-use crate::lithophane::{LithophaneConfig, PixelCreationMethod as LithoPixelMethod};
+use crate::lithophane::{LithophaneConfig, NamedLayer, PixelCreationMethod as LithoPixelMethod};
 use crate::palette::{
     PaletteColorEntry, PaletteLoader, PaletteLoaderConfig,
     PixelCreationMethod as PalettePixelMethod,
 };
-use crate::stl::{export_to_dir, export_to_zip, StlFormat};
+use crate::stl::{export_to_3mf, export_to_dir, export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -90,9 +90,10 @@ pub struct Cli {
     #[arg(short = 'p', long, value_name = "FILE")]
     pub palette: PathBuf,
 
-    /// Output path for the generated STL layers. Not required for --palette-info.
-    /// Use a .zip extension to bundle all layers into a ZIP archive,
-    /// or any other path to write each layer as a separate .stl file into a directory.
+    /// Output path for the generated layers. Not required for --palette-info.
+    /// .zip  → ZIP archive with one .stl per layer.
+    /// .3mf  → 3MF file with embedded filament colors; Bambu Studio auto-assigns AMS slots.
+    /// other → directory with one .stl per layer.
     #[arg(
         short = 'o',
         long,
@@ -246,8 +247,8 @@ impl Cli {
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
         let layers = generator.generate(&image, &palette)?;
         println!("  Generated {} layer(s)", layers.len());
-        for (name, mesh) in &layers {
-            println!("    - {}: {} triangles", name, mesh.triangle_count());
+        for layer in &layers {
+            println!("    - {}: {} triangles", layer.name, layer.mesh.triangle_count());
         }
         println!();
 
@@ -302,8 +303,8 @@ impl Cli {
         let layers =
             crate::lithophane::calibration::generate_calibration_pattern(&raw_palette, &config)?;
 
-        for (name, mesh) in &layers {
-            println!("  - {}: {} Dreiecke", name, mesh.triangle_count());
+        for layer in &layers {
+            println!("  - {}: {} Dreiecke", layer.name, layer.mesh.triangle_count());
         }
         println!();
 
@@ -468,16 +469,24 @@ impl Cli {
 
     /// Exports layers to the given output path.
     ///
-    /// If the path ends in `.zip` the layers are bundled into a ZIP archive.
-    /// Otherwise a directory is created and each layer is written as a separate `.stl` file.
-    fn export_layers(&self, layers: &[(String, crate::lithophane::geometry::Mesh)], output: &std::path::Path) -> Result<()> {
-        let is_zip = output.extension().and_then(|e| e.to_str()) == Some("zip");
-        if is_zip {
-            println!("  Format: ZIP ({:?})", self.format);
-            export_to_zip(layers, output, self.format.into())
-        } else {
-            println!("  Format: Verzeichnis ({:?})", self.format);
-            export_to_dir(layers, output, self.format.into())
+    /// The output format is determined by the file extension:
+    /// - `.zip`  → ZIP archive with one STL file per layer
+    /// - `.3mf`  → 3MF file with embedded filament colors (recommended for Bambu Studio)
+    /// - other   → directory with one STL file per layer
+    fn export_layers(&self, layers: &[NamedLayer], output: &std::path::Path) -> Result<()> {
+        match output.extension().and_then(|e| e.to_str()) {
+            Some("zip") => {
+                println!("  Format: ZIP ({:?})", self.format);
+                export_to_zip(layers, output, self.format.into())
+            }
+            Some("3mf") => {
+                println!("  Format: 3MF (mit Farbmetadaten)");
+                export_to_3mf(layers, output, self.format.into())
+            }
+            _ => {
+                println!("  Format: Verzeichnis ({:?})", self.format);
+                export_to_dir(layers, output, self.format.into())
+            }
         }
     }
 
