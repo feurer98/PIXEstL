@@ -204,22 +204,10 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
     Ok(())
 }
 
-const CONTENT_TYPES_XML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>
-</Types>"#;
-
-const RELS_XML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"
-    Target="/3D/3dmodel.model" Id="rel0"/>
-</Relationships>"#;
-
 /// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
 ///
-/// Jeder Layer mit einem `hex_color` wird als `<object>` mit `pid`/`pindex`-Attribut
-/// in der 3MF-Datei gespeichert. Bambu Studio erkennt diese Farben beim Import
+/// Jeder Layer mit einem `hex_color` wird als Objekt mit Farbzuweisung in der
+/// 3MF-Datei gespeichert. Bambu Studio erkennt diese Farben beim Import
 /// automatisch und ordnet sie den nächstgelegenen AMS-Slots zu.
 ///
 /// Layer ohne Farbe (Grundplatte, Textur) werden als farblose Objekte exportiert.
@@ -228,42 +216,28 @@ const RELS_XML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 ///
 /// * `layers`      - Slice aus `NamedLayer`; jedes Element wird ein 3MF-Objekt
 /// * `output_path` - Pfad zur Ausgabe-3MF-Datei
-/// * `_format`     - Wird ignoriert; 3MF-Objekte werden immer als ASCII-XML exportiert
+/// * `_format`     - Wird ignoriert; 3MF verwendet kein STL-Format intern
 ///
 /// # Errors
 ///
-/// Gibt `PixestlError::Io` oder `PixestlError::Zip` zurück bei Schreibfehlern.
+/// Gibt `PixestlError::Io` oder `PixestlError::Other` zurück bei Schreibfehlern.
 pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     layers: &[NamedLayer],
     output_path: P,
     _format: StlFormat,
 ) -> Result<()> {
+    use lib3mf_core::model::{
+        BuildItem, Color, ColorGroup, Geometry, Mesh as Lib3mfMesh,
+        Model, Object, ObjectType, ResourceId, Unit,
+    };
     use std::fs::File;
-    use zip::write::SimpleFileOptions;
-    use zip::ZipWriter;
 
-    let file = File::create(output_path).map_err(PixestlError::Io)?;
-    let mut zip = ZipWriter::new(file);
+    let mut model = Model {
+        unit: Unit::Millimeter,
+        ..Default::default()
+    };
 
-    let opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    zip.start_file("[Content_Types].xml", opts).map_err(PixestlError::Zip)?;
-    zip.write_all(CONTENT_TYPES_XML.as_bytes()).map_err(PixestlError::Io)?;
-
-    zip.start_file("_rels/.rels", opts).map_err(PixestlError::Zip)?;
-    zip.write_all(RELS_XML.as_bytes()).map_err(PixestlError::Io)?;
-
-    zip.start_file("3D/3dmodel.model", opts).map_err(PixestlError::Zip)?;
-    write_3dmodel(&mut zip, layers)?;
-
-    zip.finish().map_err(PixestlError::Zip)?;
-    Ok(())
-}
-
-/// Schreibt das 3MF-Hauptdokument (`3dmodel.model`) in den Writer.
-fn write_3dmodel<W: Write>(writer: &mut W, layers: &[NamedLayer]) -> Result<()> {
-    // Collect unique hex colors in first-seen order.
-    // Using a Vec for lookup is fine: filament count is always small (≤32).
+    // Unique Farben sammeln (Reihenfolge erster Auftreten)
     let mut colors: Vec<&str> = Vec::new();
     for layer in layers {
         if let Some(ref hex) = layer.hex_color {
@@ -273,79 +247,69 @@ fn write_3dmodel<W: Write>(writer: &mut W, layers: &[NamedLayer]) -> Result<()> 
         }
     }
 
-    writeln!(writer, r#"<?xml version="1.0" encoding="utf-8"?>"#).map_err(PixestlError::Io)?;
-    writeln!(
-        writer,
-        r#"<model unit="millimeter" xml:lang="en-US""#
-    ).map_err(PixestlError::Io)?;
-    writeln!(
-        writer,
-        r#"  xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02""#
-    ).map_err(PixestlError::Io)?;
-    writeln!(
-        writer,
-        r#"  xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02">"#
-    ).map_err(PixestlError::Io)?;
-    writeln!(writer, "  <resources>").map_err(PixestlError::Io)?;
-
+    let color_group_id = ResourceId(1);
     if !colors.is_empty() {
-        writeln!(writer, r#"    <m:colorgroup id="1">"#).map_err(PixestlError::Io)?;
-        for color in &colors {
-            writeln!(writer, r#"      <m:color color="{color}"/>"#).map_err(PixestlError::Io)?;
-        }
-        writeln!(writer, "    </m:colorgroup>").map_err(PixestlError::Io)?;
+        let color_group = ColorGroup {
+            id: color_group_id,
+            colors: colors
+                .iter()
+                .map(|hex| Color::from_hex(hex).unwrap_or(Color::new(128, 128, 128, 255)))
+                .collect(),
+        };
+        model
+            .resources
+            .add_color_group(color_group)
+            .map_err(|e| PixestlError::Other(e.to_string()))?;
     }
 
     for (idx, layer) in layers.iter().enumerate() {
-        let object_id = idx + 2; // id 1 is reserved for the colorgroup
+        let object_id = ResourceId((idx + 2) as u32);
 
-        let color_attrs = layer.hex_color.as_deref().and_then(|hex| {
-            colors.iter().position(|&c| c == hex).map(|pindex| {
-                format!(r#" pid="1" pindex="{pindex}""#)
-            })
-        }).unwrap_or_default();
-
-        writeln!(
-            writer,
-            r#"    <object id="{object_id}" type="model"{color_attrs}>"#
-        ).map_err(PixestlError::Io)?;
-        writeln!(writer, "      <mesh>").map_err(PixestlError::Io)?;
-
-        writeln!(writer, "        <vertices>").map_err(PixestlError::Io)?;
+        let mut mesh = Lib3mfMesh::new();
         for tri in &layer.mesh.triangles {
-            for v in [&tri.v0, &tri.v1, &tri.v2] {
-                writeln!(
-                    writer,
-                    r#"          <vertex x="{}" y="{}" z="{}"/>"#,
-                    v.x, v.y, v.z
-                ).map_err(PixestlError::Io)?;
-            }
+            let v0 = mesh.add_vertex(tri.v0.x as f32, tri.v0.y as f32, tri.v0.z as f32);
+            let v1 = mesh.add_vertex(tri.v1.x as f32, tri.v1.y as f32, tri.v1.z as f32);
+            let v2 = mesh.add_vertex(tri.v2.x as f32, tri.v2.y as f32, tri.v2.z as f32);
+            mesh.add_triangle(v0, v1, v2);
         }
-        writeln!(writer, "        </vertices>").map_err(PixestlError::Io)?;
 
-        writeln!(writer, "        <triangles>").map_err(PixestlError::Io)?;
-        for (i, _) in layer.mesh.triangles.iter().enumerate() {
-            let base = i * 3;
-            writeln!(
-                writer,
-                r#"          <triangle v1="{}" v2="{}" v3="{}"/>"#,
-                base, base + 1, base + 2
-            ).map_err(PixestlError::Io)?;
-        }
-        writeln!(writer, "        </triangles>").map_err(PixestlError::Io)?;
+        let pindex = layer
+            .hex_color
+            .as_deref()
+            .and_then(|hex| colors.iter().position(|&c| c == hex))
+            .map(|i| i as u32);
+        let pid = pindex.map(|_| color_group_id);
 
-        writeln!(writer, "      </mesh>").map_err(PixestlError::Io)?;
-        writeln!(writer, "    </object>").map_err(PixestlError::Io)?;
+        let object = Object {
+            id: object_id,
+            object_type: ObjectType::Model,
+            name: Some(layer.name.clone()),
+            part_number: None,
+            uuid: None,
+            pid,
+            thumbnail: None,
+            pindex,
+            geometry: Geometry::Mesh(mesh),
+        };
+        model
+            .resources
+            .add_object(object)
+            .map_err(|e| PixestlError::Other(e.to_string()))?;
+
+        model.build.items.push(BuildItem {
+            object_id,
+            transform: glam::Mat4::IDENTITY,
+            part_number: None,
+            uuid: None,
+            path: None,
+            printable: None,
+        });
     }
 
-    writeln!(writer, "  </resources>").map_err(PixestlError::Io)?;
-    writeln!(writer, "  <build>").map_err(PixestlError::Io)?;
-    for (idx, _) in layers.iter().enumerate() {
-        writeln!(writer, r#"    <item objectid="{}"/>"#, idx + 2).map_err(PixestlError::Io)?;
-    }
-    writeln!(writer, "  </build>").map_err(PixestlError::Io)?;
-    writeln!(writer, "</model>").map_err(PixestlError::Io)?;
-
+    let file = File::create(output_path).map_err(PixestlError::Io)?;
+    model
+        .write(file)
+        .map_err(|e| PixestlError::Other(e.to_string()))?;
     Ok(())
 }
 
