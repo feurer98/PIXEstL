@@ -323,8 +323,15 @@ impl Cli {
         println!("Fertig!");
         println!();
         println!("--- Kalibrierungs-Anleitung ---");
-        println!("1. Drucken Sie die ZIP-Datei mit Ihrem Multi-Color-Drucker.");
-        println!("   Jede STL-Datei entspricht einem Filament.");
+        let ext = output.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if ext == "3mf" {
+            println!("1. Öffnen Sie die 3MF-Datei in Bambu Studio / PrusaSlicer.");
+            println!("   Farben sind bereits zugewiesen (AMS-Zuordnung automatisch).");
+        } else {
+            println!("1. Drucken Sie die Ausgabe mit Ihrem Multi-Color-Drucker.");
+            println!("   Jede STL-Datei entspricht einem Filament.");
+            println!("   Tipp: Mit -o ausgabe.3mf erhalten Sie eine 3MF-Datei mit Farbzuweisung.");
+        }
         println!(
             "2. Jede Reihe zeigt ein Filament bei 1 bis {} Schichten.",
             self.color_layers

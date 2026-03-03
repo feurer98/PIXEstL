@@ -15,8 +15,11 @@ use std::collections::HashMap;
 /// Size of each calibration square in mm
 const SQUARE_SIZE: f64 = 10.0;
 
-/// Gap between squares in mm
-const SQUARE_GAP: f64 = 2.0;
+/// Gap between columns within the same filament row (0 = tiles touch each other)
+const COLUMN_GAP: f64 = 0.0;
+
+/// Gap between filament rows in mm
+const ROW_GAP: f64 = 2.0;
 
 /// Generates calibration test pattern layers.
 ///
@@ -24,11 +27,12 @@ const SQUARE_GAP: f64 = 2.0;
 /// - One base plate ("calibration-plate")
 /// - One STL per active filament with test squares at each layer count
 ///
-/// Grid layout:
+/// Grid layout (tiles within a row touch; 2mm gap between rows):
 /// ```text
-///   1 layer   2 layers  3 layers  ... N layers
-///   [  □  ]   [  □  ]   [  □  ]       [  □  ]   ← Filament 1
-///   [  □  ]   [  □  ]   [  □  ]       [  □  ]   ← Filament 2
+///   1 layer  2 layers 3 layers  ... N layers
+///   [ □ ][ □ ][ □ ]       [ □ ]   ← Filament 1
+///
+///   [ □ ][ □ ][ □ ]       [ □ ]   ← Filament 2
 ///   ...
 /// ```
 #[allow(clippy::cast_precision_loss)]
@@ -53,9 +57,9 @@ pub fn generate_calibration_pattern(
 
     // Grid dimensions
     let grid_width =
-        num_columns as f64 * SQUARE_SIZE + (num_columns - 1).max(0) as f64 * SQUARE_GAP;
+        num_columns as f64 * SQUARE_SIZE + (num_columns - 1).max(0) as f64 * COLUMN_GAP;
     let grid_depth =
-        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
+        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * ROW_GAP;
 
     // Generate base plate
     let plate_center = Vector3::new(grid_width / 2.0, grid_depth / 2.0, -plate_thickness / 2.0);
@@ -68,11 +72,11 @@ pub fn generate_calibration_pattern(
     // Generate test squares for each filament
     for (row_idx, (hex_code, entry)) in active_filaments.iter().enumerate() {
         let mut filament_mesh = Mesh::new();
-        let row_y = row_idx as f64 * (SQUARE_SIZE + SQUARE_GAP);
+        let row_y = row_idx as f64 * (SQUARE_SIZE + ROW_GAP);
 
         for layer_count in 1..=nb_layers {
             let col_idx = (layer_count - 1) as usize;
-            let col_x = col_idx as f64 * (SQUARE_SIZE + SQUARE_GAP);
+            let col_x = col_idx as f64 * (SQUARE_SIZE + COLUMN_GAP);
 
             let cube_height = layer_count as f64 * layer_thickness;
             let center = Vector3::new(
@@ -102,9 +106,9 @@ pub fn generate_calibration_pattern(
 pub fn calibration_grid_dimensions(num_filaments: usize, nb_layers: u32) -> (f64, f64) {
     let num_columns = nb_layers as usize;
     let width =
-        num_columns as f64 * SQUARE_SIZE + (num_columns.saturating_sub(1)) as f64 * SQUARE_GAP;
+        num_columns as f64 * SQUARE_SIZE + (num_columns.saturating_sub(1)) as f64 * COLUMN_GAP;
     let depth =
-        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * SQUARE_GAP;
+        num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * ROW_GAP;
     (width, depth)
 }
 
@@ -276,9 +280,9 @@ mod tests {
     #[test]
     fn test_calibration_grid_dimensions() {
         let (width, depth) = calibration_grid_dimensions(3, 5);
-        // 5 columns: 5 * 10 + 4 * 2 = 58mm
-        assert!((width - 58.0).abs() < 0.001);
-        // 3 rows: 3 * 10 + 2 * 2 = 34mm
+        // 5 columns: 5 * 10 + 4 * 0 = 50mm (no gap between columns)
+        assert!((width - 50.0).abs() < 0.001);
+        // 3 rows: 3 * 10 + 2 * 2 = 34mm (2mm gap between rows)
         assert!((depth - 34.0).abs() < 0.001);
     }
 
