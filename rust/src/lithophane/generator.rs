@@ -6,7 +6,7 @@ use crate::image::{
     convert_to_grayscale, extract_pixels, flip_vertical, has_transparent_pixel, resize_image,
 };
 use crate::lithophane::config::LithophaneConfig;
-use crate::lithophane::geometry::Mesh;
+use crate::lithophane::layer::NamedLayer;
 use crate::lithophane::{color_layer, support_plate, texture_layer};
 use crate::palette::{quantize_image, Palette};
 use image::{DynamicImage, RgbaImage};
@@ -21,7 +21,7 @@ impl LithophaneGenerator {
         Ok(Self { config })
     }
 
-    pub fn generate(&self, image: &DynamicImage, palette: &Palette) -> Result<Vec<(String, Mesh)>> {
+    pub fn generate(&self, image: &DynamicImage, palette: &Palette) -> Result<Vec<NamedLayer>> {
         let mut layers = Vec::new();
 
         // When neither --width nor --height is specified (both are 0), derive the physical
@@ -70,7 +70,7 @@ impl LithophaneGenerator {
         if let Some(ref color_img) = color_image {
             if !has_transparent_pixel(color_img) {
                 let plate = support_plate::generate_support_plate(color_img, &self.config)?;
-                layers.push(("layer-plate".to_string(), plate));
+                layers.push(NamedLayer::without_color("layer-plate".to_string(), plate));
             }
         }
 
@@ -81,14 +81,17 @@ impl LithophaneGenerator {
 
         if let Some(ref texture_img) = texture_image {
             let texture_mesh = texture_layer::generate_texture_layer(texture_img, &self.config)?;
-            layers.push(("layer-texture".to_string(), texture_mesh));
+            layers.push(NamedLayer::without_color(
+                "layer-texture".to_string(),
+                texture_mesh,
+            ));
         }
 
         // Apply curve transformation if configured
         if self.config.curve > 0.0 {
             let total_width = self.compute_total_width(image);
-            for (_name, mesh) in &mut layers {
-                mesh.apply_curve(self.config.curve, total_width);
+            for layer in &mut layers {
+                layer.mesh.apply_curve(self.config.curve, total_width);
             }
         }
 
@@ -124,7 +127,7 @@ impl LithophaneGenerator {
         &self,
         image: &RgbaImage,
         palette: &Palette,
-    ) -> Result<Vec<(String, Mesh)>> {
+    ) -> Result<Vec<NamedLayer>> {
         let mut layers = Vec::new();
         let hex_color_groups = palette.hex_color_groups();
 
@@ -148,10 +151,14 @@ impl LithophaneGenerator {
                 format!("layer-{}", color_names.join("+"))
             };
 
+            // Use the first hex code in the group as the representative color for 3MF export.
+            // For single-filament groups (the common case) this is exact.
+            let representative_color = hex_codes.first().cloned();
+
             let mesh =
                 color_layer::generate_color_layer(image, palette, hex_codes, &self.config, -1, -1)?;
 
-            layers.push((layer_name, mesh));
+            layers.push(NamedLayer::new(layer_name, mesh, representative_color));
         }
 
         Ok(layers)

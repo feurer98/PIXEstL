@@ -145,8 +145,12 @@ fn test_full_pipeline_color_layer_only() {
     assert!(!layers.is_empty(), "must produce at least one layer");
 
     // Every mesh must contain triangles
-    for (name, mesh) in &layers {
-        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
+    for layer in &layers {
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     // 5. Export to ZIP
@@ -212,8 +216,12 @@ fn test_full_pipeline_texture_layer_only() {
         .expect("generation must succeed");
     assert!(!layers.is_empty(), "must produce at least one layer");
 
-    for (name, mesh) in &layers {
-        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
+    for layer in &layers {
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();
@@ -269,13 +277,17 @@ fn test_full_pipeline_both_layers() {
         layers.len()
     );
 
-    let has_plate = layers.iter().any(|(name, _)| name == "layer-plate");
-    let has_texture = layers.iter().any(|(name, _)| name == "layer-texture");
+    let has_plate = layers.iter().any(|l| l.name == "layer-plate");
+    let has_texture = layers.iter().any(|l| l.name == "layer-texture");
     assert!(has_plate, "support plate layer must be present");
     assert!(has_texture, "texture layer must be present");
 
-    for (name, mesh) in &layers {
-        assert!(mesh.triangle_count() > 0, "layer '{name}' has no triangles");
+    for layer in &layers {
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();

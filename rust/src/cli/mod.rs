@@ -3,12 +3,12 @@
 use crate::color::ColorDistanceMethod;
 use crate::error::Result;
 use crate::image::load_image;
-use crate::lithophane::{LithophaneConfig, PixelCreationMethod as LithoPixelMethod};
+use crate::lithophane::{LithophaneConfig, NamedLayer, PixelCreationMethod as LithoPixelMethod};
 use crate::palette::{
     PaletteColorEntry, PaletteLoader, PaletteLoaderConfig,
     PixelCreationMethod as PalettePixelMethod,
 };
-use crate::stl::{export_to_zip, StlFormat};
+use crate::stl::{export_to_3mf, export_to_dir, export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -90,7 +90,10 @@ pub struct Cli {
     #[arg(short = 'p', long, value_name = "FILE")]
     pub palette: PathBuf,
 
-    /// Output ZIP file containing the generated STL layers. Not required for --palette-info.
+    /// Output path for the generated layers. Not required for --palette-info.
+    /// .zip  → ZIP archive with one .stl per layer.
+    /// .3mf  → 3MF file with embedded filament colors; Bambu Studio auto-assigns AMS slots.
+    /// other → directory with one .stl per layer.
     #[arg(
         short = 'o',
         long,
@@ -244,15 +247,18 @@ impl Cli {
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
         let layers = generator.generate(&image, &palette)?;
         println!("  Generated {} layer(s)", layers.len());
-        for (name, mesh) in &layers {
-            println!("    - {}: {} triangles", name, mesh.triangle_count());
+        for layer in &layers {
+            println!(
+                "    - {}: {} triangles",
+                layer.name,
+                layer.mesh.triangle_count()
+            );
         }
         println!();
 
         // --- Export ---
         println!("Exporting to: {}", output.display());
-        export_to_zip(&layers, output, self.format.into())?;
-        println!("  Format: {:?}\n", self.format);
+        self.export_layers(&layers, output)?;
 
         println!("Done!");
         Ok(())
@@ -301,15 +307,18 @@ impl Cli {
         let layers =
             crate::lithophane::calibration::generate_calibration_pattern(&raw_palette, &config)?;
 
-        for (name, mesh) in &layers {
-            println!("  - {}: {} Dreiecke", name, mesh.triangle_count());
+        for layer in &layers {
+            println!(
+                "  - {}: {} Dreiecke",
+                layer.name,
+                layer.mesh.triangle_count()
+            );
         }
         println!();
 
         // Export
         println!("Exportiere nach: {}", output.display());
-        export_to_zip(&layers, output, self.format.into())?;
-        println!("  Format: {:?}\n", self.format);
+        self.export_layers(&layers, output)?;
 
         println!("Fertig!");
         println!();
@@ -430,64 +439,98 @@ impl Cli {
 
     /// Prints information about a single filament entry.
     fn print_filament_info(hex: &str, entry: &PaletteColorEntry, target_layers: u32) {
-        if let Some(layers) = &entry.layers {
-            let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
-            layer_nums.sort();
+        let Some(layers) = &entry.layers else { return };
 
-            let layer_str: String = layer_nums
-                .iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
+        let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
+        layer_nums.sort();
 
-            let completeness = if layer_nums.len() as u32 >= target_layers {
-                "vollstaendig".to_string()
-            } else {
-                format!("{} von {} definiert", layer_nums.len(), target_layers)
-            };
+        let layer_str = layer_nums
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
 
-            println!(
-                "  {}  {:<35} Schichten: {:<15} ({})",
-                hex, entry.name, layer_str, completeness
-            );
-        }
+        let completeness = if layer_nums.len() as u32 >= target_layers {
+            "vollstaendig".to_string()
+        } else {
+            format!("{} von {} definiert", layer_nums.len(), target_layers)
+        };
+
+        println!(
+            "  {}  {:<35} Schichten: {:<15} ({})",
+            hex, entry.name, layer_str, completeness
+        );
     }
 
     /// Prints palette validation warnings to stderr.
     fn print_palette_warnings(&self, raw_data: &HashMap<String, PaletteColorEntry>) {
         let warnings = PaletteLoader::validate_completeness(raw_data, self.color_layers);
-        if !warnings.is_empty() {
-            eprintln!();
-            for w in &warnings {
-                eprintln!("  [Warnung] {}", w);
+        if warnings.is_empty() {
+            return;
+        }
+        eprintln!();
+        for w in &warnings {
+            eprintln!("  [Warnung] {}", w);
+        }
+        eprintln!(
+            "  [Hinweis] Layer-Nummern in der Palette definieren Farbdichte-Stufen \
+            (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
+        );
+        eprintln!();
+    }
+
+    /// Exports layers to the given output path.
+    ///
+    /// The output format is determined by the file extension:
+    /// - `.zip`  → ZIP archive with one STL file per layer
+    /// - `.3mf`  → 3MF file with embedded filament colors (recommended for Bambu Studio)
+    /// - other   → directory with one STL file per layer
+    fn export_layers(&self, layers: &[NamedLayer], output: &std::path::Path) -> Result<()> {
+        match output.extension().and_then(|e| e.to_str()) {
+            Some("zip") => {
+                println!("  Format: ZIP ({:?})", self.format);
+                export_to_zip(layers, output, self.format.into())
             }
-            eprintln!(
-                "  [Hinweis] Layer-Nummern in der Palette definieren Farbdichte-Stufen \
-                (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
-            );
-            eprintln!();
+            Some("3mf") => {
+                println!("  Format: 3MF (mit Farbmetadaten)");
+                export_to_3mf(layers, output, self.format.into())
+            }
+            _ => {
+                println!("  Format: Verzeichnis ({:?})", self.format);
+                export_to_dir(layers, output, self.format.into())
+            }
+        }
+    }
+
+    /// Returns the effective output width in millimeters derived from CLI parameters,
+    /// or `None` when neither `--width` nor `--height` was specified.
+    fn compute_effective_width_mm(&self, image_width: u32, image_height: u32) -> Option<f64> {
+        if self.width > 0.0 {
+            Some(self.width)
+        } else if self.height > 0.0 && image_height > 0 {
+            Some((image_width as f64 * self.height) / image_height as f64)
+        } else {
+            None
         }
     }
 
     /// Prints a resolution warning if the image has significantly more pixels
     /// than the effective color resolution.
     fn print_resolution_warning(&self, image_width: u32, image_height: u32) {
-        // Calculate effective width in mm
-        let effective_width_mm = if self.width > 0.0 {
-            self.width
-        } else if self.height > 0.0 && image_height > 0 {
-            (image_width as f64 * self.height) / image_height as f64
-        } else {
-            // Neither --width nor --height given: natural size (1 source px = 1 color px)
-            let natural_width = image_width as f64 * self.color_pixel_width;
-            let natural_height = image_height as f64 * self.color_pixel_width;
-            eprintln!(
-                "  [Hinweis] Keine Ausgabegröße angegeben. \
-                 Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
-                 Verwende --width oder --height für eine bestimmte Größe.",
-                natural_width, natural_height
-            );
-            natural_width
+        let effective_width_mm = match self.compute_effective_width_mm(image_width, image_height) {
+            Some(w) => w,
+            None => {
+                // Neither --width nor --height given: use natural size and inform the user.
+                let natural_width = image_width as f64 * self.color_pixel_width;
+                let natural_height = image_height as f64 * self.color_pixel_width;
+                eprintln!(
+                    "  [Hinweis] Keine Ausgabegröße angegeben. \
+                         Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
+                         Verwende --width oder --height für eine bestimmte Größe.",
+                    natural_width, natural_height
+                );
+                return;
+            }
         };
 
         if effective_width_mm <= 0.0 || self.color_pixel_width <= 0.0 {

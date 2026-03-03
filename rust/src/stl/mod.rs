@@ -11,6 +11,7 @@
 
 use crate::error::{PixestlError, Result};
 use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
+use crate::lithophane::layer::NamedLayer;
 use std::io::Write;
 
 /// STL-Ausgabeformat
@@ -125,6 +126,40 @@ fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
     Ok(())
 }
 
+/// Exportiert mehrere Layer als einzelne `.stl`-Dateien in ein Verzeichnis.
+///
+/// Das Verzeichnis wird erstellt, falls es noch nicht existiert.
+/// Jeder Layer erhält eine eigene Datei `<name>.stl`.
+///
+/// # Arguments
+///
+/// * `layers`   - Slice aus `(Name, Mesh)`-Paaren
+/// * `dir_path` - Pfad zum Ausgabeverzeichnis
+/// * `format`   - STL-Ausgabeformat für alle Layer
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` zurück, wenn das Verzeichnis nicht erstellt oder
+/// eine Datei nicht geschrieben werden kann.
+pub fn export_to_dir<P: AsRef<std::path::Path>>(
+    layers: &[NamedLayer],
+    dir_path: P,
+    format: StlFormat,
+) -> Result<()> {
+    use std::fs;
+
+    let dir = dir_path.as_ref();
+    fs::create_dir_all(dir).map_err(PixestlError::Io)?;
+
+    for layer in layers {
+        let path = dir.join(format!("{}.stl", layer.name));
+        let mut file = fs::File::create(&path).map_err(PixestlError::Io)?;
+        write_stl(&layer.mesh, &mut file, format, &layer.name)?;
+    }
+
+    Ok(())
+}
+
 /// Exportiert mehrere Layer (je eine STL-Datei) in ein ZIP-Archiv.
 ///
 /// Jeder Layer wird als eigene `.stl`-Datei im Archiv abgelegt.
@@ -145,7 +180,7 @@ fn write_f32_vec3<W: Write>(writer: &mut W, vec: &Vector3) -> Result<()> {
 ///
 /// `Ok(())` bei Erfolg.
 pub fn export_to_zip<P: AsRef<std::path::Path>>(
-    layers: &[(String, Mesh)],
+    layers: &[NamedLayer],
     output_path: P,
     format: StlFormat,
 ) -> Result<()> {
@@ -158,14 +193,123 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
 
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
-    for (layer_name, mesh) in layers {
-        let filename = format!("{}.stl", layer_name);
+    for layer in layers {
+        let filename = format!("{}.stl", layer.name);
         zip.start_file(filename, options)
             .map_err(PixestlError::Zip)?;
-        write_stl(mesh, &mut zip, format, layer_name)?;
+        write_stl(&layer.mesh, &mut zip, format, &layer.name)?;
     }
 
     zip.finish().map_err(PixestlError::Zip)?;
+    Ok(())
+}
+
+/// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
+///
+/// Jeder Layer mit einem `hex_color` wird als Objekt mit Farbzuweisung in der
+/// 3MF-Datei gespeichert. Bambu Studio erkennt diese Farben beim Import
+/// automatisch und ordnet sie den nächstgelegenen AMS-Slots zu.
+///
+/// Layer ohne Farbe (Grundplatte, Textur) werden als farblose Objekte exportiert.
+///
+/// # Arguments
+///
+/// * `layers`      - Slice aus `NamedLayer`; jedes Element wird ein 3MF-Objekt
+/// * `output_path` - Pfad zur Ausgabe-3MF-Datei
+/// * `_format`     - Wird ignoriert; 3MF verwendet kein STL-Format intern
+///
+/// # Errors
+///
+/// Gibt `PixestlError::Io` oder `PixestlError::Other` zurück bei Schreibfehlern.
+pub fn export_to_3mf<P: AsRef<std::path::Path>>(
+    layers: &[NamedLayer],
+    output_path: P,
+    _format: StlFormat,
+) -> Result<()> {
+    use lib3mf_core::model::{
+        BuildItem, Color, ColorGroup, Geometry, Mesh as Lib3mfMesh, Model, Object, ObjectType,
+        ResourceId, Unit,
+    };
+    use std::fs::File;
+
+    let mut model = Model {
+        unit: Unit::Millimeter,
+        ..Default::default()
+    };
+
+    // Unique Farben sammeln (Reihenfolge erster Auftreten)
+    let mut colors: Vec<&str> = Vec::new();
+    for layer in layers {
+        if let Some(ref hex) = layer.hex_color {
+            if !colors.contains(&hex.as_str()) {
+                colors.push(hex.as_str());
+            }
+        }
+    }
+
+    let color_group_id = ResourceId(1);
+    if !colors.is_empty() {
+        let color_group = ColorGroup {
+            id: color_group_id,
+            colors: colors
+                .iter()
+                .map(|hex| Color::from_hex(hex).unwrap_or(Color::new(128, 128, 128, 255)))
+                .collect(),
+        };
+        model
+            .resources
+            .add_color_group(color_group)
+            .map_err(|e| PixestlError::Other(e.to_string()))?;
+    }
+
+    for (idx, layer) in layers.iter().enumerate() {
+        let object_id = ResourceId((idx + 2) as u32);
+
+        let mut mesh = Lib3mfMesh::new();
+        for tri in &layer.mesh.triangles {
+            let v0 = mesh.add_vertex(tri.v0.x as f32, tri.v0.y as f32, tri.v0.z as f32);
+            let v1 = mesh.add_vertex(tri.v1.x as f32, tri.v1.y as f32, tri.v1.z as f32);
+            let v2 = mesh.add_vertex(tri.v2.x as f32, tri.v2.y as f32, tri.v2.z as f32);
+            mesh.add_triangle(v0, v1, v2);
+        }
+
+        let pindex = layer
+            .hex_color
+            .as_deref()
+            .and_then(|hex| colors.iter().position(|&c| c == hex))
+            .map(|i| i as u32);
+        let pid = pindex.map(|_| color_group_id);
+
+        let object = Object {
+            id: object_id,
+            object_type: ObjectType::Model,
+            name: Some(layer.name.clone()),
+            part_number: None,
+            uuid: None,
+            pid,
+            thumbnail: None,
+            pindex,
+            geometry: Geometry::Mesh(mesh),
+        };
+        model
+            .resources
+            .add_object(object)
+            .map_err(|e| PixestlError::Other(e.to_string()))?;
+
+        model.build.items.push(BuildItem {
+            object_id,
+            transform: glam::Mat4::IDENTITY,
+            part_number: None,
+            uuid: None,
+            path: None,
+            printable: None,
+        });
+    }
+
+    let file = File::create(output_path).map_err(PixestlError::Io)?;
+    model
+        .write(file)
+        .map_err(|e| PixestlError::Other(e.to_string()))?;
     Ok(())
 }
 
