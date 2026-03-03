@@ -227,8 +227,8 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     _format: StlFormat,
 ) -> Result<()> {
     use lib3mf_core::model::{
-        BuildItem, Color, ColorGroup, Geometry, Mesh as Lib3mfMesh,
-        Model, Object, ObjectType, ResourceId, Unit,
+        BuildItem, Color, ColorGroup, Geometry, Mesh as Lib3mfMesh, Model, Object, ObjectType,
+        ResourceId, Unit,
     };
     use std::fs::File;
 

@@ -60,7 +60,10 @@ pub fn generate_calibration_pattern(
     // Generate base plate
     let plate_center = Vector3::new(grid_width / 2.0, grid_depth / 2.0, -plate_thickness / 2.0);
     let plate = Mesh::cube(grid_width, grid_depth, plate_thickness, plate_center);
-    layers.push(NamedLayer::without_color("calibration-plate".to_string(), plate));
+    layers.push(NamedLayer::without_color(
+        "calibration-plate".to_string(),
+        plate,
+    ));
 
     // Generate test squares for each filament
     for (row_idx, (hex_code, entry)) in active_filaments.iter().enumerate() {
@@ -83,7 +86,11 @@ pub fn generate_calibration_pattern(
         }
 
         let layer_name = format!("calibration-{}", sanitize_filename(&entry.name, hex_code));
-        layers.push(NamedLayer::new(layer_name, filament_mesh, Some(hex_code.to_string())));
+        layers.push(NamedLayer::new(
+            layer_name,
+            filament_mesh,
+            Some(hex_code.to_string()),
+        ));
     }
 
     Ok(layers)

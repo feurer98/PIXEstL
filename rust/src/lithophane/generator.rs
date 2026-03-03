@@ -81,7 +81,10 @@ impl LithophaneGenerator {
 
         if let Some(ref texture_img) = texture_image {
             let texture_mesh = texture_layer::generate_texture_layer(texture_img, &self.config)?;
-            layers.push(NamedLayer::without_color("layer-texture".to_string(), texture_mesh));
+            layers.push(NamedLayer::without_color(
+                "layer-texture".to_string(),
+                texture_mesh,
+            ));
         }
 
         // Apply curve transformation if configured

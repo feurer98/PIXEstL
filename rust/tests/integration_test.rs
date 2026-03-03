@@ -146,7 +146,11 @@ fn test_full_pipeline_color_layer_only() {
 
     // Every mesh must contain triangles
     for layer in &layers {
-        assert!(layer.mesh.triangle_count() > 0, "layer '{}' has no triangles", layer.name);
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     // 5. Export to ZIP
@@ -213,7 +217,11 @@ fn test_full_pipeline_texture_layer_only() {
     assert!(!layers.is_empty(), "must produce at least one layer");
 
     for layer in &layers {
-        assert!(layer.mesh.triangle_count() > 0, "layer '{}' has no triangles", layer.name);
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();
@@ -275,7 +283,11 @@ fn test_full_pipeline_both_layers() {
     assert!(has_texture, "texture layer must be present");
 
     for layer in &layers {
-        assert!(layer.mesh.triangle_count() > 0, "layer '{}' has no triangles", layer.name);
+        assert!(
+            layer.mesh.triangle_count() > 0,
+            "layer '{}' has no triangles",
+            layer.name
+        );
     }
 
     let zip_tmp = tempfile::NamedTempFile::new().unwrap();

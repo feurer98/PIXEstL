@@ -19,10 +19,18 @@ pub struct NamedLayer {
 
 impl NamedLayer {
     pub fn new(name: String, mesh: Mesh, hex_color: Option<String>) -> Self {
-        Self { name, mesh, hex_color }
+        Self {
+            name,
+            mesh,
+            hex_color,
+        }
     }
 
     pub fn without_color(name: String, mesh: Mesh) -> Self {
-        Self { name, mesh, hex_color: None }
+        Self {
+            name,
+            mesh,
+            hex_color: None,
+        }
     }
 }

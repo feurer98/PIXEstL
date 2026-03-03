@@ -248,7 +248,11 @@ impl Cli {
         let layers = generator.generate(&image, &palette)?;
         println!("  Generated {} layer(s)", layers.len());
         for layer in &layers {
-            println!("    - {}: {} triangles", layer.name, layer.mesh.triangle_count());
+            println!(
+                "    - {}: {} triangles",
+                layer.name,
+                layer.mesh.triangle_count()
+            );
         }
         println!();
 
@@ -304,7 +308,11 @@ impl Cli {
             crate::lithophane::calibration::generate_calibration_pattern(&raw_palette, &config)?;
 
         for layer in &layers {
-            println!("  - {}: {} Dreiecke", layer.name, layer.mesh.triangle_count());
+            println!(
+                "  - {}: {} Dreiecke",
+                layer.name,
+                layer.mesh.triangle_count()
+            );
         }
         println!();
 
@@ -436,7 +444,11 @@ impl Cli {
         let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
         layer_nums.sort();
 
-        let layer_str = layer_nums.iter().map(u32::to_string).collect::<Vec<_>>().join(", ");
+        let layer_str = layer_nums
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
 
         let completeness = if layer_nums.len() as u32 >= target_layers {
             "vollstaendig".to_string()
@@ -505,22 +517,21 @@ impl Cli {
     /// Prints a resolution warning if the image has significantly more pixels
     /// than the effective color resolution.
     fn print_resolution_warning(&self, image_width: u32, image_height: u32) {
-        let effective_width_mm =
-            match self.compute_effective_width_mm(image_width, image_height) {
-                Some(w) => w,
-                None => {
-                    // Neither --width nor --height given: use natural size and inform the user.
-                    let natural_width = image_width as f64 * self.color_pixel_width;
-                    let natural_height = image_height as f64 * self.color_pixel_width;
-                    eprintln!(
-                        "  [Hinweis] Keine Ausgabegröße angegeben. \
+        let effective_width_mm = match self.compute_effective_width_mm(image_width, image_height) {
+            Some(w) => w,
+            None => {
+                // Neither --width nor --height given: use natural size and inform the user.
+                let natural_width = image_width as f64 * self.color_pixel_width;
+                let natural_height = image_height as f64 * self.color_pixel_width;
+                eprintln!(
+                    "  [Hinweis] Keine Ausgabegröße angegeben. \
                          Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
                          Verwende --width oder --height für eine bestimmte Größe.",
-                        natural_width, natural_height
-                    );
-                    return;
-                }
-            };
+                    natural_width, natural_height
+                );
+                return;
+            }
+        };
 
         if effective_width_mm <= 0.0 || self.color_pixel_width <= 0.0 {
             return;
