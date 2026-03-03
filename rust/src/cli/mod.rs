@@ -430,65 +430,73 @@ impl Cli {
 
     /// Prints information about a single filament entry.
     fn print_filament_info(hex: &str, entry: &PaletteColorEntry, target_layers: u32) {
-        if let Some(layers) = &entry.layers {
-            let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
-            layer_nums.sort();
+        let Some(layers) = &entry.layers else { return };
 
-            let layer_str: String = layer_nums
-                .iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
+        let mut layer_nums: Vec<u32> = layers.keys().filter_map(|k| k.parse().ok()).collect();
+        layer_nums.sort();
 
-            let completeness = if layer_nums.len() as u32 >= target_layers {
-                "vollstaendig".to_string()
-            } else {
-                format!("{} von {} definiert", layer_nums.len(), target_layers)
-            };
+        let layer_str = layer_nums.iter().map(u32::to_string).collect::<Vec<_>>().join(", ");
 
-            println!(
-                "  {}  {:<35} Schichten: {:<15} ({})",
-                hex, entry.name, layer_str, completeness
-            );
-        }
+        let completeness = if layer_nums.len() as u32 >= target_layers {
+            "vollstaendig".to_string()
+        } else {
+            format!("{} von {} definiert", layer_nums.len(), target_layers)
+        };
+
+        println!(
+            "  {}  {:<35} Schichten: {:<15} ({})",
+            hex, entry.name, layer_str, completeness
+        );
     }
 
     /// Prints palette validation warnings to stderr.
     fn print_palette_warnings(&self, raw_data: &HashMap<String, PaletteColorEntry>) {
         let warnings = PaletteLoader::validate_completeness(raw_data, self.color_layers);
-        if !warnings.is_empty() {
-            eprintln!();
-            for w in &warnings {
-                eprintln!("  [Warnung] {}", w);
-            }
-            eprintln!(
-                "  [Hinweis] Layer-Nummern in der Palette definieren Farbdichte-Stufen \
-                (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
-            );
-            eprintln!();
+        if warnings.is_empty() {
+            return;
+        }
+        eprintln!();
+        for w in &warnings {
+            eprintln!("  [Warnung] {}", w);
+        }
+        eprintln!(
+            "  [Hinweis] Layer-Nummern in der Palette definieren Farbdichte-Stufen \
+            (Anzahl uebereinander gedruckter Schichten), nicht die physische Position im STL."
+        );
+        eprintln!();
+    }
+
+    /// Returns the effective output width in millimeters derived from CLI parameters,
+    /// or `None` when neither `--width` nor `--height` was specified.
+    fn compute_effective_width_mm(&self, image_width: u32, image_height: u32) -> Option<f64> {
+        if self.width > 0.0 {
+            Some(self.width)
+        } else if self.height > 0.0 && image_height > 0 {
+            Some((image_width as f64 * self.height) / image_height as f64)
+        } else {
+            None
         }
     }
 
     /// Prints a resolution warning if the image has significantly more pixels
     /// than the effective color resolution.
     fn print_resolution_warning(&self, image_width: u32, image_height: u32) {
-        // Calculate effective width in mm
-        let effective_width_mm = if self.width > 0.0 {
-            self.width
-        } else if self.height > 0.0 && image_height > 0 {
-            (image_width as f64 * self.height) / image_height as f64
-        } else {
-            // Neither --width nor --height given: natural size (1 source px = 1 color px)
-            let natural_width = image_width as f64 * self.color_pixel_width;
-            let natural_height = image_height as f64 * self.color_pixel_width;
-            eprintln!(
-                "  [Hinweis] Keine Ausgabegröße angegeben. \
-                 Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
-                 Verwende --width oder --height für eine bestimmte Größe.",
-                natural_width, natural_height
-            );
-            natural_width
-        };
+        let effective_width_mm =
+            match self.compute_effective_width_mm(image_width, image_height) {
+                Some(w) => w,
+                None => {
+                    // Neither --width nor --height given: use natural size and inform the user.
+                    let natural_width = image_width as f64 * self.color_pixel_width;
+                    let natural_height = image_height as f64 * self.color_pixel_width;
+                    eprintln!(
+                        "  [Hinweis] Keine Ausgabegröße angegeben. \
+                         Natürliche Größe wird verwendet: {:.1}mm x {:.1}mm. \
+                         Verwende --width oder --height für eine bestimmte Größe.",
+                        natural_width, natural_height
+                    );
+                    return;
+                }
+            };
 
         if effective_width_mm <= 0.0 || self.color_pixel_width <= 0.0 {
             return;
