@@ -134,6 +134,11 @@ pub struct Cli {
     #[arg(long, default_value = "1.8", value_name = "MM")]
     pub texture_max: f64,
 
+    /// Filament color for the texture layer as hex code (e.g. "#FFFFFF" for white).
+    /// The texture layer is always single-color; use the color layer for multi-color output.
+    #[arg(long, default_value = "#FFFFFF", value_name = "HEX")]
+    pub texture_color: String,
+
     /// Base plate thickness in mm (solid backing layer under the color stack)
     #[arg(long, default_value = "0.2", value_name = "MM")]
     pub plate_thickness: f64,
@@ -188,6 +193,7 @@ impl Cli {
             texture_min_thickness: self.texture_min,
             texture_max_thickness: self.texture_max,
             texture_layer: !self.no_texture,
+            texture_color: self.texture_color.clone(),
             plate_thickness: self.plate_thickness,
             pixel_creation_method: self.pixel_method.into(),
             color_number: self.color_number,
