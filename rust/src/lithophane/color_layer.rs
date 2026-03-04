@@ -171,7 +171,7 @@ fn process_row(
                     let cube_height = cur_pixel_height;
 
                     let center_x = (x as f64 * pixel_width) + (cube_width / 2.0);
-                    let center_y = y as f64 * pixel_width;
+                    let center_y = (y as f64 + 0.5) * pixel_width;
                     let center_z = cur_pixel_height_adjust;
 
                     let center = Vector3::new(center_x, center_y, center_z);

@@ -12,6 +12,7 @@
 use crate::error::{PixestlError, Result};
 use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
 use crate::lithophane::layer::NamedLayer;
+use std::collections::HashMap;
 use std::io::Write;
 
 /// STL-Ausgabeformat
@@ -204,6 +205,23 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
     Ok(())
 }
 
+fn get_or_add_vertex(
+    mesh: &mut lib3mf_core::model::Mesh,
+    vertex_map: &mut HashMap<(u32, u32, u32), u32>,
+    x: f32,
+    y: f32,
+    z: f32,
+) -> u32 {
+    let key = (x.to_bits(), y.to_bits(), z.to_bits());
+    if let Some(&idx) = vertex_map.get(&key) {
+        idx
+    } else {
+        let idx = mesh.add_vertex(x, y, z);
+        vertex_map.insert(key, idx);
+        idx
+    }
+}
+
 /// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
 ///
 /// Jeder Layer mit einem `hex_color` wird als Objekt mit Farbzuweisung in der
@@ -266,10 +284,29 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         let object_id = ResourceId((idx + 2) as u32);
 
         let mut mesh = Lib3mfMesh::new();
+        let mut vertex_map: HashMap<(u32, u32, u32), u32> = HashMap::new();
         for tri in &layer.mesh.triangles {
-            let v0 = mesh.add_vertex(tri.v0.x as f32, tri.v0.y as f32, tri.v0.z as f32);
-            let v1 = mesh.add_vertex(tri.v1.x as f32, tri.v1.y as f32, tri.v1.z as f32);
-            let v2 = mesh.add_vertex(tri.v2.x as f32, tri.v2.y as f32, tri.v2.z as f32);
+            let v0 = get_or_add_vertex(
+                &mut mesh,
+                &mut vertex_map,
+                tri.v0.x as f32,
+                tri.v0.y as f32,
+                tri.v0.z as f32,
+            );
+            let v1 = get_or_add_vertex(
+                &mut mesh,
+                &mut vertex_map,
+                tri.v1.x as f32,
+                tri.v1.y as f32,
+                tri.v1.z as f32,
+            );
+            let v2 = get_or_add_vertex(
+                &mut mesh,
+                &mut vertex_map,
+                tri.v2.x as f32,
+                tri.v2.y as f32,
+                tri.v2.z as f32,
+            );
             mesh.add_triangle(v0, v1, v2);
         }
 
@@ -396,5 +433,102 @@ mod tests {
         let mut output = Vec::new();
         write_stl(&mesh, &mut output, StlFormat::Binary, "test").unwrap();
         assert_eq!(output.len(), 84);
+    }
+
+    #[test]
+    fn test_export_to_3mf_unit_and_z_range() {
+        use crate::lithophane::layer::NamedLayer;
+        use std::io::Read;
+        use tempfile::NamedTempFile;
+
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 0.0, 0.3),
+            Vector3::new(1.0, 0.0, 0.3),
+            Vector3::new(0.0, 1.0, 1.8),
+        ));
+        let layers = vec![NamedLayer::new(
+            "test".to_string(),
+            mesh,
+            Some("#FF0000".to_string()),
+        )];
+
+        let tmp = NamedTempFile::new().unwrap();
+        export_to_3mf(&layers, tmp.path(), StlFormat::Binary).unwrap();
+
+        let file = std::fs::File::open(tmp.path()).unwrap();
+        let mut zip = zip::ZipArchive::new(file).unwrap();
+        let mut model_file = zip.by_name("3D/3dmodel.model").unwrap();
+        let mut content = String::new();
+        model_file.read_to_string(&mut content).unwrap();
+
+        assert!(
+            content.contains("unit=\"millimeter\""),
+            "3MF must declare unit=millimeter; got: {}",
+            &content[..500.min(content.len())]
+        );
+        assert!(
+            content.contains("z=\"1.8"),
+            "Max Z vertex should be ~1.8mm; content snippet: {}",
+            &content[..500.min(content.len())]
+        );
+    }
+
+    #[test]
+    fn test_export_to_3mf_vertex_deduplication() {
+        use crate::lithophane::layer::NamedLayer;
+
+        // A single quad (2 triangles sharing 2 vertices)
+        let mut mesh = Mesh::new();
+        // Triangle 1: (0,0,0) (1,0,0) (0,1,0)
+        // Triangle 2: (1,1,0) (1,0,0) (0,1,0)  <- shares v1=(1,0,0) and v2=(0,1,0)
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(1.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        ));
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(1.0, 1.0, 0.0),
+            Vector3::new(1.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        ));
+        let layers = vec![NamedLayer::new("quad".to_string(), mesh, None)];
+
+        // Build the lib3mf mesh via the same dedup logic
+        use lib3mf_core::model::Mesh as Lib3mfMesh;
+        let mut lib_mesh = Lib3mfMesh::new();
+        let mut vertex_map: HashMap<(u32, u32, u32), u32> = HashMap::new();
+        for layer in &layers {
+            for tri in &layer.mesh.triangles {
+                let _v0 = get_or_add_vertex(
+                    &mut lib_mesh,
+                    &mut vertex_map,
+                    tri.v0.x as f32,
+                    tri.v0.y as f32,
+                    tri.v0.z as f32,
+                );
+                let _v1 = get_or_add_vertex(
+                    &mut lib_mesh,
+                    &mut vertex_map,
+                    tri.v1.x as f32,
+                    tri.v1.y as f32,
+                    tri.v1.z as f32,
+                );
+                let _v2 = get_or_add_vertex(
+                    &mut lib_mesh,
+                    &mut vertex_map,
+                    tri.v2.x as f32,
+                    tri.v2.y as f32,
+                    tri.v2.z as f32,
+                );
+            }
+        }
+        // 2 triangles × 3 unique verts = 4 unique positions (not 6 without dedup)
+        assert_eq!(
+            lib_mesh.vertices.len(),
+            4,
+            "Expected 4 unique vertices for a quad, got {}",
+            lib_mesh.vertices.len()
+        );
     }
 }
