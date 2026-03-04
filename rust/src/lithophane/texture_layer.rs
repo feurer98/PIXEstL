@@ -68,6 +68,7 @@ fn process_texture_row(
     let pixel_width = config.texture_pixel_width;
     let min_thickness = config.texture_min_thickness;
     let max_thickness = config.texture_max_thickness;
+    let z_offset = config.total_color_layer_height();
 
     for x in 0..width - 1 {
         let i = x as f64 * pixel_width;
@@ -75,10 +76,10 @@ fn process_texture_row(
         let i1 = (x + 1) as f64 * pixel_width;
         let j1 = (y + 1) as f64 * pixel_width;
 
-        let h00 = get_pixel_height(image, x, y, min_thickness, max_thickness);
-        let h10 = get_pixel_height(image, x + 1, y, min_thickness, max_thickness);
-        let h01 = get_pixel_height(image, x, y + 1, min_thickness, max_thickness);
-        let h11 = get_pixel_height(image, x + 1, y + 1, min_thickness, max_thickness);
+        let h00 = z_offset + get_pixel_height(image, x, y, min_thickness, max_thickness);
+        let h10 = z_offset + get_pixel_height(image, x + 1, y, min_thickness, max_thickness);
+        let h01 = z_offset + get_pixel_height(image, x, y + 1, min_thickness, max_thickness);
+        let h11 = z_offset + get_pixel_height(image, x + 1, y + 1, min_thickness, max_thickness);
 
         // Create two triangles for this quad
         let t1 = Triangle::new(
@@ -98,71 +99,71 @@ fn process_texture_row(
 
         // Add edge triangles for borders
         if x == 0 {
-            add_left_edge(&mut mesh, i, j, j1, h00, h01);
+            add_left_edge(&mut mesh, i, j, j1, h00, h01, z_offset);
         }
         if y == 0 {
-            add_top_edge(&mut mesh, i, i1, j, h00, h10);
+            add_top_edge(&mut mesh, i, i1, j, h00, h10, z_offset);
         }
         if x == width - 2 {
-            add_right_edge(&mut mesh, i1, j, j1, h10, h11);
+            add_right_edge(&mut mesh, i1, j, j1, h10, h11, z_offset);
         }
         if y == height - 2 {
-            add_bottom_edge(&mut mesh, i, i1, j1, h01, h11);
+            add_bottom_edge(&mut mesh, i, i1, j1, h01, h11, z_offset);
         }
     }
 
     mesh
 }
 
-fn add_left_edge(mesh: &mut Mesh, i: f64, j: f64, j1: f64, h00: f64, h01: f64) {
+fn add_left_edge(mesh: &mut Mesh, i: f64, j: f64, j1: f64, h00: f64, h01: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
         Vector3::new(i, j1, h01),
-        Vector3::new(i, j1, 0.0),
+        Vector3::new(i, j1, z_base),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
-        Vector3::new(i, j, 0.0),
-        Vector3::new(i, j1, 0.0),
+        Vector3::new(i, j, z_base),
+        Vector3::new(i, j1, z_base),
     ));
 }
 
-fn add_top_edge(mesh: &mut Mesh, i: f64, i1: f64, j: f64, h00: f64, h10: f64) {
+fn add_top_edge(mesh: &mut Mesh, i: f64, i1: f64, j: f64, h00: f64, h10: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
         Vector3::new(i1, j, h10),
-        Vector3::new(i1, j, 0.0),
+        Vector3::new(i1, j, z_base),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
-        Vector3::new(i, j, 0.0),
-        Vector3::new(i1, j, 0.0),
+        Vector3::new(i, j, z_base),
+        Vector3::new(i1, j, z_base),
     ));
 }
 
-fn add_right_edge(mesh: &mut Mesh, i1: f64, j: f64, j1: f64, h10: f64, h11: f64) {
+fn add_right_edge(mesh: &mut Mesh, i1: f64, j: f64, j1: f64, h10: f64, h11: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i1, j, h10),
         Vector3::new(i1, j1, h11),
-        Vector3::new(i1, j1, 0.0),
+        Vector3::new(i1, j1, z_base),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i1, j, h10),
-        Vector3::new(i1, j, 0.0),
-        Vector3::new(i1, j1, 0.0),
+        Vector3::new(i1, j, z_base),
+        Vector3::new(i1, j1, z_base),
     ));
 }
 
-fn add_bottom_edge(mesh: &mut Mesh, i: f64, i1: f64, j1: f64, h01: f64, h11: f64) {
+fn add_bottom_edge(mesh: &mut Mesh, i: f64, i1: f64, j1: f64, h01: f64, h11: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j1, h01),
         Vector3::new(i1, j1, h11),
-        Vector3::new(i1, j1, 0.0),
+        Vector3::new(i1, j1, z_base),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j1, h01),
-        Vector3::new(i, j1, 0.0),
-        Vector3::new(i1, j1, 0.0),
+        Vector3::new(i, j1, z_base),
+        Vector3::new(i1, j1, z_base),
     ));
 }
 
