@@ -1,0 +1,58 @@
+use crate::error::{Lib3mfError, Result};
+use crate::model::{Build, BuildItem};
+use crate::parser::component_parser::parse_transform;
+use crate::parser::xml_parser::{XmlParser, get_attribute, get_attribute_u32};
+
+use glam::Mat4;
+use quick_xml::events::Event;
+use std::borrow::Cow;
+use std::io::BufRead;
+
+pub fn parse_build<R: BufRead>(parser: &mut XmlParser<R>) -> Result<Build> {
+    let mut build = Build::default();
+
+    loop {
+        match parser.read_next_event()? {
+            Event::Start(e) | Event::Empty(e) if e.name().as_ref() == b"item" => {
+                let object_id = crate::model::ResourceId(get_attribute_u32(&e, b"objectid")?);
+                let transform = if let Some(s) = get_attribute(&e, b"transform") {
+                    parse_transform(&s)?
+                } else {
+                    Mat4::IDENTITY
+                };
+
+                let part_number =
+                    get_attribute(&e, b"partnumber").map(|s: Cow<str>| s.into_owned());
+                let uuid = crate::parser::xml_parser::get_attribute_uuid(&e)?;
+                // Try "path" or "p:path"
+                let path = get_attribute(&e, b"path")
+                    .or_else(|| get_attribute(&e, b"p:path"))
+                    .map(|s: Cow<str>| s.into_owned());
+
+                let printable = get_attribute(&e, b"printable").and_then(|s| match s.as_ref() {
+                    "1" => Some(true),
+                    "0" => Some(false),
+                    _ => None,
+                });
+
+                build.items.push(BuildItem {
+                    object_id,
+                    part_number,
+                    uuid,
+                    path,
+                    transform,
+                    printable,
+                });
+            }
+            Event::End(e) if e.name().as_ref() == b"build" => break,
+            Event::Eof => {
+                return Err(Lib3mfError::Validation(
+                    "Unexpected EOF in build".to_string(),
+                ));
+            }
+            _ => {}
+        }
+    }
+
+    Ok(build)
+}
