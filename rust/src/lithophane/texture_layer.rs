@@ -43,10 +43,27 @@ pub fn generate_texture_layer(image: &RgbaImage, config: &LithophaneConfig) -> R
 
     // Merge all row meshes with pre-allocation
     let total_triangles: usize = row_meshes.iter().map(|m| m.triangle_count()).sum();
-    let mut final_mesh = Mesh::with_capacity(total_triangles);
+    let mut final_mesh = Mesh::with_capacity(total_triangles + 2);
     for row_mesh in row_meshes {
         final_mesh.merge_owned(row_mesh);
     }
+
+    // Close the bottom face to produce a watertight solid.
+    // Without this the mesh is open, causing slicers to misread bounding-box dimensions.
+    let pw = config.texture_pixel_width;
+    let max_x = (width as f64 - 1.0) * pw;
+    let max_y = (height as f64 - 1.0) * pw;
+    // Winding order chosen so the normal points in the -Z direction (outward bottom).
+    final_mesh.add_triangle(Triangle::new(
+        Vector3::new(0.0, 0.0, 0.0),
+        Vector3::new(0.0, max_y, 0.0),
+        Vector3::new(max_x, max_y, 0.0),
+    ));
+    final_mesh.add_triangle(Triangle::new(
+        Vector3::new(0.0, 0.0, 0.0),
+        Vector3::new(max_x, max_y, 0.0),
+        Vector3::new(max_x, 0.0, 0.0),
+    ));
 
     Ok(final_mesh)
 }
@@ -68,7 +85,6 @@ fn process_texture_row(
     let pixel_width = config.texture_pixel_width;
     let min_thickness = config.texture_min_thickness;
     let max_thickness = config.texture_max_thickness;
-    let z_offset = config.total_color_layer_height();
 
     for x in 0..width - 1 {
         let i = x as f64 * pixel_width;
@@ -76,10 +92,10 @@ fn process_texture_row(
         let i1 = (x + 1) as f64 * pixel_width;
         let j1 = (y + 1) as f64 * pixel_width;
 
-        let h00 = z_offset + get_pixel_height(image, x, y, min_thickness, max_thickness);
-        let h10 = z_offset + get_pixel_height(image, x + 1, y, min_thickness, max_thickness);
-        let h01 = z_offset + get_pixel_height(image, x, y + 1, min_thickness, max_thickness);
-        let h11 = z_offset + get_pixel_height(image, x + 1, y + 1, min_thickness, max_thickness);
+        let h00 = get_pixel_height(image, x, y, min_thickness, max_thickness);
+        let h10 = get_pixel_height(image, x + 1, y, min_thickness, max_thickness);
+        let h01 = get_pixel_height(image, x, y + 1, min_thickness, max_thickness);
+        let h11 = get_pixel_height(image, x + 1, y + 1, min_thickness, max_thickness);
 
         // Create two triangles for this quad
         let t1 = Triangle::new(
@@ -99,16 +115,16 @@ fn process_texture_row(
 
         // Add edge triangles for borders
         if x == 0 {
-            add_left_edge(&mut mesh, i, j, j1, h00, h01, z_offset);
+            add_left_edge(&mut mesh, i, j, j1, h00, h01, 0.0);
         }
         if y == 0 {
-            add_top_edge(&mut mesh, i, i1, j, h00, h10, z_offset);
+            add_top_edge(&mut mesh, i, i1, j, h00, h10, 0.0);
         }
         if x == width - 2 {
-            add_right_edge(&mut mesh, i1, j, j1, h10, h11, z_offset);
+            add_right_edge(&mut mesh, i1, j, j1, h10, h11, 0.0);
         }
         if y == height - 2 {
-            add_bottom_edge(&mut mesh, i, i1, j1, h01, h11, z_offset);
+            add_bottom_edge(&mut mesh, i, i1, j1, h01, h11, 0.0);
         }
     }
 
@@ -207,22 +223,24 @@ mod tests {
     fn test_generate_texture_layer_2x2() {
         // 2x2 image produces 1x1 grid of quads = 2 surface triangles
         // Plus edge triangles: left(2) + top(2) + right(2) + bottom(2) = 8
-        // Total = 2 + 8 = 10
+        // Plus bottom face: 2
+        // Total = 2 + 8 + 2 = 12
         let image = create_uniform_image(2, 2, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 10);
+        assert_eq!(mesh.triangle_count(), 12);
     }
 
     #[test]
     fn test_generate_texture_layer_3x3() {
         // 3x3 image produces 2x2 grid of quads = 4 quads * 2 triangles = 8 surface triangles
         // Edge triangles: left(2*2) + top(2*2) + right(2*2) + bottom(2*2) = 16
-        // Total = 8 + 16 = 24
+        // Plus bottom face: 2
+        // Total = 8 + 16 + 2 = 26
         let image = create_uniform_image(3, 3, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 24);
+        assert_eq!(mesh.triangle_count(), 26);
     }
 
     #[test]
