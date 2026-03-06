@@ -222,13 +222,40 @@ fn get_or_add_vertex(
     }
 }
 
+/// Generiert das `Metadata/model_settings.config` XML für Bambu Studio.
+///
+/// Bambu Studio weist Objekte Filamentslots via dieser Datei zu (nicht via
+/// ColorGroup+pid/pindex). Ohne diese Datei zeigen alle Objekte "Fila. 1".
+///
+/// Der `extruder`-Wert ist 1-basiert: Index in `colors` + 1.
+/// Objekte ohne Farbe (Grundplatte) erhalten extruder=1 als Fallback.
+fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> String {
+    let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
+    for (idx, layer) in layers.iter().enumerate() {
+        let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
+        let extruder = layer
+            .hex_color
+            .as_deref()
+            .and_then(|hex| colors.iter().position(|&c| c == hex))
+            .map(|i| i + 1) // 1-basiert
+            .unwrap_or(1);
+        xml.push_str(&format!(
+            "  <object id=\"{}\">\n    <metadata key=\"name\" value=\"{}\"/>\n    <metadata key=\"extruder\" value=\"{}\"/>\n  </object>\n",
+            object_id, layer.name, extruder
+        ));
+    }
+    xml.push_str("</config>");
+    xml
+}
+
 /// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
 ///
 /// Jeder Layer mit einem `hex_color` wird als Objekt mit Farbzuweisung in der
 /// 3MF-Datei gespeichert. Bambu Studio erkennt diese Farben beim Import
 /// automatisch und ordnet sie den nächstgelegenen AMS-Slots zu.
 ///
-/// Layer ohne Farbe (Grundplatte, Textur) werden als farblose Objekte exportiert.
+/// Zusätzlich wird `Metadata/model_settings.config` generiert, damit Bambu Studio
+/// die Filamentslot-Zuweisung pro Objekt korrekt lesen kann.
 ///
 /// # Arguments
 ///
@@ -249,6 +276,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         ResourceId, Unit,
     };
     use std::fs::File;
+    use std::io::Cursor;
 
     let mut model = Model {
         unit: Unit::Millimeter,
@@ -343,10 +371,36 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         });
     }
 
-    let file = File::create(output_path).map_err(PixestlError::Io)?;
+    // Schritt 1: 3MF-Modell in Puffer schreiben (Two-Pass für Bambu-Metadaten)
+    let mut buf: Vec<u8> = Vec::new();
     model
-        .write(file)
+        .write(Cursor::new(&mut buf))
         .map_err(|e| PixestlError::Other(e.to_string()))?;
+
+    // Schritt 2: Bambu model_settings.config generieren
+    let config_xml = generate_model_settings_config(layers, &colors);
+
+    // Schritt 3: Puffer als ZIP öffnen, alle Einträge in Ausgabe-ZIP kopieren
+    //            und Metadata/model_settings.config hinzufügen
+    let output_file = File::create(output_path).map_err(PixestlError::Io)?;
+    let mut zip_out = zip::ZipWriter::new(output_file);
+    let mut zip_in = zip::ZipArchive::new(Cursor::new(buf)).map_err(PixestlError::Zip)?;
+
+    for i in 0..zip_in.len() {
+        let entry = zip_in.by_index_raw(i).map_err(PixestlError::Zip)?;
+        zip_out.raw_copy_file(entry).map_err(PixestlError::Zip)?;
+    }
+
+    let options =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+    zip_out
+        .start_file("Metadata/model_settings.config", options)
+        .map_err(PixestlError::Zip)?;
+    zip_out
+        .write_all(config_xml.as_bytes())
+        .map_err(PixestlError::Io)?;
+    zip_out.finish().map_err(PixestlError::Zip)?;
+
     Ok(())
 }
 
@@ -472,6 +526,88 @@ mod tests {
             "Max Z vertex should be ~1.8mm; content snippet: {}",
             &content[..500.min(content.len())]
         );
+    }
+
+    #[test]
+    fn test_export_to_3mf_bambu_model_settings_config() {
+        use crate::lithophane::layer::NamedLayer;
+        use std::io::Read;
+        use tempfile::NamedTempFile;
+
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(1.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        ));
+        let layers = vec![
+            NamedLayer::new(
+                "layer-Red".to_string(),
+                mesh.clone(),
+                Some("#FF0000".to_string()),
+            ),
+            NamedLayer::new(
+                "layer-Green".to_string(),
+                mesh.clone(),
+                Some("#00FF00".to_string()),
+            ),
+            NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
+        ];
+
+        let tmp = NamedTempFile::new().unwrap();
+        export_to_3mf(&layers, tmp.path(), StlFormat::Binary).unwrap();
+
+        let file = std::fs::File::open(tmp.path()).unwrap();
+        let mut zip = zip::ZipArchive::new(file).unwrap();
+
+        // model_settings.config muss existieren
+        let mut config_file = zip.by_name("Metadata/model_settings.config").unwrap();
+        let mut config = String::new();
+        config_file.read_to_string(&mut config).unwrap();
+
+        // Objekt 2 = layer-Red → extruder 1
+        assert!(config.contains(r#"id="2""#), "Object id=2 must exist");
+        assert!(
+            config.contains(r#"key="extruder" value="1""#),
+            "layer-Red should be extruder 1; config: {config}"
+        );
+        // Objekt 3 = layer-Green → extruder 2
+        assert!(config.contains(r#"id="3""#), "Object id=3 must exist");
+        assert!(
+            config.contains(r#"key="extruder" value="2""#),
+            "layer-Green should be extruder 2; config: {config}"
+        );
+        // Objekt 4 = layer-plate (kein hex_color) → extruder 1 (Fallback)
+        assert!(config.contains(r#"id="4""#), "Object id=4 must exist");
+    }
+
+    #[test]
+    fn test_generate_model_settings_config() {
+        let mesh = Mesh::new();
+        let layers = vec![
+            NamedLayer::new(
+                "layer-A".to_string(),
+                mesh.clone(),
+                Some("#AA0000".to_string()),
+            ),
+            NamedLayer::new(
+                "layer-B".to_string(),
+                mesh.clone(),
+                Some("#00BB00".to_string()),
+            ),
+            NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
+        ];
+        let colors = vec!["#AA0000", "#00BB00"];
+        let xml = generate_model_settings_config(&layers, &colors);
+
+        assert!(xml.contains(r#"id="2""#));
+        assert!(xml.contains(r#"value="1""#)); // extruder 1 für layer-A
+        assert!(xml.contains(r#"id="3""#));
+        assert!(xml.contains(r#"value="2""#)); // extruder 2 für layer-B
+        assert!(xml.contains(r#"id="4""#)); // layer-plate, extruder=1 Fallback
+        assert!(xml.starts_with("<?xml"));
+        assert!(xml.contains("<config>"));
+        assert!(xml.ends_with("</config>"));
     }
 
     #[test]

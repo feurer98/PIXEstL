@@ -81,9 +81,10 @@ impl LithophaneGenerator {
 
         if let Some(ref texture_img) = texture_image {
             let texture_mesh = texture_layer::generate_texture_layer(texture_img, &self.config)?;
-            layers.push(NamedLayer::without_color(
+            layers.push(NamedLayer::new(
                 "layer-texture".to_string(),
                 texture_mesh,
+                Some(self.config.texture_color.clone()),
             ));
         }
 

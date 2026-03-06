@@ -85,15 +85,18 @@ Parameter fuer die CMYK-Farbschichten.
 
 Parameter fuer die Texturschicht (Helligkeitsrelief).
 
-| Parameter               | Standard | Beschreibung                                        |
-|-------------------------|----------|-----------------------------------------------------|
-| `--texture-pixel-width` | `0.25`   | Breite eines Texturpixels in mm                     |
-| `--texture-min`         | `0.3`    | Minimale Texturdicke in mm (hellster Punkt)          |
-| `--texture-max`         | `1.8`    | Maximale Texturdicke in mm (dunkelster Punkt)        |
-| `--no-texture`          | -        | Texturschicht deaktivieren (nur Farbe generieren)    |
+| Parameter               | Standard    | Beschreibung                                        |
+|-------------------------|-------------|-----------------------------------------------------|
+| `--texture-pixel-width` | `0.25`      | Breite eines Texturpixels in mm                     |
+| `--texture-min`         | `0.3`       | Minimale Texturdicke in mm (hellster Punkt)          |
+| `--texture-max`         | `1.8`       | Maximale Texturdicke in mm (dunkelster Punkt)        |
+| `--texture-color`       | `#FFFFFF`   | Filamentfarbe der Texturschicht als Hex-Code (einfarbig, z.B. weißes Filament) |
+| `--no-texture`          | -           | Texturschicht deaktivieren (nur Farbe generieren)    |
 
 !!! info "Texturschicht erklaert"
     Die Texturschicht erzeugt das klassische Lithophanie-Relief: Dunkle Bereiche sind dicker (weniger Lichtdurchlass), helle Bereiche duenner. Sie verleiht dem Bild **Tiefe und Kontrast**, unabhaengig von der Farbschicht.
+
+    Die Texturschicht ist immer **einfarbig** – typisch weißes Filament (`#FFFFFF`). Farbe kommt ausschließlich über die Farbschicht. Mit `--texture-color` kann das Filament der Texturschicht angepasst werden.
 
 !!! example "Nur Farbe (ohne Texturschicht)"
     ```bash

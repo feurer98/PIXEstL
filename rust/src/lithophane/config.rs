@@ -50,6 +50,8 @@ pub struct LithophaneConfig {
     pub texture_max_thickness: f64,
     /// Ob eine Texturschicht generiert werden soll
     pub texture_layer: bool,
+    /// Filamentfarbe der Texturschicht als Hex-Code (z.B. "#FFFFFF" für weißes Filament)
+    pub texture_color: String,
     /// Dicke der Basisplatte in mm
     pub plate_thickness: f64,
     /// Methode zur Pixel-Erstellung (Additive oder Full)
@@ -83,6 +85,7 @@ impl Default for LithophaneConfig {
             texture_min_thickness: 0.3,
             texture_max_thickness: 1.8,
             texture_layer: true,
+            texture_color: "#FFFFFF".to_string(),
             plate_thickness: 0.2,
             pixel_creation_method: PixelCreationMethod::Additive,
             color_number: 0,
