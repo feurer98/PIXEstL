@@ -230,8 +230,7 @@ fn get_or_add_vertex(
 /// Der `extruder`-Wert ist 1-basiert: Index in `colors` + 1.
 /// Objekte ohne Farbe (Grundplatte) erhalten extruder=1 als Fallback.
 fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> String {
-    let mut xml =
-        String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
+    let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
     for (idx, layer) in layers.iter().enumerate() {
         let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
         let extruder = layer
@@ -385,16 +384,15 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     //            und Metadata/model_settings.config hinzufügen
     let output_file = File::create(output_path).map_err(PixestlError::Io)?;
     let mut zip_out = zip::ZipWriter::new(output_file);
-    let mut zip_in =
-        zip::ZipArchive::new(Cursor::new(buf)).map_err(PixestlError::Zip)?;
+    let mut zip_in = zip::ZipArchive::new(Cursor::new(buf)).map_err(PixestlError::Zip)?;
 
     for i in 0..zip_in.len() {
         let entry = zip_in.by_index_raw(i).map_err(PixestlError::Zip)?;
         zip_out.raw_copy_file(entry).map_err(PixestlError::Zip)?;
     }
 
-    let options = zip::write::SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let options =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     zip_out
         .start_file("Metadata/model_settings.config", options)
         .map_err(PixestlError::Zip)?;
@@ -543,8 +541,16 @@ mod tests {
             Vector3::new(0.0, 1.0, 0.0),
         ));
         let layers = vec![
-            NamedLayer::new("layer-Red".to_string(), mesh.clone(), Some("#FF0000".to_string())),
-            NamedLayer::new("layer-Green".to_string(), mesh.clone(), Some("#00FF00".to_string())),
+            NamedLayer::new(
+                "layer-Red".to_string(),
+                mesh.clone(),
+                Some("#FF0000".to_string()),
+            ),
+            NamedLayer::new(
+                "layer-Green".to_string(),
+                mesh.clone(),
+                Some("#00FF00".to_string()),
+            ),
             NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
         ];
 
@@ -579,8 +585,16 @@ mod tests {
     fn test_generate_model_settings_config() {
         let mesh = Mesh::new();
         let layers = vec![
-            NamedLayer::new("layer-A".to_string(), mesh.clone(), Some("#AA0000".to_string())),
-            NamedLayer::new("layer-B".to_string(), mesh.clone(), Some("#00BB00".to_string())),
+            NamedLayer::new(
+                "layer-A".to_string(),
+                mesh.clone(),
+                Some("#AA0000".to_string()),
+            ),
+            NamedLayer::new(
+                "layer-B".to_string(),
+                mesh.clone(),
+                Some("#00BB00".to_string()),
+            ),
             NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
         ];
         let colors = vec!["#AA0000", "#00BB00"];
@@ -590,7 +604,7 @@ mod tests {
         assert!(xml.contains(r#"value="1""#)); // extruder 1 für layer-A
         assert!(xml.contains(r#"id="3""#));
         assert!(xml.contains(r#"value="2""#)); // extruder 2 für layer-B
-        assert!(xml.contains(r#"id="4""#));    // layer-plate, extruder=1 Fallback
+        assert!(xml.contains(r#"id="4""#)); // layer-plate, extruder=1 Fallback
         assert!(xml.starts_with("<?xml"));
         assert!(xml.contains("<config>"));
         assert!(xml.ends_with("</config>"));
