@@ -277,7 +277,7 @@ optional = true
 version = "1.5"
 
 [dependencies.glam]
-version = "0.31.0"
+version = "0.32"
 features = ["serde"]
 
 [dependencies.lexical-core]

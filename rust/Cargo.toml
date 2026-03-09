@@ -36,7 +36,7 @@ zip = "8"
 
 # 3MF export
 lib3mf-core = "0.3"
-glam = "0.31"
+glam = "0.32"
 
 [patch.crates-io]
 lib3mf-core = { path = "vendor/lib3mf-core" }
