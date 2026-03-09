@@ -267,6 +267,18 @@ fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> Str
          \x20   <metadata key=\"plater_id\" value=\"1\"/>\n\
          \x20   <metadata key=\"locked\" value=\"false\"/>\n",
     );
+
+    // Filament-Einträge: definiert Anzahl und Farben der Filament-Slots für Bambu Studio.
+    // Ohne diese Einträge erstellt Bambu nur 4 Standard-Slots (ein AMS), und
+    // extruder-Werte > 4 fallen auf 1 zurück.
+    for (i, color) in colors.iter().enumerate() {
+        xml.push_str(&format!(
+            "    <filament id=\"{}\" type=\"PLA\" color=\"{}\" used_m=\"0\" used_g=\"0\"/>\n",
+            i + 1,
+            color
+        ));
+    }
+
     for (idx, _layer) in layers.iter().enumerate() {
         let object_id = (idx + 2) as u32;
         let identify_id = (idx + 1) as u32;
@@ -615,6 +627,16 @@ mod tests {
         );
         // Objekt 4 = layer-plate (kein hex_color) → extruder 1 (Fallback)
         assert!(config.contains(r#"id="4""#), "Object id=4 must exist");
+
+        // Filament-Einträge für Bambu Studio Slot-Erkennung
+        assert!(
+            config.contains(r##"<filament id="1" type="PLA" color="#FF0000""##),
+            "Filament 1 (Red) entry missing; config: {config}"
+        );
+        assert!(
+            config.contains(r##"<filament id="2" type="PLA" color="#00FF00""##),
+            "Filament 2 (Green) entry missing; config: {config}"
+        );
     }
 
     #[test]
@@ -654,9 +676,76 @@ mod tests {
         assert!(xml.contains("object_id"));
         assert!(xml.contains("identify_id"));
 
+        // Filament-Einträge müssen im Plate-Abschnitt vorhanden sein
+        assert!(
+            xml.contains(r##"<filament id="1" type="PLA" color="#AA0000""##),
+            "Filament 1 entry missing; config: {xml}"
+        );
+        assert!(
+            xml.contains(r##"<filament id="2" type="PLA" color="#00BB00""##),
+            "Filament 2 entry missing; config: {xml}"
+        );
+
         assert!(xml.starts_with("<?xml"));
         assert!(xml.contains("<config>"));
         assert!(xml.ends_with("</config>"));
+    }
+
+    #[test]
+    fn test_generate_model_settings_config_many_colors() {
+        let mesh = Mesh::new();
+        let colors_list = [
+            "#000000", "#0086D6", "#69B1CF", "#F5A0B8", "#D7C599", "#E5008E", "#FFEA00",
+            "#FFFFFF",
+        ];
+        let mut layers: Vec<NamedLayer> = colors_list
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                NamedLayer::new(
+                    format!("layer-{}", i + 1),
+                    mesh.clone(),
+                    Some(c.to_string()),
+                )
+            })
+            .collect();
+        layers.push(NamedLayer::new(
+            "layer-plate".to_string(),
+            mesh.clone(),
+            None,
+        ));
+
+        let colors: Vec<&str> = colors_list.iter().copied().collect();
+        let xml = generate_model_settings_config(&layers, &colors);
+
+        // Alle 8 Extruder-Werte müssen korrekt zugewiesen sein
+        for i in 1..=8 {
+            assert!(
+                xml.contains(&format!(r#"value="{i}""#)),
+                "Extruder value {i} missing; config: {xml}"
+            );
+        }
+
+        // Alle 8 Filament-Einträge müssen im Plate-Abschnitt vorhanden sein
+        for (i, color) in colors_list.iter().enumerate() {
+            assert!(
+                xml.contains(&format!(
+                    r#"<filament id="{}" type="PLA" color="{}""#,
+                    i + 1,
+                    color
+                )),
+                "Filament {} entry missing; config: {xml}",
+                i + 1
+            );
+        }
+
+        // Plate-Objekt (ohne Farbe) fällt auf extruder=1 zurück
+        // object_id für plate = 10 (8 Farblayer + 1 plate, +2 offset → 11, aber plate ist index 8 → 10)
+        let plate_object_id = (colors_list.len() + 2) as u32;
+        assert!(
+            xml.contains(&format!(r#"id="{plate_object_id}""#)),
+            "Plate object id={plate_object_id} missing; config: {xml}"
+        );
     }
 
     #[test]
