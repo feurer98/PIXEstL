@@ -262,15 +262,21 @@ fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> Str
     }
 
     // Plate-Abschnitt mit model_instance pro Objekt (verknüpft 3MF-ID ↔ Bambu-ID)
-    xml.push_str(
+    // filament_map: Reihenfolge der Filament-Slots (1-basiert, space-separated).
+    // Bambu Studio nutzt diesen Wert um die Anzahl der Projekt-Filamente zu bestimmen.
+    let filament_map: String = (1..=colors.len())
+        .map(|i| i.to_string())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    xml.push_str(&format!(
         "  <plate>\n\
          \x20   <metadata key=\"plater_id\" value=\"1\"/>\n\
-         \x20   <metadata key=\"locked\" value=\"false\"/>\n",
-    );
+         \x20   <metadata key=\"locked\" value=\"false\"/>\n\
+         \x20   <metadata key=\"filament_map\" value=\"{filament_map}\"/>\n",
+    ));
 
-    // Filament-Einträge: definiert Anzahl und Farben der Filament-Slots für Bambu Studio.
-    // Ohne diese Einträge erstellt Bambu nur 4 Standard-Slots (ein AMS), und
-    // extruder-Werte > 4 fallen auf 1 zurück.
+    // Filament-Einträge: definiert Farben der Filament-Slots für Bambu Studio.
     for (i, color) in colors.iter().enumerate() {
         xml.push_str(&format!(
             "    <filament id=\"{}\" type=\"PLA\" color=\"{}\" used_m=\"0\" used_g=\"0\"/>\n",
