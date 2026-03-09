@@ -29,6 +29,7 @@ fn format_transform_matrix(mat: &glam::Mat4) -> String {
 }
 
 impl Model {
+    /// Serializes the model to XML, writing the `<model>` document to the given writer.
     pub fn write_xml<W: Write>(
         &self,
         writer: W,
@@ -103,15 +104,15 @@ impl Model {
 
         // Write material resources first (colorgroups, basematerials, textures, etc.)
         for color_group in self.resources.iter_color_groups() {
-            xml.start_element("m:colorgroup")
+            xml.start_element("colorgroup")
                 .attr("id", &color_group.id.0.to_string())
                 .write_start()?;
             for color in &color_group.colors {
-                xml.start_element("m:color")
+                xml.start_element("color")
                     .attr("color", &color.to_hex())
                     .write_empty()?;
             }
-            xml.end_element("m:colorgroup")?;
+            xml.end_element("colorgroup")?;
         }
 
         for base_materials in self.resources.iter_base_materials() {
@@ -269,13 +270,12 @@ impl Model {
                         obj_elem = obj_elem.attr("volumetricstackid", &vsid.0.to_string());
                     }
 
-                    if let Some(ref pid) = obj.pid {
+                    if let Some(pid) = obj.pid {
                         obj_elem = obj_elem.attr("pid", &pid.0.to_string());
                     }
                     if let Some(pindex) = obj.pindex {
                         obj_elem = obj_elem.attr("pindex", &pindex.to_string());
                     }
-
                     if let Some(pid) = obj.part_number.as_ref() {
                         obj_elem = obj_elem.attr("partnumber", pid);
                     }

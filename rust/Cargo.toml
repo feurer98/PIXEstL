@@ -35,7 +35,7 @@ thiserror = "2"
 zip = "8"
 
 # 3MF export
-lib3mf-core = "0.3"
+lib3mf-core = "0.4"
 glam = "0.32"
 
 [patch.crates-io]
