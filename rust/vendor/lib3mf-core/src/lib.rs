@@ -73,15 +73,15 @@
 //! ```toml
 //! # Cargo.toml - minimal build (no crypto, no parallel)
 //! [dependencies]
-//! lib3mf-core = "0.1"
+//! lib3mf-core = "0.4"
 //!
 //! # Cargo.toml - with crypto support
 //! [dependencies]
-//! lib3mf-core = { version = "0.1", features = ["crypto"] }
+//! lib3mf-core = { version = "0.4", features = ["crypto"] }
 //!
 //! # Cargo.toml - full-featured build
 //! [dependencies]
-//! lib3mf-core = { version = "0.1", features = ["full"] }
+//! lib3mf-core = { version = "0.4", features = ["full"] }
 //! ```
 //!
 //! ## Modules
@@ -152,6 +152,7 @@ pub mod crypto;
 pub mod error;
 pub mod model;
 pub mod parser;
+/// Utility types and functions (model diffing, hardware detection, XML canonicalization).
 pub mod utils;
 pub mod validation;
 pub mod writer;

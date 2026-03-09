@@ -11,8 +11,9 @@
 
 [package]
 edition = "2024"
+rust-version = "1.88"
 name = "lib3mf-core"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Steve Scargall"]
 build = false
 autolib = false
@@ -138,6 +139,10 @@ name = "bambu_integration"
 path = "tests/bambu_integration.rs"
 
 [[test]]
+name = "beamlattice_radius_roundtrip"
+path = "tests/beamlattice_radius_roundtrip.rs"
+
+[[test]]
 name = "beamlattice_roundtrip"
 path = "tests/beamlattice_roundtrip.rs"
 
@@ -218,6 +223,10 @@ name = "repair_test"
 path = "tests/repair_test.rs"
 
 [[test]]
+name = "resolve_meshes_integration"
+path = "tests/resolve_meshes_integration.rs"
+
+[[test]]
 name = "roundtrip_benchy"
 path = "tests/roundtrip_benchy.rs"
 
@@ -238,12 +247,20 @@ name = "stats_benchy"
 path = "tests/stats_benchy.rs"
 
 [[test]]
+name = "streaming_extension_test"
+path = "tests/streaming_extension_test.rs"
+
+[[test]]
 name = "streaming_test"
 path = "tests/streaming_test.rs"
 
 [[test]]
 name = "validation_test"
 path = "tests/validation_test.rs"
+
+[[test]]
+name = "vendor_namespace_roundtrip"
+path = "tests/vendor_namespace_roundtrip.rs"
 
 [[test]]
 name = "verification_test"
@@ -262,6 +279,11 @@ name = "core_bench"
 path = "benches/core_bench.rs"
 harness = false
 
+[[bench]]
+name = "memory_bench"
+path = "benches/memory_bench.rs"
+harness = false
+
 [dependencies.aes-gcm]
 version = "0.10.3"
 optional = true
@@ -277,7 +299,7 @@ optional = true
 version = "1.5"
 
 [dependencies.glam]
-version = "0.31.0"
+version = "0.32"
 features = ["serde"]
 
 [dependencies.lexical-core]
@@ -346,6 +368,9 @@ default-features = false
 
 [dev-dependencies.criterion]
 version = "0.5"
+
+[dev-dependencies.peakmem-alloc]
+version = "0.3"
 
 [dev-dependencies.proptest]
 version = "1.6.0"
