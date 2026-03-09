@@ -224,13 +224,21 @@ fn get_or_add_vertex(
 
 /// Generiert das `Metadata/model_settings.config` XML für Bambu Studio.
 ///
-/// Bambu Studio weist Objekte Filamentslots via dieser Datei zu (nicht via
-/// ColorGroup+pid/pindex). Ohne diese Datei zeigen alle Objekte "Fila. 1".
+/// Bambu Studio verknüpft Objekte mit Filamentslots über drei Elemente:
+/// 1. `<object id="N">` mit `<metadata key="extruder" value="M"/>` (Filamentslot)
+/// 2. `<part id="1" subtype="normal_part">` — Bambu erwartet mindestens ein Part,
+///    sonst wird der Extruder-Wert ignoriert
+/// 3. `<plate>` mit `<model_instance>` — verknüpft 3MF-Objekt-IDs mit Bambu-
+///    internen identify_ids; ohne diesen Abschnitt werden die Objekte nicht
+///    erkannt und alle fallen auf Fila. 1 zurück
 ///
+/// Die object-IDs beginnen bei 2 (ID 1 = ColorGroup-Resource).
 /// Der `extruder`-Wert ist 1-basiert: Index in `colors` + 1.
 /// Objekte ohne Farbe (Grundplatte) erhalten extruder=1 als Fallback.
 fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> String {
     let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
+
+    // Object-Einträge mit part-Sub-Elementen (zwingend für Bambu-Erkennung)
     for (idx, layer) in layers.iter().enumerate() {
         let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
         let extruder = layer
@@ -240,10 +248,38 @@ fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> Str
             .map(|i| i + 1) // 1-basiert
             .unwrap_or(1);
         xml.push_str(&format!(
-            "  <object id=\"{}\">\n    <metadata key=\"name\" value=\"{}\"/>\n    <metadata key=\"extruder\" value=\"{}\"/>\n  </object>\n",
-            object_id, layer.name, extruder
+            "  <object id=\"{object_id}\">\n\
+             \x20   <metadata key=\"name\" value=\"{name}\"/>\n\
+             \x20   <metadata key=\"extruder\" value=\"{extruder}\"/>\n\
+             \x20   <part id=\"1\" subtype=\"normal_part\">\n\
+             \x20     <metadata key=\"name\" value=\"{name}\"/>\n\
+             \x20     <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n\
+             \x20     <metadata key=\"source_volume_id\" value=\"0\"/>\n\
+             \x20   </part>\n\
+             \x20 </object>\n",
+            name = layer.name,
         ));
     }
+
+    // Plate-Abschnitt mit model_instance pro Objekt (verknüpft 3MF-ID ↔ Bambu-ID)
+    xml.push_str(
+        "  <plate>\n\
+         \x20   <metadata key=\"plater_id\" value=\"1\"/>\n\
+         \x20   <metadata key=\"locked\" value=\"false\"/>\n",
+    );
+    for (idx, _layer) in layers.iter().enumerate() {
+        let object_id = (idx + 2) as u32;
+        let identify_id = (idx + 1) as u32;
+        xml.push_str(&format!(
+            "    <model_instance>\n\
+             \x20     <metadata key=\"object_id\" value=\"{object_id}\"/>\n\
+             \x20     <metadata key=\"instance_id\" value=\"0\"/>\n\
+             \x20     <metadata key=\"identify_id\" value=\"{identify_id}\"/>\n\
+             \x20   </model_instance>\n"
+        ));
+    }
+    xml.push_str("  </plate>\n");
+
     xml.push_str("</config>");
     xml
 }
@@ -600,11 +636,24 @@ mod tests {
         let colors = vec!["#AA0000", "#00BB00"];
         let xml = generate_model_settings_config(&layers, &colors);
 
+        // Objekt-IDs und Extruder-Zuweisung
         assert!(xml.contains(r#"id="2""#));
         assert!(xml.contains(r#"value="1""#)); // extruder 1 für layer-A
         assert!(xml.contains(r#"id="3""#));
         assert!(xml.contains(r#"value="2""#)); // extruder 2 für layer-B
         assert!(xml.contains(r#"id="4""#)); // layer-plate, extruder=1 Fallback
+
+        // Part-Sub-Elemente müssen vorhanden sein (Bambu-Pflicht)
+        assert!(xml.contains(r#"subtype="normal_part""#));
+        assert!(xml.contains("source_volume_id"));
+        assert!(xml.contains("matrix"));
+
+        // Plate-Abschnitt mit model_instance (Bambu-Verknüpfung)
+        assert!(xml.contains("<plate>"));
+        assert!(xml.contains("plater_id"));
+        assert!(xml.contains("object_id"));
+        assert!(xml.contains("identify_id"));
+
         assert!(xml.starts_with("<?xml"));
         assert!(xml.contains("<config>"));
         assert!(xml.ends_with("</config>"));
