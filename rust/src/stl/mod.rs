@@ -701,8 +701,7 @@ mod tests {
     fn test_generate_model_settings_config_many_colors() {
         let mesh = Mesh::new();
         let colors_list = [
-            "#000000", "#0086D6", "#69B1CF", "#F5A0B8", "#D7C599", "#E5008E", "#FFEA00",
-            "#FFFFFF",
+            "#000000", "#0086D6", "#69B1CF", "#F5A0B8", "#D7C599", "#E5008E", "#FFEA00", "#FFFFFF",
         ];
         let mut layers: Vec<NamedLayer> = colors_list
             .iter()
@@ -721,7 +720,7 @@ mod tests {
             None,
         ));
 
-        let colors: Vec<&str> = colors_list.iter().copied().collect();
+        let colors: Vec<&str> = colors_list.to_vec();
         let xml = generate_model_settings_config(&layers, &colors);
 
         // Alle 8 Extruder-Werte müssen korrekt zugewiesen sein
