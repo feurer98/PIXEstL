@@ -6,6 +6,7 @@
 pub mod cli;
 pub mod color;
 pub mod error;
+pub mod filament;
 pub mod image;
 pub mod lithophane;
 pub mod palette;

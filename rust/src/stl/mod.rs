@@ -10,6 +10,7 @@
 //! erstellt, das je eine `.stl`-Datei pro Layer enthält.
 
 use crate::error::{PixestlError, Result};
+use crate::filament::FilamentMapping;
 use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
 use crate::lithophane::layer::NamedLayer;
 use std::collections::HashMap;
@@ -224,82 +225,19 @@ fn get_or_add_vertex(
 
 /// Generiert das `Metadata/model_settings.config` XML für Bambu Studio.
 ///
-/// Bambu Studio verknüpft Objekte mit Filamentslots über drei Elemente:
-/// 1. `<object id="N">` mit `<metadata key="extruder" value="M"/>` (Filamentslot)
-/// 2. `<part id="1" subtype="normal_part">` — Bambu erwartet mindestens ein Part,
-///    sonst wird der Extruder-Wert ignoriert
-/// 3. `<plate>` mit `<model_instance>` — verknüpft 3MF-Objekt-IDs mit Bambu-
-///    internen identify_ids; ohne diesen Abschnitt werden die Objekte nicht
-///    erkannt und alle fallen auf Fila. 1 zurück
-///
-/// Die object-IDs beginnen bei 2 (ID 1 = ColorGroup-Resource).
-/// Der `extruder`-Wert ist 1-basiert: Index in `colors` + 1.
-/// Objekte ohne Farbe (Grundplatte) erhalten extruder=1 als Fallback.
+/// Delegiert an `FilamentMapping::generate_model_settings_config()`.
+/// Wird nur noch für Abwärtskompatibilität in Tests verwendet.
+#[cfg(test)]
 fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> String {
-    let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
-
-    // Object-Einträge mit part-Sub-Elementen (zwingend für Bambu-Erkennung)
-    for (idx, layer) in layers.iter().enumerate() {
-        let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
-        let extruder = layer
-            .hex_color
-            .as_deref()
-            .and_then(|hex| colors.iter().position(|&c| c == hex))
-            .map(|i| i + 1) // 1-basiert
-            .unwrap_or(1);
-        xml.push_str(&format!(
-            "  <object id=\"{object_id}\">\n\
-             \x20   <metadata key=\"name\" value=\"{name}\"/>\n\
-             \x20   <metadata key=\"extruder\" value=\"{extruder}\"/>\n\
-             \x20   <part id=\"1\" subtype=\"normal_part\">\n\
-             \x20     <metadata key=\"name\" value=\"{name}\"/>\n\
-             \x20     <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n\
-             \x20     <metadata key=\"source_volume_id\" value=\"0\"/>\n\
-             \x20   </part>\n\
-             \x20 </object>\n",
-            name = layer.name,
-        ));
-    }
-
-    // Plate-Abschnitt mit model_instance pro Objekt (verknüpft 3MF-ID ↔ Bambu-ID)
-    // filament_map: Reihenfolge der Filament-Slots (1-basiert, space-separated).
-    // Bambu Studio nutzt diesen Wert um die Anzahl der Projekt-Filamente zu bestimmen.
-    let filament_map: String = (1..=colors.len())
-        .map(|i| i.to_string())
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    xml.push_str(&format!(
-        "  <plate>\n\
-         \x20   <metadata key=\"plater_id\" value=\"1\"/>\n\
-         \x20   <metadata key=\"locked\" value=\"false\"/>\n\
-         \x20   <metadata key=\"filament_map\" value=\"{filament_map}\"/>\n",
-    ));
-
-    // Filament-Einträge: definiert Farben der Filament-Slots für Bambu Studio.
-    for (i, color) in colors.iter().enumerate() {
-        xml.push_str(&format!(
-            "    <filament id=\"{}\" type=\"PLA\" color=\"{}\" used_m=\"0\" used_g=\"0\"/>\n",
-            i + 1,
-            color
-        ));
-    }
-
-    for (idx, _layer) in layers.iter().enumerate() {
-        let object_id = (idx + 2) as u32;
-        let identify_id = (idx + 1) as u32;
-        xml.push_str(&format!(
-            "    <model_instance>\n\
-             \x20     <metadata key=\"object_id\" value=\"{object_id}\"/>\n\
-             \x20     <metadata key=\"instance_id\" value=\"0\"/>\n\
-             \x20     <metadata key=\"identify_id\" value=\"{identify_id}\"/>\n\
-             \x20   </model_instance>\n"
-        ));
-    }
-    xml.push_str("  </plate>\n");
-
-    xml.push_str("</config>");
-    xml
+    // Legacy-Wrapper: baut ein FilamentMapping aus den übergebenen Farben
+    let mapping = FilamentMapping::from_layers(layers);
+    // Verify that the mapping produces the same color order
+    debug_assert_eq!(
+        mapping.colors().iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        colors,
+        "FilamentMapping color order mismatch"
+    );
+    mapping.generate_model_settings_config(layers)
 }
 
 /// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
@@ -332,20 +270,15 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     use std::fs::File;
     use std::io::Cursor;
 
+    // Filament-Zuordnung zentral berechnen
+    let filament_mapping = FilamentMapping::from_layers(layers);
+
     let mut model = Model {
         unit: Unit::Millimeter,
         ..Default::default()
     };
 
-    // Unique Farben sammeln (Reihenfolge erster Auftreten)
-    let mut colors: Vec<&str> = Vec::new();
-    for layer in layers {
-        if let Some(ref hex) = layer.hex_color {
-            if !colors.contains(&hex.as_str()) {
-                colors.push(hex.as_str());
-            }
-        }
-    }
+    let colors = filament_mapping.colors();
 
     let color_group_id = ResourceId(1);
     if !colors.is_empty() {
@@ -395,7 +328,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         let pindex = layer
             .hex_color
             .as_deref()
-            .and_then(|hex| colors.iter().position(|&c| c == hex))
+            .and_then(|hex| colors.iter().position(|c| c == hex))
             .map(|i| i as u32);
         let pid = pindex.map(|_| color_group_id);
 
@@ -431,11 +364,12 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         .write(Cursor::new(&mut buf))
         .map_err(|e| PixestlError::Other(e.to_string()))?;
 
-    // Schritt 2: Bambu model_settings.config generieren
-    let config_xml = generate_model_settings_config(layers, &colors);
+    // Schritt 2: Bambu-Konfigurationsdateien generieren
+    let model_config_xml = filament_mapping.generate_model_settings_config(layers);
+    let project_config = filament_mapping.generate_project_settings_config();
 
     // Schritt 3: Puffer als ZIP öffnen, alle Einträge in Ausgabe-ZIP kopieren
-    //            und Metadata/model_settings.config hinzufügen
+    //            und Bambu-Metadaten hinzufügen
     let output_file = File::create(output_path).map_err(PixestlError::Io)?;
     let mut zip_out = zip::ZipWriter::new(output_file);
     let mut zip_in = zip::ZipArchive::new(Cursor::new(buf)).map_err(PixestlError::Zip)?;
@@ -447,12 +381,25 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
 
     let options =
         zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+
+    // model_settings.config: Objekt-zu-Extruder-Zuordnung
     zip_out
         .start_file("Metadata/model_settings.config", options)
         .map_err(PixestlError::Zip)?;
     zip_out
-        .write_all(config_xml.as_bytes())
+        .write_all(model_config_xml.as_bytes())
         .map_err(PixestlError::Io)?;
+
+    // project_settings.config: Projekt-Filamente (Farben, Typen)
+    // Ohne diese Datei verwendet Bambu Studio die Standard-Druckerprofil-Filamente
+    // und ignoriert zusätzliche Extruder-Zuweisungen über 4 Slots hinaus.
+    zip_out
+        .start_file("Metadata/project_settings.config", options)
+        .map_err(PixestlError::Zip)?;
+    zip_out
+        .write_all(project_config.as_bytes())
+        .map_err(PixestlError::Io)?;
+
     zip_out.finish().map_err(PixestlError::Zip)?;
 
     Ok(())
@@ -615,9 +562,12 @@ mod tests {
         let mut zip = zip::ZipArchive::new(file).unwrap();
 
         // model_settings.config muss existieren
-        let mut config_file = zip.by_name("Metadata/model_settings.config").unwrap();
-        let mut config = String::new();
-        config_file.read_to_string(&mut config).unwrap();
+        let config = {
+            let mut config_file = zip.by_name("Metadata/model_settings.config").unwrap();
+            let mut config = String::new();
+            config_file.read_to_string(&mut config).unwrap();
+            config
+        };
 
         // Objekt 2 = layer-Red → extruder 1
         assert!(config.contains(r#"id="2""#), "Object id=2 must exist");
@@ -634,14 +584,33 @@ mod tests {
         // Objekt 4 = layer-plate (kein hex_color) → extruder 1 (Fallback)
         assert!(config.contains(r#"id="4""#), "Object id=4 must exist");
 
-        // Filament-Einträge für Bambu Studio Slot-Erkennung
+        // Filament-Einträge für Bambu Studio Slot-Erkennung (RGBA)
         assert!(
-            config.contains(r##"<filament id="1" type="PLA" color="#FF0000""##),
-            "Filament 1 (Red) entry missing; config: {config}"
+            config.contains(r##"<filament id="1" type="PLA" color="#FF0000FF""##),
+            "Filament 1 (Red) RGBA entry missing; config: {config}"
         );
         assert!(
-            config.contains(r##"<filament id="2" type="PLA" color="#00FF00""##),
-            "Filament 2 (Green) entry missing; config: {config}"
+            config.contains(r##"<filament id="2" type="PLA" color="#00FF00FF""##),
+            "Filament 2 (Green) RGBA entry missing; config: {config}"
+        );
+
+        // project_settings.config muss existieren (für Filament-Erkennung in Bambu Studio)
+        let project_config = {
+            let mut project_file = zip
+                .by_name("Metadata/project_settings.config")
+                .expect("project_settings.config must exist in 3MF");
+            let mut buf = String::new();
+            project_file.read_to_string(&mut buf).unwrap();
+            buf
+        };
+
+        assert!(
+            project_config.contains("filament_colour = #FF0000FF;#00FF00FF"),
+            "project_settings.config must contain RGBA filament colors; got: {project_config}"
+        );
+        assert!(
+            project_config.contains("filament_type = PLA;PLA"),
+            "project_settings.config must contain filament types; got: {project_config}"
         );
     }
 
@@ -682,13 +651,13 @@ mod tests {
         assert!(xml.contains("object_id"));
         assert!(xml.contains("identify_id"));
 
-        // Filament-Einträge müssen im Plate-Abschnitt vorhanden sein
+        // Filament-Einträge müssen im Plate-Abschnitt vorhanden sein (RGBA)
         assert!(
-            xml.contains(r##"<filament id="1" type="PLA" color="#AA0000""##),
+            xml.contains(r##"<filament id="1" type="PLA" color="#AA0000FF""##),
             "Filament 1 entry missing; config: {xml}"
         );
         assert!(
-            xml.contains(r##"<filament id="2" type="PLA" color="#00BB00""##),
+            xml.contains(r##"<filament id="2" type="PLA" color="#00BB00FF""##),
             "Filament 2 entry missing; config: {xml}"
         );
 
@@ -731,13 +700,18 @@ mod tests {
             );
         }
 
-        // Alle 8 Filament-Einträge müssen im Plate-Abschnitt vorhanden sein
+        // Alle 8 Filament-Einträge müssen im Plate-Abschnitt vorhanden sein (RGBA)
         for (i, color) in colors_list.iter().enumerate() {
+            let rgba = if color.len() == 7 {
+                format!("{}FF", color)
+            } else {
+                color.to_string()
+            };
             assert!(
                 xml.contains(&format!(
                     r#"<filament id="{}" type="PLA" color="{}""#,
                     i + 1,
-                    color
+                    rgba
                 )),
                 "Filament {} entry missing; config: {xml}",
                 i + 1
