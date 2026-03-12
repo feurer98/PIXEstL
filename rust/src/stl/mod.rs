@@ -604,14 +604,20 @@ mod tests {
             buf
         };
 
-        assert!(
-            project_config.contains("filament_colour = #FF0000FF;#00FF00FF"),
-            "project_settings.config must contain RGBA filament colors; got: {project_config}"
-        );
-        assert!(
-            project_config.contains("filament_type = PLA;PLA"),
-            "project_settings.config must contain filament types; got: {project_config}"
-        );
+        // project_settings.config ist JSON (nicht INI)
+        let json: serde_json::Value = serde_json::from_str(&project_config)
+            .expect("project_settings.config must be valid JSON");
+        let colours = json["filament_colour"]
+            .as_array()
+            .expect("filament_colour must be a JSON array");
+        assert_eq!(colours.len(), 2, "Expected 2 filament colors");
+        assert_eq!(colours[0].as_str().unwrap(), "#FF0000FF");
+        assert_eq!(colours[1].as_str().unwrap(), "#00FF00FF");
+        let types = json["filament_type"]
+            .as_array()
+            .expect("filament_type must be a JSON array");
+        assert_eq!(types.len(), 2);
+        assert_eq!(types[0].as_str().unwrap(), "PLA");
     }
 
     #[test]
