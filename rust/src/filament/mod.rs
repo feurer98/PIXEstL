@@ -76,10 +76,7 @@ impl FilamentMapping {
 
     /// Extruder-Index (1-basiert) für einen Layer.
     pub fn extruder_for_layer(&self, layer_index: usize) -> u32 {
-        self.extruder_indices
-            .get(layer_index)
-            .copied()
-            .unwrap_or(1)
+        self.extruder_indices.get(layer_index).copied().unwrap_or(1)
     }
 
     /// Generiert `Metadata/model_settings.config` XML für Bambu Studio.
@@ -161,11 +158,7 @@ impl FilamentMapping {
     /// Format: JSON-Objekt (kein INI/XML), wie von BambuStudio/OrcaSlicer erwartet.
     /// Siehe `lib3mf-core::parser::bambu_config::parse_project_settings`.
     pub fn generate_project_settings_config(&self) -> String {
-        let colours: Vec<String> = self
-            .colors
-            .iter()
-            .map(|c| Self::hex_to_rgba(c))
-            .collect();
+        let colours: Vec<String> = self.colors.iter().map(|c| Self::hex_to_rgba(c)).collect();
         let types: Vec<&str> = self.colors.iter().map(|_| "PLA").collect();
 
         let json = serde_json::json!({
@@ -212,8 +205,7 @@ mod tests {
     fn test_filament_mapping_many_colors() {
         let mesh = Mesh::new();
         let colors_list = [
-            "#000000", "#0086D6", "#69B1CF", "#D7C599", "#E5008E", "#F5A0B8", "#FFEA00",
-            "#FFFFFF",
+            "#000000", "#0086D6", "#69B1CF", "#D7C599", "#E5008E", "#F5A0B8", "#FFEA00", "#FFFFFF",
         ];
         let mut layers: Vec<NamedLayer> = colors_list
             .iter()
@@ -317,8 +309,8 @@ mod tests {
         let config = mapping.generate_project_settings_config();
 
         // JSON format: parseable by BambuStudio/OrcaSlicer
-        let json: serde_json::Value = serde_json::from_str(&config)
-            .expect("project_settings.config must be valid JSON");
+        let json: serde_json::Value =
+            serde_json::from_str(&config).expect("project_settings.config must be valid JSON");
 
         let colours = json["filament_colour"]
             .as_array()

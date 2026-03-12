@@ -233,7 +233,11 @@ fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> Str
     let mapping = FilamentMapping::from_layers(layers);
     // Verify that the mapping produces the same color order
     debug_assert_eq!(
-        mapping.colors().iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        mapping
+            .colors()
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>(),
         colors,
         "FilamentMapping color order mismatch"
     );
