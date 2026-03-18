@@ -1,12 +1,12 @@
-# Important! This is a personal project that was ported with Claude. Neither the documentation nor the code has been fully checked. WIP
+> **Note:** This is a personal project ported with Claude. Neither the documentation nor the code has been fully checked. WIP
 
 # PIXEstL - Rust Edition
 
 **Color Lithophane Generator for 3D Printing with Multi-Filament Support**
 
-Rust port of the original [PIXEstL]([https://github.com/gaugo87/PIXEstL]) Java application. Generate stunning color lithophanes for 3D printing using CMYK-based additive color mixing with automatic material system (AMS) support.
+Rust port of the original [PIXEstL](https://github.com/gaugo87/PIXEstL) Java application by [gaugo87](https://github.com/gaugo87). Generate stunning color lithophanes for 3D printing using CMYK-based additive color mixing with automatic material system (AMS) support.
 
-[![Tests](https://img.shields.io/badge/tests-149%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-233%20passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -22,6 +22,15 @@ Rust port of the original [PIXEstL]([https://github.com/gaugo87/PIXEstL]) Java a
 - ⚡ **Run-Length Encoding** - Optimized mesh generation
 
 ## Quick Start
+
+### Prerequisites
+
+- **Rust 1.75 or later** — Install via [rustup](https://rustup.rs/):
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+- Modern CPU (multi-core recommended)
+- ~100 MB RAM for typical images
 
 ### Installation
 
@@ -51,6 +60,8 @@ This will:
 2. Load color palette from `palette.json`
 3. Generate color lithophane layers
 4. Export STL files to `lithophane.zip`
+
+A ready-to-use palette file is provided in the `palette/` directory of the repository.
 
 ## Usage
 
@@ -231,7 +242,7 @@ Typical generation time for 100x100mm lithophane: **~5-15 seconds**
 ## Testing
 
 ```bash
-# Run all tests (149 tests)
+# Run all tests (233 tests)
 cargo test
 
 # Run with output
@@ -246,9 +257,9 @@ cargo test --release
 
 ## Requirements
 
-- Rust 1.75 or later
+- Rust 1.75 or later — Install via [rustup](https://rustup.rs/)
 - Modern CPU (multi-core recommended)
-- ~100MB RAM for typical images
+- ~100 MB RAM for typical images
 
 ## Comparison with Java Version
 
@@ -271,13 +282,14 @@ MIT License - See LICENSE file
 
 ## Credits
 
-- Original PIXEstL: [feurer98](https://github.com/feurer98)
-- Rust Port: PIXEstL Contributors
+- Original PIXEstL Java application: [gaugo87](https://github.com/gaugo87) — [gaugo87/PIXEstL](https://github.com/gaugo87/PIXEstL)
+- Rust Port: [feurer98](https://github.com/feurer98)
 - Based on CMYK additive color mixing research
 - Bambu Lab AMS integration
 
 ## Links
 
-- [Original PIXEstL (Java)](https://github.com/feurer98/PIXEstL)
+- [Original PIXEstL (Java)](https://github.com/gaugo87/PIXEstL)
+- [Rust Port](https://github.com/feurer98/PIXEstL)
 - [Bambu Lab](https://bambulab.com/)
 - [Color Lithophanes](https://www.instructables.com/Color-Lithophane/)
