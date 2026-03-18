@@ -74,7 +74,7 @@ A ready-to-use palette file is provided in the `palette/` directory of the repos
 
 **Image Dimensions:**
 - `-w, --width <MM>` - Destination width in millimeters (0 = auto)
-- `-h, --height <MM>` - Destination height in millimeters (0 = auto)
+- `-H, --height <MM>` - Destination height in millimeters (0 = auto)
 
 **Color Layer Settings:**
 - `--color-pixel-width <MM>` - Size of each color pixel (default: 0.8)
@@ -84,8 +84,9 @@ A ready-to-use palette file is provided in the `palette/` directory of the repos
 
 **Texture Layer Settings:**
 - `--texture-pixel-width <MM>` - Size of each texture pixel (default: 0.25)
-- `--texture-min <MM>` - Minimum thickness (default: 0.3)
-- `--texture-max <MM>` - Maximum thickness (default: 1.8)
+- `--texture-min <MM>` - Minimum texture thickness (default: 0.3)
+- `--texture-max <MM>` - Maximum texture thickness (default: 1.8)
+- `--texture-color <HEX>` - Filament color for texture layer (default: #FFFFFF)
 - `--no-texture` - Disable texture layer
 
 **Export Options:**
@@ -95,8 +96,13 @@ A ready-to-use palette file is provided in the `palette/` directory of the repos
 **Advanced Options:**
 - `--color-distance <rgb|cie-lab>` - Color matching method (default: cie-lab)
 - `--pixel-method <additive|full>` - Color creation method (default: additive)
-- `--color-number <N>` - Limit colors for AMS (0 = all)
+- `--color-number <N>` - Limit colors per AMS group (0 = all)
+- `-C, --curve <DEG>` - Curve angle in degrees for cylindrical lithophanes (default: 0)
 - `--debug` - Enable debug output
+
+**Special Modes:**
+- `--palette-info` - Show palette information and exit (no input/output required)
+- `--calibrate` - Generate a calibration pattern instead of processing an image
 
 ### Examples
 
@@ -108,7 +114,7 @@ pixestl -i photo.jpg -p palette.json -o output.zip -w 100
 **80x120mm with texture layer only:**
 ```bash
 pixestl -i landscape.png -p palette.json -o output.zip \
-  -w 80 -h 120 --no-color
+  -w 80 -H 120 --no-color
 ```
 
 **High-resolution color lithophane:**
