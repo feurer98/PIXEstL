@@ -10,23 +10,26 @@ use crate::lithophane::geometry::{Mesh, Triangle, Vector3};
 use image::RgbaImage;
 use rayon::prelude::*;
 
-/// Calculates pixel height based on brightness
+/// Precomputes a row of pixel heights to avoid redundant RGB→CMYK conversions.
 ///
-/// Uses K (black) component from CMYK conversion
-fn get_pixel_height(
+/// Each pixel's height is computed once. Within a quad row, each pixel appears
+/// as a corner of up to four quads, so precomputing saves ~3x conversions.
+fn precompute_row_heights(
     image: &RgbaImage,
-    x: u32,
     y: u32,
+    width: u32,
     min_thickness: f64,
     max_thickness: f64,
-) -> f64 {
-    let pixel = image.get_pixel(x, y);
-    let rgb = Rgb::new(pixel[0], pixel[1], pixel[2]);
-    let cmyk = rgb.to_cmyk();
-
-    // K value (darkness) determines thickness
-    let k = cmyk.k;
-    k * (max_thickness - min_thickness) + min_thickness
+) -> Vec<f64> {
+    let range = max_thickness - min_thickness;
+    (0..width)
+        .map(|x| {
+            let pixel = image.get_pixel(x, y);
+            let rgb = Rgb::new(pixel[0], pixel[1], pixel[2]);
+            let k = rgb.to_cmyk().k;
+            k * range + min_thickness
+        })
+        .collect()
 }
 
 /// Generates texture layer mesh
@@ -74,6 +77,9 @@ pub fn generate_texture_layer(image: &RgbaImage, config: &LithophaneConfig) -> R
 /// forming the surface, plus edge wall triangles along the image borders. The Z
 /// height of each vertex is determined by the pixel's CMYK K (darkness) value,
 /// creating a relief surface where darker pixels are thicker.
+///
+/// Heights for both pixel rows (`y` and `y+1`) are precomputed once to avoid
+/// redundant RGB→CMYK conversions (each pixel is a corner of up to 4 quads).
 fn process_texture_row(
     image: &RgbaImage,
     y: u32,
@@ -86,16 +92,21 @@ fn process_texture_row(
     let min_thickness = config.texture_min_thickness;
     let max_thickness = config.texture_max_thickness;
 
+    // Precompute heights for the two rows this quad-row touches.
+    let heights_y = precompute_row_heights(image, y, width, min_thickness, max_thickness);
+    let heights_y1 = precompute_row_heights(image, y + 1, width, min_thickness, max_thickness);
+
     for x in 0..width - 1 {
+        let xu = x as usize;
         let i = x as f64 * pixel_width;
         let j = y as f64 * pixel_width;
         let i1 = (x + 1) as f64 * pixel_width;
         let j1 = (y + 1) as f64 * pixel_width;
 
-        let h00 = get_pixel_height(image, x, y, min_thickness, max_thickness);
-        let h10 = get_pixel_height(image, x + 1, y, min_thickness, max_thickness);
-        let h01 = get_pixel_height(image, x, y + 1, min_thickness, max_thickness);
-        let h11 = get_pixel_height(image, x + 1, y + 1, min_thickness, max_thickness);
+        let h00 = heights_y[xu];
+        let h10 = heights_y[xu + 1];
+        let h01 = heights_y1[xu];
+        let h11 = heights_y1[xu + 1];
 
         // Create two triangles for this quad
         let t1 = Triangle::new(
@@ -195,11 +206,17 @@ mod tests {
         })
     }
 
+    /// Test helper: compute a single pixel's height via the precomputed row path.
+    fn pixel_height(image: &RgbaImage, x: u32, y: u32, min: f64, max: f64) -> f64 {
+        let row = precompute_row_heights(image, y, image.width(), min, max);
+        row[x as usize]
+    }
+
     #[test]
     fn test_get_pixel_height_white() {
         // White pixel: K=0, should return min_thickness
         let image = create_uniform_image(1, 1, [255, 255, 255]);
-        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        let height = pixel_height(&image, 0, 0, 0.3, 1.8);
         assert_relative_eq!(height, 0.3, epsilon = 0.01);
     }
 
@@ -207,7 +224,7 @@ mod tests {
     fn test_get_pixel_height_black() {
         // Black pixel: K=1, should return max_thickness
         let image = create_uniform_image(1, 1, [0, 0, 0]);
-        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        let height = pixel_height(&image, 0, 0, 0.3, 1.8);
         assert_relative_eq!(height, 1.8, epsilon = 0.01);
     }
 
@@ -215,7 +232,7 @@ mod tests {
     fn test_get_pixel_height_gray() {
         // Mid-gray: K ≈ 0.5, height should be between min and max
         let image = create_uniform_image(1, 1, [128, 128, 128]);
-        let height = get_pixel_height(&image, 0, 0, 0.3, 1.8);
+        let height = pixel_height(&image, 0, 0, 0.3, 1.8);
         assert!(height > 0.3 && height < 1.8);
     }
 
@@ -249,8 +266,8 @@ mod tests {
         let light = create_uniform_image(1, 1, [200, 200, 200]);
         let dark = create_uniform_image(1, 1, [50, 50, 50]);
 
-        let h_light = get_pixel_height(&light, 0, 0, 0.3, 1.8);
-        let h_dark = get_pixel_height(&dark, 0, 0, 0.3, 1.8);
+        let h_light = pixel_height(&light, 0, 0, 0.3, 1.8);
+        let h_dark = pixel_height(&dark, 0, 0, 0.3, 1.8);
 
         assert!(
             h_dark > h_light,

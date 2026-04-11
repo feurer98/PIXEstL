@@ -3,11 +3,8 @@
 use crate::color::ColorDistanceMethod;
 use crate::error::Result;
 use crate::image::load_image;
-use crate::lithophane::{LithophaneConfig, NamedLayer, PixelCreationMethod as LithoPixelMethod};
-use crate::palette::{
-    PaletteColorEntry, PaletteLoader, PaletteLoaderConfig,
-    PixelCreationMethod as PalettePixelMethod,
-};
+use crate::lithophane::{LithophaneConfig, NamedLayer};
+use crate::palette::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
 use crate::stl::{export_to_3mf, export_to_dir, export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
@@ -49,20 +46,11 @@ pub enum CliPixelMethod {
     Full,
 }
 
-impl From<CliPixelMethod> for LithoPixelMethod {
+impl From<CliPixelMethod> for PixelCreationMethod {
     fn from(method: CliPixelMethod) -> Self {
         match method {
-            CliPixelMethod::Additive => LithoPixelMethod::Additive,
-            CliPixelMethod::Full => LithoPixelMethod::Full,
-        }
-    }
-}
-
-impl From<CliPixelMethod> for PalettePixelMethod {
-    fn from(method: CliPixelMethod) -> Self {
-        match method {
-            CliPixelMethod::Additive => PalettePixelMethod::Additive,
-            CliPixelMethod::Full => PalettePixelMethod::Full,
+            CliPixelMethod::Additive => PixelCreationMethod::Additive,
+            CliPixelMethod::Full => PixelCreationMethod::Full,
         }
     }
 }
@@ -195,16 +183,10 @@ impl Cli {
             texture_layer: !self.no_texture,
             texture_color: self.texture_color.clone(),
             plate_thickness: self.plate_thickness,
-            pixel_creation_method: self.pixel_method.into(),
             color_number: self.color_number,
             color_distance_method: self.color_distance.into(),
             curve: self.curve,
             debug: self.debug,
-            low_memory: false,
-            layer_thread_max_number: 0,
-            row_thread_number: std::thread::available_parallelism()
-                .map(|n| n.get())
-                .unwrap_or(1),
         }
     }
 

@@ -114,9 +114,9 @@ impl PaletteLoader {
     ) -> Vec<String> {
         let mut warnings = Vec::new();
 
-        // Sort entries for deterministic output
+        // Sortierung für deterministische Ausgabe
         let mut entries: Vec<_> = palette_data.iter().collect();
-        entries.sort_by_key(|(hex, _)| (*hex).clone());
+        entries.sort_by(|(a, _), (b, _)| a.cmp(b));
 
         for (hex_code, entry) in &entries {
             if !entry.active {
@@ -209,12 +209,12 @@ impl PaletteLoader {
 
         let mut palette = Palette::new(config.nb_layers);
 
-        // Build hex codes map
+        // Hex-Code → Farbname-Zuordnung aufbauen
         let mut hex_codes_map = HashMap::new();
         for (hex_code, entry) in &palette_data {
             hex_codes_map.insert(hex_code.clone(), entry.name.clone());
         }
-        palette.set_hex_codes(hex_codes_map.clone());
+        palette.set_hex_codes(hex_codes_map);
 
         // Collect active colors
         let mut hex_color_list: Vec<String> = palette_data
@@ -385,7 +385,7 @@ impl PaletteLoader {
 
         // Factorize and add all combinations
         for mut combi in final_combi_list.clone() {
-            combi.factorize();
+            combi.factorize()?;
             palette.add_combi(combi);
         }
 

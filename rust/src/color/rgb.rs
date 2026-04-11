@@ -70,7 +70,8 @@ impl Rgb {
         format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
     }
 
-    /// Converts RGB to normalized floating point values (0.0-1.0)
+    /// Konvertiert RGB in normalisierte Fließkommawerte (0.0–1.0).
+    #[inline]
     #[must_use]
     pub fn to_f64(&self) -> (f64, f64, f64) {
         (
@@ -80,7 +81,8 @@ impl Rgb {
         )
     }
 
-    /// Creates RGB from normalized floating point values (0.0-1.0)
+    /// Erzeugt RGB aus normalisierten Fließkommawerten (0.0–1.0).
+    #[inline]
     #[must_use]
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_f64(r: f64, g: f64, b: f64) -> Self {

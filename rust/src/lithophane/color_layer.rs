@@ -39,6 +39,21 @@ fn has_transparent_neighbor(image: &RgbaImage, x: u32, y: u32) -> bool {
     false
 }
 
+/// Shared context for processing a single row of color pixels.
+///
+/// Groups the immutable parameters that `process_row` needs, replacing
+/// a long positional parameter list.
+struct ColorRowContext<'a> {
+    image: &'a RgbaImage,
+    palette: &'a Palette,
+    hex_codes: &'a [String],
+    config: &'a LithophaneConfig,
+    width: u32,
+    has_transparency: bool,
+    layer_offset: i32,
+    layer_max: i32,
+}
+
 /// Generates mesh for a single color layer
 ///
 /// Based on Java CSGThreadColorRow.run()
@@ -53,22 +68,21 @@ pub fn generate_color_layer(
     let (width, height) = image.dimensions();
     let has_transparency = crate::image::has_transparent_pixel(image);
 
+    let ctx = ColorRowContext {
+        image,
+        palette,
+        hex_codes,
+        config,
+        width,
+        has_transparency,
+        layer_offset,
+        layer_max,
+    };
+
     // Process rows in parallel
     let row_meshes: Vec<Mesh> = (0..height)
         .into_par_iter()
-        .map(|y| {
-            process_row(
-                image,
-                palette,
-                hex_codes,
-                config,
-                y,
-                width,
-                has_transparency,
-                layer_offset,
-                layer_max,
-            )
-        })
+        .map(|y| process_row(&ctx, y))
         .collect();
 
     // Merge all row meshes with pre-allocation
@@ -90,31 +104,20 @@ pub fn generate_color_layer(
 ///
 /// Transparent pixels and pixels adjacent to transparent neighbors are skipped
 /// to avoid artifacts at transparency boundaries.
-#[allow(clippy::too_many_arguments)]
-fn process_row(
-    image: &RgbaImage,
-    palette: &Palette,
-    hex_codes: &[String],
-    config: &LithophaneConfig,
-    y: u32,
-    width: u32,
-    has_transparency: bool,
-    layer_offset: i32,
-    layer_max: i32,
-) -> Mesh {
+fn process_row(ctx: &ColorRowContext<'_>, y: u32) -> Mesh {
     let mut mesh = Mesh::new();
 
-    for hex_code in hex_codes {
+    for hex_code in ctx.hex_codes {
         let mut x = 0;
 
-        while x < width {
-            let pixel = image.get_pixel(x, y);
+        while x < ctx.width {
+            let pixel = ctx.image.get_pixel(x, y);
             if is_pixel_transparent(pixel) {
                 x += 1;
                 continue;
             }
 
-            if has_transparency && has_transparent_neighbor(image, x, y) {
+            if ctx.has_transparency && has_transparent_neighbor(ctx.image, x, y) {
                 x += 1;
                 continue;
             }
@@ -123,12 +126,12 @@ fn process_row(
 
             // Run-length encoding
             let mut k = 1;
-            while x + k < width {
-                let next_pixel = image.get_pixel(x + k, y);
+            while x + k < ctx.width {
+                let next_pixel = ctx.image.get_pixel(x + k, y);
                 let next_rgb = Rgb::new(next_pixel[0], next_pixel[1], next_pixel[2]);
 
                 if next_rgb != pixel_rgb
-                    || (has_transparency && has_transparent_neighbor(image, x + k, y))
+                    || (ctx.has_transparency && has_transparent_neighbor(ctx.image, x + k, y))
                 {
                     break;
                 }
@@ -136,7 +139,7 @@ fn process_row(
                 k += 1;
             }
 
-            if let Some(color_combi) = palette.get_combi(&pixel_rgb) {
+            if let Some(color_combi) = ctx.palette.get_combi(&pixel_rgb) {
                 let layers = color_combi.layers_with_hex(hex_code);
 
                 for (layer_index, layer) in layers.iter().enumerate() {
@@ -150,8 +153,13 @@ fn process_row(
                         .unwrap_or(0);
 
                     let (adjusted_height, adjusted_before) =
-                        if layer_offset != -1 && layer_max != -1 {
-                            apply_layer_offset(layer_height, layer_before, layer_offset, layer_max)
+                        if ctx.layer_offset != -1 && ctx.layer_max != -1 {
+                            apply_layer_offset(
+                                layer_height,
+                                layer_before,
+                                ctx.layer_offset,
+                                ctx.layer_max,
+                            )
                         } else {
                             (layer_height, layer_before)
                         };
@@ -160,8 +168,8 @@ fn process_row(
                         continue;
                     }
 
-                    let pixel_width = config.color_pixel_width;
-                    let one_pixel_height_size = config.color_pixel_layer_thickness;
+                    let pixel_width = ctx.config.color_pixel_width;
+                    let one_pixel_height_size = ctx.config.color_pixel_layer_thickness;
                     let cur_pixel_height = one_pixel_height_size * adjusted_height as f64;
                     let cur_pixel_height_adjust =
                         (cur_pixel_height / 2.0) + (adjusted_before as f64 * one_pixel_height_size);
@@ -175,9 +183,7 @@ fn process_row(
                     let center_z = cur_pixel_height_adjust;
 
                     let center = Vector3::new(center_x, center_y, center_z);
-                    let cube = Mesh::cube(cube_width, cube_depth, cube_height, center);
-
-                    mesh.merge(&cube);
+                    mesh.add_cube(cube_width, cube_depth, cube_height, center);
                 }
             }
 

@@ -136,6 +136,18 @@ pub fn resize_image(
         )));
     }
 
+    // Guard against excessive dimensions that could cause out-of-memory.
+    // 20 000 x 20 000 = 400M pixels x 4 bytes = ~1.6 GB which is a reasonable ceiling.
+    const MAX_PIXELS: u64 = 400_000_000;
+    let total_pixels = u64::from(nb_pixel_width) * u64::from(nb_pixel_height);
+    if total_pixels > MAX_PIXELS {
+        return Err(PixestlError::Config(format!(
+            "Resulting image dimensions are too large ({nb_pixel_width}x{nb_pixel_height} = \
+             {total_pixels} pixels, max {MAX_PIXELS}). Use a smaller --width/--height or \
+             larger --color-pixel-width/--texture-pixel-width to reduce resolution."
+        )));
+    }
+
     // Use Lanczos3 for high-quality resizing
     let resized = image.resize_exact(
         nb_pixel_width,

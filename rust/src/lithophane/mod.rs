@@ -17,7 +17,7 @@ pub mod support_plate;
 pub mod texture_layer;
 
 pub use calibration::generate_calibration_pattern;
-pub use config::{LithophaneConfig, PixelCreationMethod};
+pub use config::LithophaneConfig;
 pub use generator::LithophaneGenerator;
 pub use geometry::{Mesh, Triangle, Vector3};
 pub use layer::NamedLayer;

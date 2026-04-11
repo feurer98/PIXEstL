@@ -1,6 +1,7 @@
 //! Integration tests for PIXEstL
 
-use pixestl::lithophane::{LithophaneConfig, PixelCreationMethod};
+use pixestl::lithophane::LithophaneConfig;
+use pixestl::palette::PixelCreationMethod;
 
 // ── Full Pipeline Helpers ────────────────────────────────────────────────────
 
