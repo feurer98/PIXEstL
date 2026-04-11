@@ -261,7 +261,7 @@ fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> Str
 ///
 /// # Errors
 ///
-/// Gibt `PixestlError::Io` oder `PixestlError::Other` zurück bei Schreibfehlern.
+/// Gibt `PixestlError::Io` oder `PixestlError::Export` zurück bei Schreibfehlern.
 pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     layers: &[NamedLayer],
     output_path: P,
@@ -295,7 +295,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         model
             .resources
             .add_color_group(color_group)
-            .map_err(|e| PixestlError::Other(e.to_string()))?;
+            .map_err(|e| PixestlError::Export(e.to_string()))?;
     }
 
     for (idx, layer) in layers.iter().enumerate() {
@@ -349,7 +349,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         model
             .resources
             .add_object(object)
-            .map_err(|e| PixestlError::Other(e.to_string()))?;
+            .map_err(|e| PixestlError::Export(e.to_string()))?;
 
         model.build.items.push(BuildItem {
             object_id,
@@ -380,7 +380,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
     let output_file = File::create(output_path).map_err(PixestlError::Io)?;
     model
         .write(output_file)
-        .map_err(|e| PixestlError::Other(e.to_string()))?;
+        .map_err(|e| PixestlError::Export(e.to_string()))?;
 
     Ok(())
 }
