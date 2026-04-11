@@ -249,7 +249,10 @@ mod tests {
 
         let result = layer1.combine_with(&layer2);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("different hex codes"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("different hex codes"));
     }
 
     #[test]

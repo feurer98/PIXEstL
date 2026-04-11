@@ -4,9 +4,7 @@ use crate::color::ColorDistanceMethod;
 use crate::error::Result;
 use crate::image::load_image;
 use crate::lithophane::{LithophaneConfig, NamedLayer};
-use crate::palette::{
-    PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod,
-};
+use crate::palette::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
 use crate::stl::{export_to_3mf, export_to_dir, export_to_zip, StlFormat};
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
