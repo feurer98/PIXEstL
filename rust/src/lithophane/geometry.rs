@@ -166,11 +166,19 @@ impl Mesh {
     /// * `height` - Height (Z dimension)
     /// * `center` - Center position of the cube
     pub fn cube(width: f64, depth: f64, height: f64, center: Vector3) -> Self {
+        let mut mesh = Mesh::with_capacity(12);
+        mesh.add_cube(width, depth, height, center);
+        mesh
+    }
+
+    /// Adds a cube (12 triangles) directly into this mesh, avoiding an
+    /// intermediate allocation.
+    ///
+    /// Prefer this over `Mesh::cube()` + `merge()` in hot loops.
+    pub fn add_cube(&mut self, width: f64, depth: f64, height: f64, center: Vector3) {
         let hw = width / 2.0;
         let hd = depth / 2.0;
         let hh = height / 2.0;
-
-        let mut mesh = Mesh::new();
 
         // Define 8 vertices of the cube (relative to center)
         let v000 = center + Vector3::new(-hw, -hd, -hh);
@@ -183,30 +191,28 @@ impl Mesh {
         let v111 = center + Vector3::new(hw, hd, hh);
 
         // Front face (+Y)
-        mesh.add_triangle(Triangle::new(v010, v110, v111));
-        mesh.add_triangle(Triangle::new(v010, v111, v011));
+        self.add_triangle(Triangle::new(v010, v110, v111));
+        self.add_triangle(Triangle::new(v010, v111, v011));
 
         // Back face (-Y)
-        mesh.add_triangle(Triangle::new(v000, v101, v100));
-        mesh.add_triangle(Triangle::new(v000, v001, v101));
+        self.add_triangle(Triangle::new(v000, v101, v100));
+        self.add_triangle(Triangle::new(v000, v001, v101));
 
         // Right face (+X)
-        mesh.add_triangle(Triangle::new(v100, v110, v101));
-        mesh.add_triangle(Triangle::new(v110, v111, v101));
+        self.add_triangle(Triangle::new(v100, v110, v101));
+        self.add_triangle(Triangle::new(v110, v111, v101));
 
         // Left face (-X)
-        mesh.add_triangle(Triangle::new(v000, v011, v001));
-        mesh.add_triangle(Triangle::new(v000, v010, v011));
+        self.add_triangle(Triangle::new(v000, v011, v001));
+        self.add_triangle(Triangle::new(v000, v010, v011));
 
         // Top face (+Z)
-        mesh.add_triangle(Triangle::new(v001, v101, v111));
-        mesh.add_triangle(Triangle::new(v001, v111, v011));
+        self.add_triangle(Triangle::new(v001, v101, v111));
+        self.add_triangle(Triangle::new(v001, v111, v011));
 
         // Bottom face (-Z)
-        mesh.add_triangle(Triangle::new(v000, v110, v010));
-        mesh.add_triangle(Triangle::new(v000, v100, v110));
-
-        mesh
+        self.add_triangle(Triangle::new(v000, v110, v010));
+        self.add_triangle(Triangle::new(v000, v100, v110));
     }
 }
 
