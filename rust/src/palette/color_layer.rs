@@ -1,6 +1,7 @@
 //! ColorLayer represents a single layer of a filament color in CMYK color space
 
 use crate::color::{Cmyk, Hsl};
+use crate::error::{PixestlError, Result};
 use std::cmp::Ordering;
 
 /// A single color layer with CMYK values
@@ -123,25 +124,28 @@ impl ColorLayer {
     /// Returns a new ColorLayer with the combined layer count.
     /// The hex_code and CMYK values must be identical.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the hex codes don't match
-    #[must_use]
-    pub fn combine_with(&self, other: &Self) -> Self {
-        assert_eq!(
-            self.hex_code, other.hex_code,
-            "Cannot combine layers with different hex codes"
-        );
-        assert_eq!(
-            self.cmyk, other.cmyk,
-            "Cannot combine layers with different CMYK values"
-        );
+    /// Returns an error if the hex codes or CMYK values don't match.
+    pub fn combine_with(&self, other: &Self) -> Result<Self> {
+        if self.hex_code != other.hex_code {
+            return Err(PixestlError::InvalidPalette(format!(
+                "Cannot combine layers with different hex codes: {} vs {}",
+                self.hex_code, other.hex_code
+            )));
+        }
+        if self.cmyk != other.cmyk {
+            return Err(PixestlError::InvalidPalette(format!(
+                "Cannot combine layers with different CMYK values for {}",
+                self.hex_code
+            )));
+        }
 
-        Self {
+        Ok(Self {
             hex_code: self.hex_code.clone(),
             layer: self.layer + other.layer,
             cmyk: self.cmyk,
-        }
+        })
     }
 }
 
@@ -224,7 +228,7 @@ mod tests {
         let layer1 = ColorLayer::from_cmyk("#FF0000".to_string(), 2, 0.0, 1.0, 1.0, 0.0);
         let layer2 = ColorLayer::from_cmyk("#FF0000".to_string(), 3, 0.0, 1.0, 1.0, 0.0);
 
-        let combined = layer1.combine_with(&layer2);
+        let combined = layer1.combine_with(&layer2).unwrap();
 
         assert_eq!(combined.hex_code(), "#FF0000");
         assert_eq!(combined.layer(), 5); // 2 + 3
@@ -232,12 +236,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Cannot combine layers with different hex codes")]
-    fn test_combine_with_different_hex_codes() {
+    fn test_combine_with_different_hex_codes_returns_error() {
         let layer1 = ColorLayer::from_cmyk("#FF0000".to_string(), 2, 0.0, 1.0, 1.0, 0.0);
         let layer2 = ColorLayer::from_cmyk("#00FF00".to_string(), 3, 1.0, 0.0, 1.0, 0.0);
 
-        let _ = layer1.combine_with(&layer2);
+        let result = layer1.combine_with(&layer2);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("different hex codes"));
     }
 
     #[test]

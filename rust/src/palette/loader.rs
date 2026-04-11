@@ -385,7 +385,7 @@ impl PaletteLoader {
 
         // Factorize and add all combinations
         for mut combi in final_combi_list.clone() {
-            combi.factorize();
+            combi.factorize()?;
             palette.add_combi(combi);
         }
 
