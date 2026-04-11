@@ -709,6 +709,64 @@ mod tests {
         );
     }
 
+    // ── Export error path tests ────────────────────────────────────────────
+
+    #[test]
+    fn test_export_to_dir_creates_directory_and_files() {
+        let mesh = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
+        let layers = vec![
+            NamedLayer::new("color".to_string(), mesh.clone(), Some("#FF0000".to_string())),
+            NamedLayer::without_color("plate".to_string(), mesh),
+        ];
+
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("stl_subdir");
+        export_to_dir(&layers, &out, StlFormat::Binary).unwrap();
+
+        assert!(out.join("color.stl").exists());
+        assert!(out.join("plate.stl").exists());
+    }
+
+    #[test]
+    fn test_export_to_zip_empty_layers() {
+        let layers: Vec<NamedLayer> = vec![];
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        export_to_zip(&layers, tmp.path(), StlFormat::Binary).unwrap();
+
+        let file = std::fs::File::open(tmp.path()).unwrap();
+        let archive = zip::ZipArchive::new(file).unwrap();
+        assert_eq!(archive.len(), 0);
+    }
+
+    #[test]
+    fn test_write_stl_to_failing_writer_returns_error() {
+        use std::io;
+        struct FailWriter;
+        impl Write for FailWriter {
+            fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
+                Err(io::Error::new(io::ErrorKind::BrokenPipe, "simulated failure"))
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Err(io::Error::new(io::ErrorKind::BrokenPipe, "simulated failure"))
+            }
+        }
+
+        let mut mesh = Mesh::new();
+        mesh.add_triangle(Triangle::new(
+            Vector3::zero(),
+            Vector3::new(1.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        ));
+
+        let mut writer = FailWriter;
+        let result = write_stl(&mesh, &mut writer, StlFormat::Ascii, "test");
+        assert!(result.is_err());
+
+        let mut writer = FailWriter;
+        let result = write_stl(&mesh, &mut writer, StlFormat::Binary, "test");
+        assert!(result.is_err());
+    }
+
     #[test]
     fn test_export_to_3mf_vertex_deduplication() {
         use crate::lithophane::layer::NamedLayer;
