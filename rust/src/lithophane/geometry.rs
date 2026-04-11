@@ -544,9 +544,21 @@ mod tests {
     fn test_mesh_extend() {
         let mut mesh = Mesh::new();
         let tris = vec![
-            Triangle::new(Vector3::zero(), Vector3::new(1.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0)),
-            Triangle::new(Vector3::zero(), Vector3::new(0.0, 1.0, 0.0), Vector3::new(0.0, 0.0, 1.0)),
-            Triangle::new(Vector3::zero(), Vector3::new(1.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0)),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 1.0, 0.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(0.0, 1.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
         ];
         mesh.extend(tris);
         assert_eq!(mesh.triangle_count(), 3);

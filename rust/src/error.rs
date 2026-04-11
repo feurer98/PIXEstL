@@ -106,7 +106,10 @@ mod tests {
             source: img_err,
         };
         let msg = err.to_string();
-        assert!(msg.contains("/tmp/fake.png"), "should contain the path: {msg}");
+        assert!(
+            msg.contains("/tmp/fake.png"),
+            "should contain the path: {msg}"
+        );
     }
 
     // ── From impls ──────────────────────────────────────────────────────────

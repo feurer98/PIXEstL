@@ -353,7 +353,11 @@ mod tests {
         );
         // All layers must have geometry
         for layer in &layers {
-            assert!(layer.mesh.triangle_count() > 0, "layer '{}' is empty", layer.name);
+            assert!(
+                layer.mesh.triangle_count() > 0,
+                "layer '{}' is empty",
+                layer.name
+            );
         }
     }
 
@@ -375,7 +379,11 @@ mod tests {
         let gen = LithophaneGenerator::new(config).unwrap();
         let layers = gen.generate(&image, &palette).unwrap();
 
-        assert_eq!(layers.len(), 1, "texture-only should produce exactly 1 layer");
+        assert_eq!(
+            layers.len(),
+            1,
+            "texture-only should produce exactly 1 layer"
+        );
         assert_eq!(layers[0].name, "layer-texture");
         assert!(layers[0].mesh.triangle_count() > 0);
     }
@@ -399,7 +407,11 @@ mod tests {
         let gen = LithophaneGenerator::new(config).unwrap();
         let layers = gen.generate(&image, &palette).unwrap();
 
-        assert!(layers.len() >= 3, "expected plate + color + texture, got {}", layers.len());
+        assert!(
+            layers.len() >= 3,
+            "expected plate + color + texture, got {}",
+            layers.len()
+        );
         assert!(layers.iter().any(|l| l.name == "layer-plate"));
         assert!(layers.iter().any(|l| l.name == "layer-texture"));
     }

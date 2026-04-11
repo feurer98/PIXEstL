@@ -267,16 +267,13 @@ mod tests {
             Rgb::new(0, 0, 255),
         ];
         // Pixels that are exactly palette colors should map to themselves
-        let quantized =
-            quantize_pixels(&palette, &palette, ColorDistanceMethod::CieLab).unwrap();
+        let quantized = quantize_pixels(&palette, &palette, ColorDistanceMethod::CieLab).unwrap();
         assert_eq!(quantized, palette);
     }
 
     #[test]
     fn test_quantize_image_empty_palette() {
-        let image = vec![
-            vec![Rgb::new(100, 100, 100), Rgb::new(200, 200, 200)],
-        ];
+        let image = vec![vec![Rgb::new(100, 100, 100), Rgb::new(200, 200, 200)]];
         let palette = vec![];
         let quantized = quantize_image(&image, &palette, ColorDistanceMethod::Rgb).unwrap();
         assert_eq!(quantized, image); // Unchanged

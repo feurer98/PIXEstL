@@ -715,7 +715,11 @@ mod tests {
     fn test_export_to_dir_creates_directory_and_files() {
         let mesh = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
         let layers = vec![
-            NamedLayer::new("color".to_string(), mesh.clone(), Some("#FF0000".to_string())),
+            NamedLayer::new(
+                "color".to_string(),
+                mesh.clone(),
+                Some("#FF0000".to_string()),
+            ),
             NamedLayer::without_color("plate".to_string(), mesh),
         ];
 
@@ -744,10 +748,16 @@ mod tests {
         struct FailWriter;
         impl Write for FailWriter {
             fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-                Err(io::Error::new(io::ErrorKind::BrokenPipe, "simulated failure"))
+                Err(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "simulated failure",
+                ))
             }
             fn flush(&mut self) -> io::Result<()> {
-                Err(io::Error::new(io::ErrorKind::BrokenPipe, "simulated failure"))
+                Err(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "simulated failure",
+                ))
             }
         }
 
