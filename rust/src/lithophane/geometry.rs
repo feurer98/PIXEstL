@@ -505,4 +505,93 @@ mod tests {
             assert_eq!(t_orig.v0, t_curved.v0);
         }
     }
+
+    // --- Additional edge case tests ---
+
+    #[test]
+    fn test_normalize_zero_vector_returns_zero() {
+        let v = Vector3::zero();
+        let n = v.normalize();
+        assert_eq!(n, Vector3::zero());
+    }
+
+    #[test]
+    fn test_cross_product_parallel_vectors_is_zero() {
+        let a = Vector3::new(1.0, 0.0, 0.0);
+        let b = Vector3::new(3.0, 0.0, 0.0); // parallel to a
+        let cross = a.cross(&b);
+        assert_relative_eq!(cross.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(cross.y, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(cross.z, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_mesh_merge_owned() {
+        let mut mesh1 = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
+        let mesh2 = Mesh::cube(1.0, 1.0, 1.0, Vector3::new(2.0, 0.0, 0.0));
+        mesh1.merge_owned(mesh2);
+        assert_eq!(mesh1.triangle_count(), 24); // 12 + 12
+    }
+
+    #[test]
+    fn test_mesh_with_capacity() {
+        let mesh = Mesh::with_capacity(100);
+        assert_eq!(mesh.triangle_count(), 0);
+        // Capacity is pre-allocated but not observable beyond "it doesn't crash"
+    }
+
+    #[test]
+    fn test_mesh_extend() {
+        let mut mesh = Mesh::new();
+        let tris = vec![
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 1.0, 0.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(0.0, 1.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
+        ];
+        mesh.extend(tris);
+        assert_eq!(mesh.triangle_count(), 3);
+    }
+
+    #[test]
+    fn test_vector3_sub_self_is_zero() {
+        let v = Vector3::new(42.0, -17.5, 99.9);
+        let result = v - v;
+        assert_relative_eq!(result.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(result.y, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(result.z, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_vector3_mul_zero_is_zero() {
+        let v = Vector3::new(42.0, -17.5, 99.9);
+        let result = v * 0.0;
+        assert_eq!(result, Vector3::zero());
+    }
+
+    #[test]
+    fn test_triangle_normal_perpendicular_to_edges() {
+        let t = Triangle::new(
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(3.0, 0.0, 0.0),
+            Vector3::new(0.0, 4.0, 0.0),
+        );
+        let normal = t.normal();
+        let edge1 = t.v1 - t.v0;
+        let edge2 = t.v2 - t.v0;
+        // Normal should be perpendicular to both edges
+        assert_relative_eq!(normal.dot(&edge1), 0.0, epsilon = 1e-10);
+        assert_relative_eq!(normal.dot(&edge2), 0.0, epsilon = 1e-10);
+    }
 }

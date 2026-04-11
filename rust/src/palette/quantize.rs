@@ -245,6 +245,72 @@ mod tests {
     }
 
     #[test]
+    fn test_quantize_single_color_palette() {
+        let pixels = vec![
+            Rgb::new(255, 0, 0),
+            Rgb::new(0, 255, 0),
+            Rgb::new(0, 0, 255),
+            Rgb::new(128, 128, 128),
+        ];
+        let palette = vec![Rgb::new(42, 42, 42)];
+
+        let quantized = quantize_pixels(&pixels, &palette, ColorDistanceMethod::Rgb).unwrap();
+        // Every pixel must map to the only available color
+        assert!(quantized.iter().all(|c| *c == Rgb::new(42, 42, 42)));
+    }
+
+    #[test]
+    fn test_quantize_exact_match() {
+        let palette = vec![
+            Rgb::new(255, 0, 0),
+            Rgb::new(0, 255, 0),
+            Rgb::new(0, 0, 255),
+        ];
+        // Pixels that are exactly palette colors should map to themselves
+        let quantized = quantize_pixels(&palette, &palette, ColorDistanceMethod::CieLab).unwrap();
+        assert_eq!(quantized, palette);
+    }
+
+    #[test]
+    fn test_quantize_image_empty_palette() {
+        let image = vec![vec![Rgb::new(100, 100, 100), Rgb::new(200, 200, 200)]];
+        let palette = vec![];
+        let quantized = quantize_image(&image, &palette, ColorDistanceMethod::Rgb).unwrap();
+        assert_eq!(quantized, image); // Unchanged
+    }
+
+    #[test]
+    fn test_quantize_with_stats_single_color() {
+        let pixels = vec![
+            Rgb::new(10, 20, 30),
+            Rgb::new(11, 21, 31),
+            Rgb::new(12, 22, 32),
+        ];
+        let palette = vec![Rgb::new(0, 0, 0)];
+
+        let (quantized, stats) =
+            quantize_with_stats(&pixels, &palette, ColorDistanceMethod::Rgb).unwrap();
+
+        assert_eq!(stats.colors_used, 1);
+        assert_eq!(stats.total_pixels, 3);
+        assert_eq!(stats.color_usage[&Rgb::new(0, 0, 0)], 3);
+        assert!(quantized.iter().all(|c| *c == Rgb::new(0, 0, 0)));
+    }
+
+    #[test]
+    fn test_quantize_with_stats_empty_pixels() {
+        let pixels: Vec<Rgb> = vec![];
+        let palette = vec![Rgb::new(255, 0, 0)];
+
+        let (quantized, stats) =
+            quantize_with_stats(&pixels, &palette, ColorDistanceMethod::Rgb).unwrap();
+
+        assert!(quantized.is_empty());
+        assert_eq!(stats.total_pixels, 0);
+        assert_eq!(stats.colors_used, 0);
+    }
+
+    #[test]
     fn test_quantize_cielab_vs_rgb() {
         let pixel = Rgb::new(200, 100, 50);
 
