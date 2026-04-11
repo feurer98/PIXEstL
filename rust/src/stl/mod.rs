@@ -353,11 +353,7 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
 
         model.build.items.push(BuildItem {
             object_id,
-            transform: glam::Mat4::IDENTITY,
-            part_number: None,
-            uuid: None,
-            path: None,
-            printable: None,
+            ..Default::default()
         });
     }
 
