@@ -202,7 +202,9 @@ impl Cli {
             debug: self.debug,
             low_memory: false,
             layer_thread_max_number: 0,
-            row_thread_number: num_cpus::get(),
+            row_thread_number: std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1),
         }
     }
 

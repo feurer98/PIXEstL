@@ -79,6 +79,15 @@ impl FilamentMapping {
         self.extruder_indices.get(layer_index).copied().unwrap_or(1)
     }
 
+    /// Escapes XML special characters in attribute values.
+    fn xml_escape(s: &str) -> String {
+        // Order matters: & must come first to avoid double-escaping
+        s.replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+    }
+
     /// Generiert `Metadata/model_settings.config` XML für Bambu Studio.
     ///
     /// Enthält:
@@ -94,6 +103,7 @@ impl FilamentMapping {
         for (idx, layer) in layers.iter().enumerate() {
             let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
             let extruder = self.extruder_for_layer(idx);
+            let name = Self::xml_escape(&layer.name);
             xml.push_str(&format!(
                 "  <object id=\"{object_id}\">\n\
                  \x20   <metadata key=\"name\" value=\"{name}\"/>\n\
@@ -104,7 +114,6 @@ impl FilamentMapping {
                  \x20     <metadata key=\"source_volume_id\" value=\"0\"/>\n\
                  \x20   </part>\n\
                  \x20 </object>\n",
-                name = layer.name,
             ));
         }
 
@@ -347,5 +356,42 @@ mod tests {
         assert_eq!(mapping.filament_count(), 1);
         assert_eq!(mapping.extruder_for_layer(0), 1);
         assert_eq!(mapping.extruder_for_layer(1), 1);
+    }
+
+    #[test]
+    fn test_xml_escape() {
+        assert_eq!(FilamentMapping::xml_escape("normal"), "normal");
+        assert_eq!(
+            FilamentMapping::xml_escape("layer & color"),
+            "layer &amp; color"
+        );
+        assert_eq!(FilamentMapping::xml_escape("<bold>"), "&lt;bold&gt;");
+        assert_eq!(
+            FilamentMapping::xml_escape("say \"hi\""),
+            "say &quot;hi&quot;"
+        );
+        // & must not be double-escaped
+        assert_eq!(FilamentMapping::xml_escape("a&b"), "a&amp;b");
+    }
+
+    #[test]
+    fn test_model_settings_config_xml_escaping() {
+        // A layer name with XML special characters must not produce invalid XML
+        let mesh = Mesh::new();
+        let layers = vec![NamedLayer::new(
+            "layer <Red> & \"Blue\"".to_string(),
+            mesh,
+            Some("#FF0000".to_string()),
+        )];
+        let mapping = FilamentMapping::from_layers(&layers);
+        let xml = mapping.generate_model_settings_config(&layers);
+
+        assert!(
+            xml.contains("layer &lt;Red&gt; &amp; &quot;Blue&quot;"),
+            "Special chars must be XML-escaped; got: {xml}"
+        );
+        // Must not contain raw unescaped special chars in attribute values
+        assert!(!xml.contains("\"Blue\""), "Raw quotes must be escaped");
+        assert!(!xml.contains("<Red>"), "Raw angle brackets must be escaped");
     }
 }
