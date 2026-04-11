@@ -1,10 +1,10 @@
-//! 3D geometry primitives for lithophane generation
+//! 3D-Geometrie-Primitive für die Lithophane-Erzeugung
 //!
-//! Provides Vector3, Triangle, and Mesh structures for building STL models
+//! Stellt Vector3, Triangle und Mesh bereit, um STL-Modelle aufzubauen.
 
 use std::ops::{Add, Mul, Sub};
 
-/// 3D vector
+/// 3D-Vektor
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector3 {
     pub x: f64,
@@ -13,17 +13,20 @@ pub struct Vector3 {
 }
 
 impl Vector3 {
-    /// Creates a new 3D vector
+    /// Erzeugt einen neuen 3D-Vektor.
+    #[inline]
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
 
-    /// Zero vector
+    /// Nullvektor (0, 0, 0).
+    #[inline]
     pub fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0)
     }
 
-    /// Computes the cross product with another vector
+    /// Berechnet das Kreuzprodukt mit einem anderen Vektor.
+    #[inline]
     pub fn cross(&self, other: &Vector3) -> Vector3 {
         Vector3::new(
             self.y * other.z - self.z * other.y,
@@ -32,17 +35,20 @@ impl Vector3 {
         )
     }
 
-    /// Computes the dot product with another vector
+    /// Berechnet das Skalarprodukt mit einem anderen Vektor.
+    #[inline]
     pub fn dot(&self, other: &Vector3) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
-    /// Computes the length (magnitude) of the vector
+    /// Berechnet die Länge (Betrag) des Vektors.
+    #[inline]
     pub fn length(&self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    /// Normalizes the vector to unit length
+    /// Normalisiert den Vektor auf Einheitslänge.
+    #[inline]
     pub fn normalize(&self) -> Vector3 {
         let len = self.length();
         if len > 0.0 {
@@ -56,6 +62,7 @@ impl Vector3 {
 impl Add for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn add(self, other: Vector3) -> Vector3 {
         Vector3::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
@@ -64,6 +71,7 @@ impl Add for Vector3 {
 impl Sub for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn sub(self, other: Vector3) -> Vector3 {
         Vector3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
@@ -72,12 +80,13 @@ impl Sub for Vector3 {
 impl Mul<f64> for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn mul(self, scalar: f64) -> Vector3 {
         Vector3::new(self.x * scalar, self.y * scalar, self.z * scalar)
     }
 }
 
-/// 3D triangle with vertices
+/// 3D-Dreieck mit drei Eckpunkten
 #[derive(Debug, Clone, PartialEq)]
 pub struct Triangle {
     pub v0: Vector3,
@@ -86,95 +95,100 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    /// Creates a new triangle
+    /// Erzeugt ein neues Dreieck.
+    #[inline]
     pub fn new(v0: Vector3, v1: Vector3, v2: Vector3) -> Self {
         Self { v0, v1, v2 }
     }
 
-    /// Computes the normal vector for this triangle
+    /// Berechnet den Normalenvektor dieses Dreiecks.
+    #[inline]
     pub fn normal(&self) -> Vector3 {
         let edge1 = self.v1 - self.v0;
         let edge2 = self.v2 - self.v0;
         edge1.cross(&edge2).normalize()
     }
 
-    /// Translates the triangle by a vector
+    /// Verschiebt das Dreieck um einen Offset-Vektor.
+    #[inline]
     pub fn translate(&self, offset: Vector3) -> Triangle {
         Triangle::new(self.v0 + offset, self.v1 + offset, self.v2 + offset)
     }
 }
 
-/// 3D mesh composed of triangles
+/// 3D-Mesh aus Dreiecken
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub triangles: Vec<Triangle>,
 }
 
 impl Mesh {
-    /// Creates a new empty mesh
+    /// Erzeugt ein neues, leeres Mesh.
     pub fn new() -> Self {
         Self {
             triangles: Vec::new(),
         }
     }
 
-    /// Creates a mesh with a given capacity
+    /// Erzeugt ein Mesh mit vorallokierter Kapazität.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             triangles: Vec::with_capacity(capacity),
         }
     }
 
-    /// Adds a triangle to the mesh
+    /// Fügt ein Dreieck zum Mesh hinzu.
+    #[inline]
     pub fn add_triangle(&mut self, triangle: Triangle) {
         self.triangles.push(triangle);
     }
 
-    /// Adds multiple triangles to the mesh
+    /// Fügt mehrere Dreiecke zum Mesh hinzu.
     pub fn extend(&mut self, triangles: impl IntoIterator<Item = Triangle>) {
         self.triangles.extend(triangles);
     }
 
-    /// Gets the number of triangles in the mesh
+    /// Gibt die Anzahl der Dreiecke im Mesh zurück.
+    #[inline]
     pub fn triangle_count(&self) -> usize {
         self.triangles.len()
     }
 
-    /// Translates all triangles in the mesh by a vector
+    /// Verschiebt alle Dreiecke im Mesh um einen Offset-Vektor.
     pub fn translate(&self, offset: Vector3) -> Mesh {
         Mesh {
             triangles: self.triangles.iter().map(|t| t.translate(offset)).collect(),
         }
     }
 
-    /// Merges another mesh into this one (by reference, cloning triangles)
+    /// Fügt ein anderes Mesh per Referenz zusammen (klont die Dreiecke).
     pub fn merge(&mut self, other: &Mesh) {
         self.triangles.extend(other.triangles.iter().cloned());
     }
 
-    /// Merges another mesh into this one by consuming it (no cloning)
+    /// Fügt ein anderes Mesh per Move zusammen (kein Klonen).
     pub fn merge_owned(&mut self, other: Mesh) {
         self.triangles.extend(other.triangles);
     }
 
-    /// Creates a cube mesh
+    /// Erzeugt ein Würfel-Mesh (12 Dreiecke).
     ///
-    /// # Arguments
+    /// # Argumente
     ///
-    /// * `width` - Width (X dimension)
-    /// * `depth` - Depth (Y dimension)
-    /// * `height` - Height (Z dimension)
-    /// * `center` - Center position of the cube
+    /// * `width`  - Breite (X-Achse)
+    /// * `depth`  - Tiefe (Y-Achse)
+    /// * `height` - Höhe (Z-Achse)
+    /// * `center` - Mittelpunkt des Würfels
     pub fn cube(width: f64, depth: f64, height: f64, center: Vector3) -> Self {
         let mut mesh = Mesh::with_capacity(12);
         mesh.add_cube(width, depth, height, center);
         mesh
     }
 
-    /// Adds a cube (12 triangles) directly into this mesh, avoiding an
-    /// intermediate allocation.
+    /// Fügt einen Würfel (12 Dreiecke) direkt in dieses Mesh ein,
+    /// ohne Zwischen-Allokation.
     ///
-    /// Prefer this over `Mesh::cube()` + `merge()` in hot loops.
+    /// In Hot Loops `Mesh::cube()` + `merge()` vorziehen.
     pub fn add_cube(&mut self, width: f64, depth: f64, height: f64, center: Vector3) {
         let hw = width / 2.0;
         let hd = depth / 2.0;
@@ -217,18 +231,18 @@ impl Mesh {
 }
 
 impl Mesh {
-    /// Applies a cylindrical curve transformation to the mesh.
+    /// Wendet eine zylindrische Krümmung auf das Mesh an.
     ///
-    /// Wraps the mesh around a cylinder along the X axis.
-    /// - `curve_degrees`: Arc angle in degrees (0=flat, 90=quarter, 360=full cylinder)
-    /// - `total_width`: Total width of the flat mesh in mm (the arc length)
+    /// Wickelt das Mesh um einen Zylinder entlang der X-Achse.
+    /// - `curve_degrees`: Bogenwinkel in Grad (0=flach, 90=Viertel, 360=Vollzylinder)
+    /// - `total_width`: Gesamtbreite des flachen Meshes in mm (Bogenlänge)
     ///
-    /// The Y axis remains unchanged (cylinder axis).
-    /// The X axis maps to the angular position.
-    /// The Z axis (depth/thickness) becomes the radial offset from the cylinder surface.
+    /// Y-Achse bleibt unverändert (Zylinderachse).
+    /// X-Achse wird auf die Winkelposition abgebildet.
+    /// Z-Achse (Tiefe/Dicke) wird zum radialen Abstand von der Zylinderoberfläche.
     ///
-    /// Consumes `self` and returns the transformed mesh. No extra allocation:
-    /// vertices are modified in-place before returning ownership.
+    /// Konsumiert `self` und gibt das transformierte Mesh zurück.
+    /// Keine zusätzliche Allokation – Vertices werden in-place modifiziert.
     pub fn apply_curve(mut self, curve_degrees: f64, total_width: f64) -> Self {
         if curve_degrees == 0.0 || total_width <= 0.0 {
             return self;

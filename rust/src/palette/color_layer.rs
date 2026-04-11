@@ -67,43 +67,50 @@ impl ColorLayer {
         }
     }
 
-    /// Gets the hex code
+    /// Gibt den Hex-Code zurück.
+    #[inline]
     #[must_use]
     pub fn hex_code(&self) -> &str {
         &self.hex_code
     }
 
-    /// Gets the number of layers
+    /// Gibt die Anzahl der Schichten zurück.
+    #[inline]
     #[must_use]
     pub fn layer(&self) -> u32 {
         self.layer
     }
 
-    /// Gets the CMYK values
+    /// Gibt die CMYK-Werte zurück.
+    #[inline]
     #[must_use]
     pub fn cmyk(&self) -> &Cmyk {
         &self.cmyk
     }
 
-    /// Gets the Cyan component
+    /// Gibt die Cyan-Komponente zurück.
+    #[inline]
     #[must_use]
     pub fn c(&self) -> f64 {
         self.cmyk.c
     }
 
-    /// Gets the Magenta component
+    /// Gibt die Magenta-Komponente zurück.
+    #[inline]
     #[must_use]
     pub fn m(&self) -> f64 {
         self.cmyk.m
     }
 
-    /// Gets the Yellow component
+    /// Gibt die Yellow-Komponente zurück.
+    #[inline]
     #[must_use]
     pub fn y(&self) -> f64 {
         self.cmyk.y
     }
 
-    /// Gets the Key (Black) component
+    /// Gibt die Key-Komponente (Schwarz) zurück.
+    #[inline]
     #[must_use]
     pub fn k(&self) -> f64 {
         self.cmyk.k
