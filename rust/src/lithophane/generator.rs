@@ -92,7 +92,7 @@ impl LithophaneGenerator {
         if self.config.curve > 0.0 {
             let total_width = self.compute_total_width(image);
             for layer in &mut layers {
-                layer.mesh.apply_curve(self.config.curve, total_width);
+                layer.mesh = std::mem::take(&mut layer.mesh).apply_curve(self.config.curve, total_width);
             }
         }
 
