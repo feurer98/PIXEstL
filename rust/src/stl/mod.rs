@@ -272,7 +272,6 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         ResourceId, Unit,
     };
     use std::fs::File;
-    use std::io::Cursor;
 
     // Filament-Zuordnung zentral berechnen
     let filament_mapping = FilamentMapping::from_layers(layers);
@@ -362,49 +361,26 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         });
     }
 
-    // Schritt 1: 3MF-Modell in Puffer schreiben (Two-Pass für Bambu-Metadaten)
-    let mut buf: Vec<u8> = Vec::new();
-    model
-        .write(Cursor::new(&mut buf))
-        .map_err(|e| PixestlError::Other(e.to_string()))?;
-
-    // Schritt 2: Bambu-Konfigurationsdateien generieren
+    // Bambu-Konfigurationsdateien als Attachments direkt ins Modell einfügen.
+    // lib3mf-core schreibt model.attachments automatisch ins ZIP – kein Two-Pass nötig.
     let model_config_xml = filament_mapping.generate_model_settings_config(layers);
     let project_config = filament_mapping.generate_project_settings_config();
 
-    // Schritt 3: Puffer als ZIP öffnen, alle Einträge in Ausgabe-ZIP kopieren
-    //            und Bambu-Metadaten hinzufügen
-    let output_file = File::create(output_path).map_err(PixestlError::Io)?;
-    let mut zip_out = zip::ZipWriter::new(output_file);
-    let mut zip_in = zip::ZipArchive::new(Cursor::new(buf)).map_err(PixestlError::Zip)?;
-
-    for i in 0..zip_in.len() {
-        let entry = zip_in.by_index_raw(i).map_err(PixestlError::Zip)?;
-        zip_out.raw_copy_file(entry).map_err(PixestlError::Zip)?;
-    }
-
-    let options =
-        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
-
-    // model_settings.config: Objekt-zu-Extruder-Zuordnung
-    zip_out
-        .start_file("Metadata/model_settings.config", options)
-        .map_err(PixestlError::Zip)?;
-    zip_out
-        .write_all(model_config_xml.as_bytes())
-        .map_err(PixestlError::Io)?;
-
-    // project_settings.config: Projekt-Filamente (Farben, Typen)
+    model.attachments.insert(
+        "Metadata/model_settings.config".to_string(),
+        model_config_xml.into_bytes(),
+    );
     // Ohne diese Datei verwendet Bambu Studio die Standard-Druckerprofil-Filamente
     // und ignoriert zusätzliche Extruder-Zuweisungen über 4 Slots hinaus.
-    zip_out
-        .start_file("Metadata/project_settings.config", options)
-        .map_err(PixestlError::Zip)?;
-    zip_out
-        .write_all(project_config.as_bytes())
-        .map_err(PixestlError::Io)?;
+    model.attachments.insert(
+        "Metadata/project_settings.config".to_string(),
+        project_config.into_bytes(),
+    );
 
-    zip_out.finish().map_err(PixestlError::Zip)?;
+    let output_file = File::create(output_path).map_err(PixestlError::Io)?;
+    model
+        .write(output_file)
+        .map_err(|e| PixestlError::Other(e.to_string()))?;
 
     Ok(())
 }
