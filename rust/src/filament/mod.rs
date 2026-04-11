@@ -361,9 +361,15 @@ mod tests {
     #[test]
     fn test_xml_escape() {
         assert_eq!(FilamentMapping::xml_escape("normal"), "normal");
-        assert_eq!(FilamentMapping::xml_escape("layer & color"), "layer &amp; color");
+        assert_eq!(
+            FilamentMapping::xml_escape("layer & color"),
+            "layer &amp; color"
+        );
         assert_eq!(FilamentMapping::xml_escape("<bold>"), "&lt;bold&gt;");
-        assert_eq!(FilamentMapping::xml_escape("say \"hi\""), "say &quot;hi&quot;");
+        assert_eq!(
+            FilamentMapping::xml_escape("say \"hi\""),
+            "say &quot;hi&quot;"
+        );
         // & must not be double-escaped
         assert_eq!(FilamentMapping::xml_escape("a&b"), "a&amp;b");
     }
