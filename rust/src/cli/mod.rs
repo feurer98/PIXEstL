@@ -163,11 +163,11 @@ impl Cli {
             .as_ref()
             .ok_or_else(|| PixestlError::Config("Output path (-o) is required".to_string()))?;
 
-        println!("PIXEstL - Color Lithophane Generator");
-        println!("=====================================\n");
+        println!("PIXEstL - Farblithophane-Generator");
+        println!("==================================\n");
 
-        // --- Load and validate palette ---
-        println!("Loading palette: {}", self.palette.display());
+        // --- Palette laden und validieren ---
+        println!("Lade Palette: {}", self.palette.display());
         let raw_palette = PaletteLoader::load_raw(&self.palette)?;
         self.print_palette_warnings(&raw_palette);
 
@@ -178,39 +178,39 @@ impl Cli {
             distance_method: self.color_distance,
         };
         let palette = PaletteLoader::load(&self.palette, palette_config)?;
-        println!("  Colors found: {}", palette.colors().len());
-        println!("  Color groups: {}\n", palette.hex_color_groups().len());
+        println!("  Farben gefunden: {}", palette.colors().len());
+        println!("  Farbgruppen: {}\n", palette.hex_color_groups().len());
 
-        // --- Load image and check resolution ---
-        println!("Loading image: {}", input.display());
+        // --- Bild laden und Auflösung prüfen ---
+        println!("Lade Bild: {}", input.display());
         let image = load_image(input)?;
-        println!("  Image size: {}x{} pixels", image.width(), image.height());
+        println!("  Bildgroesse: {}x{} Pixel", image.width(), image.height());
         self.print_resolution_warning(image.width(), image.height());
         println!();
 
-        // --- Generate lithophane ---
-        println!("Generating lithophane layers...");
+        // --- Lithophane generieren ---
+        println!("Generiere Lithophane-Schichten...");
         let config = self.to_lithophane_config();
         if config.curve > 0.0 {
-            println!("  Curve: {:.0} degrees", config.curve);
+            println!("  Kurve: {:.0} Grad", config.curve);
         }
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
         let layers = generator.generate(&image, &palette)?;
-        println!("  Generated {} layer(s)", layers.len());
+        println!("  {} Schicht(en) generiert", layers.len());
         for layer in &layers {
             println!(
-                "    - {}: {} triangles",
+                "    - {}: {} Dreiecke",
                 layer.name,
                 layer.mesh.triangle_count()
             );
         }
         println!();
 
-        // --- Export ---
-        println!("Exporting to: {}", output.display());
+        // --- Exportieren ---
+        println!("Exportiere nach: {}", output.display());
         self.export_layers(&layers, output)?;
 
-        println!("Done!");
+        println!("Fertig!");
         Ok(())
     }
 
