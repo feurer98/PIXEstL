@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::io::Write;
 
 /// STL-Ausgabeformat
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum StlFormat {
     /// Menschenlesbares Text-Format
     Ascii,

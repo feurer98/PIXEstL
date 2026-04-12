@@ -4,7 +4,7 @@ use crate::color::{CieLab, Rgb};
 use crate::error::PixestlError;
 
 /// Method for calculating color distance
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, clap::ValueEnum)]
 pub enum ColorDistanceMethod {
     /// RGB Euclidean distance (fast but less perceptually accurate)
     Rgb,
