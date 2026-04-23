@@ -116,7 +116,7 @@ impl PaletteLoader {
 
         // Sortierung für deterministische Ausgabe
         let mut entries: Vec<_> = palette_data.iter().collect();
-        entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+        entries.sort_by_key(|(a, _)| *a);
 
         for (hex_code, entry) in &entries {
             if !entry.active {
