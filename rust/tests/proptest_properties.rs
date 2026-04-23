@@ -64,7 +64,7 @@ mod color_roundtrips {
 
 mod color_distance_properties {
     use super::*;
-    use pixestl::color::{CieLab, ColorDistance, Rgb};
+    use pixestl::color::{CieLab, ColorDistance as _, Rgb};
 
     proptest! {
         /// Distance is symmetric: d(a,b) == d(b,a) for RGB Euclidean distance.

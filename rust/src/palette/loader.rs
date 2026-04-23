@@ -430,7 +430,7 @@ impl PaletteLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
+    use std::io::Write as _;
     use tempfile::NamedTempFile;
 
     fn create_test_palette_json() -> NamedTempFile {

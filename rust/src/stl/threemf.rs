@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_export_to_3mf_unit_and_z_range() {
-        use std::io::Read;
+        use std::io::Read as _;
         use tempfile::NamedTempFile;
 
         let mut mesh = Mesh::new();
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_export_to_3mf_bambu_model_settings_config() {
-        use std::io::Read;
+        use std::io::Read as _;
         use tempfile::NamedTempFile;
 
         let mut mesh = Mesh::new();
