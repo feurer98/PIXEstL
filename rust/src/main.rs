@@ -1,6 +1,6 @@
 //! PIXEstL command-line application
 
-use clap::Parser;
+use clap::Parser as _;
 use pixestl::cli::Cli;
 use std::process;
 

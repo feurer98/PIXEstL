@@ -192,7 +192,7 @@ mod tests {
     use super::*;
     use crate::palette::{PaletteLoader, PaletteLoaderConfig};
     use image::{ImageBuffer, Rgba};
-    use std::io::Write;
+    use std::io::Write as _;
 
     fn default_config() -> LithophaneConfig {
         LithophaneConfig::default()

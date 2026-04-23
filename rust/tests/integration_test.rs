@@ -20,7 +20,7 @@ fn test_image(width: u32, height: u32) -> image::DynamicImage {
 
 /// Writes a minimal two-color (Red + White) palette JSON to a temp file.
 fn test_palette_file() -> tempfile::NamedTempFile {
-    use std::io::Write;
+    use std::io::Write as _;
     let mut f = tempfile::NamedTempFile::new().unwrap();
     // r##"…"## needed because the JSON keys contain "#" followed by letters,
     // which would otherwise terminate an r#"…"# raw-string literal.

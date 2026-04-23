@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_color_distance_method_from_str() {
-        use std::str::FromStr;
+        use std::str::FromStr as _;
         assert_eq!(
             ColorDistanceMethod::from_str("RGB").unwrap(),
             ColorDistanceMethod::Rgb

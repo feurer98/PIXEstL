@@ -5,7 +5,7 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::io::Write;
+use std::io::Write as _;
 
 /// Creates a minimal palette JSON temp file (Red + White).
 fn test_palette_file() -> tempfile::NamedTempFile {
