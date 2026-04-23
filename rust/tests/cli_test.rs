@@ -152,7 +152,7 @@ fn test_successful_zip_generation() {
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Done!"));
+        .stdout(predicate::str::contains("Fertig!"));
 
     // Verify the ZIP was actually created and is valid
     let zip_bytes = std::fs::read(&out).unwrap();

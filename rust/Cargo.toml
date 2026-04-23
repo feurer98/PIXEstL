@@ -2,6 +2,7 @@
 name = "pixestl"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 authors = ["PIXEstL Contributors"]
 description = "Color lithophane generator for 3D printing - Rust port of PIXEstL"
 license = "MIT"

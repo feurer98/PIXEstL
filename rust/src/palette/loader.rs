@@ -40,7 +40,7 @@ fn default_active() -> bool {
 }
 
 /// Generation mode
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum PixelCreationMethod {
     /// Additive color mixing with multiple layers
     Additive,

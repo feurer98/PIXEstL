@@ -1,59 +1,14 @@
 //! Command-line interface for PIXEstL
 
 use crate::color::ColorDistanceMethod;
-use crate::error::Result;
+use crate::error::{PixestlError, Result};
 use crate::image::load_image;
 use crate::lithophane::{LithophaneConfig, NamedLayer};
 use crate::palette::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
 use crate::stl::{export_to_3mf, export_to_dir, export_to_zip, StlFormat};
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use std::collections::HashMap;
 use std::path::PathBuf;
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum CliStlFormat {
-    Ascii,
-    Binary,
-}
-
-impl From<CliStlFormat> for StlFormat {
-    fn from(format: CliStlFormat) -> Self {
-        match format {
-            CliStlFormat::Ascii => StlFormat::Ascii,
-            CliStlFormat::Binary => StlFormat::Binary,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum CliColorDistance {
-    Rgb,
-    CieLab,
-}
-
-impl From<CliColorDistance> for ColorDistanceMethod {
-    fn from(method: CliColorDistance) -> Self {
-        match method {
-            CliColorDistance::Rgb => ColorDistanceMethod::Rgb,
-            CliColorDistance::CieLab => ColorDistanceMethod::CieLab,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum CliPixelMethod {
-    Additive,
-    Full,
-}
-
-impl From<CliPixelMethod> for PixelCreationMethod {
-    fn from(method: CliPixelMethod) -> Self {
-        match method {
-            CliPixelMethod::Additive => PixelCreationMethod::Additive,
-            CliPixelMethod::Full => PixelCreationMethod::Full,
-        }
-    }
-}
 
 #[derive(Parser, Debug)]
 #[command(name = "pixestl")]
@@ -141,15 +96,15 @@ pub struct Cli {
 
     /// STL output format: ascii (human-readable) or binary (smaller, faster)
     #[arg(long, value_enum, default_value = "ascii")]
-    pub format: CliStlFormat,
+    pub format: StlFormat,
 
     /// Color matching algorithm: cie-lab (perceptually uniform, recommended) or rgb (faster)
     #[arg(long, value_enum, default_value = "cie-lab")]
-    pub color_distance: CliColorDistance,
+    pub color_distance: ColorDistanceMethod,
 
     /// Pixel color method: additive (stack layers for more colors) or full (one filament per pixel)
     #[arg(long, value_enum, default_value = "additive")]
-    pub pixel_method: CliPixelMethod,
+    pub pixel_method: PixelCreationMethod,
 
     /// Maximum number of filament colors per AMS group (0 = use all). Set to 4 for single AMS.
     #[arg(long, default_value = "0", value_name = "N")]
@@ -184,7 +139,7 @@ impl Cli {
             texture_color: self.texture_color.clone(),
             plate_thickness: self.plate_thickness,
             color_number: self.color_number,
-            color_distance_method: self.color_distance.into(),
+            color_distance_method: self.color_distance,
             curve: self.curve,
             debug: self.debug,
         }
@@ -199,58 +154,63 @@ impl Cli {
             return self.run_calibrate();
         }
 
-        // input and output are guaranteed present by clap (required_unless_present)
-        let input = self.input.as_ref().unwrap();
-        let output = self.output.as_ref().unwrap();
+        let input = self
+            .input
+            .as_ref()
+            .ok_or_else(|| PixestlError::Config("Input image (-i) is required".to_string()))?;
+        let output = self
+            .output
+            .as_ref()
+            .ok_or_else(|| PixestlError::Config("Output path (-o) is required".to_string()))?;
 
-        println!("PIXEstL - Color Lithophane Generator");
-        println!("=====================================\n");
+        println!("PIXEstL - Farblithophane-Generator");
+        println!("==================================\n");
 
-        // --- Load and validate palette ---
-        println!("Loading palette: {}", self.palette.display());
+        // --- Palette laden und validieren ---
+        println!("Lade Palette: {}", self.palette.display());
         let raw_palette = PaletteLoader::load_raw(&self.palette)?;
         self.print_palette_warnings(&raw_palette);
 
         let palette_config = PaletteLoaderConfig {
             nb_layers: self.color_layers,
-            creation_method: self.pixel_method.into(),
+            creation_method: self.pixel_method,
             color_number: self.color_number,
-            distance_method: self.color_distance.into(),
+            distance_method: self.color_distance,
         };
         let palette = PaletteLoader::load(&self.palette, palette_config)?;
-        println!("  Colors found: {}", palette.colors().len());
-        println!("  Color groups: {}\n", palette.hex_color_groups().len());
+        println!("  Farben gefunden: {}", palette.colors().len());
+        println!("  Farbgruppen: {}\n", palette.hex_color_groups().len());
 
-        // --- Load image and check resolution ---
-        println!("Loading image: {}", input.display());
+        // --- Bild laden und Auflösung prüfen ---
+        println!("Lade Bild: {}", input.display());
         let image = load_image(input)?;
-        println!("  Image size: {}x{} pixels", image.width(), image.height());
+        println!("  Bildgroesse: {}x{} Pixel", image.width(), image.height());
         self.print_resolution_warning(image.width(), image.height());
         println!();
 
-        // --- Generate lithophane ---
-        println!("Generating lithophane layers...");
+        // --- Lithophane generieren ---
+        println!("Generiere Lithophane-Schichten...");
         let config = self.to_lithophane_config();
         if config.curve > 0.0 {
-            println!("  Curve: {:.0} degrees", config.curve);
+            println!("  Kurve: {:.0} Grad", config.curve);
         }
         let generator = crate::lithophane::LithophaneGenerator::new(config)?;
         let layers = generator.generate(&image, &palette)?;
-        println!("  Generated {} layer(s)", layers.len());
+        println!("  {} Schicht(en) generiert", layers.len());
         for layer in &layers {
             println!(
-                "    - {}: {} triangles",
+                "    - {}: {} Dreiecke",
                 layer.name,
                 layer.mesh.triangle_count()
             );
         }
         println!();
 
-        // --- Export ---
-        println!("Exporting to: {}", output.display());
+        // --- Exportieren ---
+        println!("Exportiere nach: {}", output.display());
         self.export_layers(&layers, output)?;
 
-        println!("Done!");
+        println!("Fertig!");
         Ok(())
     }
 
@@ -376,9 +336,9 @@ impl Cli {
         // Try to load full palette for combination count and AMS info
         let palette_config = PaletteLoaderConfig {
             nb_layers: self.color_layers,
-            creation_method: self.pixel_method.into(),
+            creation_method: self.pixel_method,
             color_number: self.color_number,
-            distance_method: self.color_distance.into(),
+            distance_method: self.color_distance,
         };
 
         println!();
@@ -486,15 +446,15 @@ impl Cli {
         match output.extension().and_then(|e| e.to_str()) {
             Some("zip") => {
                 println!("  Format: ZIP ({:?})", self.format);
-                export_to_zip(layers, output, self.format.into())
+                export_to_zip(layers, output, self.format)
             }
             Some("3mf") => {
                 println!("  Format: 3MF (mit Farbmetadaten)");
-                export_to_3mf(layers, output, self.format.into())
+                export_to_3mf(layers, output, self.format)
             }
             _ => {
                 println!("  Format: Verzeichnis ({:?})", self.format);
-                export_to_dir(layers, output, self.format.into())
+                export_to_dir(layers, output, self.format)
             }
         }
     }
