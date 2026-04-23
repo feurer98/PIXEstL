@@ -245,6 +245,21 @@ pixestl/
 
 Typical generation time for 100x100mm lithophane: **~5-15 seconds**
 
+### Benchmarks
+
+Measured with [Criterion](https://github.com/bheisler/criterion.rs) on the CI runner (release build):
+
+| Benchmark | Time |
+|-----------|------|
+| CIELab conversion (256 colors) | ~26 µs |
+| Delta E distance (single pair) | ~312 ps |
+| Closest color – RGB (100-color palette) | ~117 ns |
+| Closest color – CIELab (100-color palette) | ~11.5 µs |
+| Pixel quantization – RGB (10 000 pixels) | ~105 µs |
+| Pixel quantization – CIELab (10 000 pixels) | ~482 µs |
+| Mesh generation – 1 000 cubes | ~49 µs |
+| Mesh merge – 100 rows × 50 cubes | ~404 µs |
+
 ## Testing
 
 ```bash
