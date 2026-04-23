@@ -18,8 +18,8 @@ path = "src/main.rs"
 # CLI
 clap = { version = "4", features = ["derive"] }
 
-# Image processing
-image = "0.25"
+# Image processing — avif excluded to avoid unmaintained core2 (RUSTSEC-2026-0105)
+image = { version = "0.25", default-features = false, features = ["rayon", "bmp", "dds", "exr", "ff", "gif", "hdr", "ico", "jpeg", "png", "pnm", "qoi", "tga", "tiff", "webp"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
