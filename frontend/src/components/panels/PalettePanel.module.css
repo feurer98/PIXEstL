@@ -7,6 +7,13 @@
   gap: 0;
 }
 
+/* When the page becomes the scroll container, this column sizes to content. */
+@media (max-width: 1024px) {
+  .column {
+    overflow-y: visible;
+  }
+}
+
 .loadRow {
   display: flex;
   gap: 5px;

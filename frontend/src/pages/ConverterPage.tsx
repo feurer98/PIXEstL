@@ -15,6 +15,7 @@ import { usePaletteLoader } from '../hooks/usePaletteLoader';
 import { useLithophaneCanvas } from '../hooks/useLithophaneCanvas';
 import { useExport } from '../hooks/useExport';
 import type { PreviewMode } from '../lib/types';
+import s from './ConverterPage.module.css';
 
 export function ConverterPage() {
   const [settings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS);
@@ -51,7 +52,7 @@ export function ConverterPage() {
   const activeCount = filaments.filter((f) => f.active).length;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className={s.page}>
       <TopBar image={image} paletteName={paletteName} activeCount={activeCount} stats={stats} />
 
       <PreviewPane>
@@ -64,15 +65,7 @@ export function ConverterPage() {
         />
       </PreviewPane>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 260px',
-          flex: 1,
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
+      <div className={s.panels}>
         <DimensionsPanel
           settings={settings}
           dispatch={dispatch}
@@ -99,27 +92,7 @@ export function ConverterPage() {
       </div>
 
       {/* Settings drawer toggle (replaces the prototype's postMessage edit-mode). */}
-      <button
-        aria-label="Anpassungen"
-        onClick={() => setShowSettings((s) => !s)}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: 20,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          border: '1px solid var(--c-border-strong)',
-          background: 'var(--c-surface)',
-          color: 'var(--c-text-mid)',
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-          zIndex: 1001,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <button aria-label="Anpassungen" onClick={() => setShowSettings((v) => !v)} className={s.settingsBtn}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <circle cx="8" cy="8" r="2.2" stroke="currentColor" strokeWidth="1.3" />
           <path
