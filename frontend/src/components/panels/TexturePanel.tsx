@@ -2,6 +2,7 @@ import type { Dispatch } from 'react';
 import { Slider } from '../ui/Slider';
 import { SwitchRow } from '../ui/SwitchRow';
 import { SectionLabel } from '../ui/SectionLabel';
+import { PanelColumn } from './PanelColumn';
 import type { Filament, Settings } from '../../lib/types';
 import type { SettingsAction } from '../../state/settingsReducer';
 
@@ -11,19 +12,12 @@ interface TexturePanelProps {
   filaments: Filament[];
 }
 
-const COL_STYLE: React.CSSProperties = {
-  borderRight: '1px solid var(--c-border)',
-  padding: '14px 16px',
-  overflowY: 'auto',
-  background: 'var(--c-surface)',
-};
-
 export function TexturePanel({ settings, dispatch, filaments }: TexturePanelProps) {
   const activeFilaments = filaments.filter((f) => f.active);
   const setColor = (color: string) => dispatch({ type: 'SET_FIELD', key: 'textureColor', value: color });
 
   return (
-    <div style={COL_STYLE}>
+    <PanelColumn>
       <SectionLabel>Texturschicht</SectionLabel>
       <Slider
         label="Pixelbreite"
@@ -107,6 +101,6 @@ export function TexturePanel({ settings, dispatch, filaments }: TexturePanelProp
           {(settings.plateThickness + settings.textureMax).toFixed(1)} mm
         </span>
       </div>
-    </div>
+    </PanelColumn>
   );
 }

@@ -3,6 +3,7 @@ import { Slider } from '../ui/Slider';
 import { ToggleGroup } from '../ui/ToggleGroup';
 import { SectionLabel } from '../ui/SectionLabel';
 import { StatGrid } from '../ui/StatGrid';
+import { PanelColumn } from './PanelColumn';
 import type { ColorMatching, LithoStats, PixelMethod, Settings } from '../../lib/types';
 import type { SettingsAction } from '../../state/settingsReducer';
 
@@ -12,16 +13,9 @@ interface ColorLayerPanelProps {
   stats: LithoStats | null;
 }
 
-const COL_STYLE: React.CSSProperties = {
-  borderRight: '1px solid var(--c-border)',
-  padding: '14px 16px',
-  overflowY: 'auto',
-  background: 'var(--c-surface)',
-};
-
 export function ColorLayerPanel({ settings, dispatch, stats }: ColorLayerPanelProps) {
   return (
-    <div style={COL_STYLE}>
+    <PanelColumn>
       <SectionLabel>Farbschicht</SectionLabel>
       <Slider
         label="Pixelbreite"
@@ -83,6 +77,6 @@ export function ColorLayerPanel({ settings, dispatch, stats }: ColorLayerPanelPr
           ]}
         />
       )}
-    </div>
+    </PanelColumn>
   );
 }

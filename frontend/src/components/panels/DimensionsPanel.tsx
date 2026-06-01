@@ -2,6 +2,7 @@ import type { Dispatch } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 import { Slider } from '../ui/Slider';
 import { SectionLabel } from '../ui/SectionLabel';
+import { PanelColumn } from './PanelColumn';
 import type { Settings } from '../../lib/types';
 import type { SettingsAction } from '../../state/settingsReducer';
 
@@ -13,13 +14,6 @@ interface DimensionsPanelProps {
   calibPlateThickness: number | null;
 }
 
-const COL_STYLE: React.CSSProperties = {
-  borderRight: '1px solid var(--c-border)',
-  padding: '14px 16px',
-  overflowY: 'auto',
-  background: 'var(--c-surface)',
-};
-
 export function DimensionsPanel({
   settings,
   dispatch,
@@ -29,7 +23,7 @@ export function DimensionsPanel({
 }: DimensionsPanelProps) {
   const { theme } = useTheme();
   return (
-    <div style={COL_STYLE}>
+    <PanelColumn>
       <SectionLabel>Abmessungen</SectionLabel>
 
       <Slider
@@ -134,6 +128,6 @@ export function DimensionsPanel({
           {settings.curve > 0 && <span style={{ color: 'var(--c-text-faint)' }}> · {settings.curve}° Bogen</span>}
         </span>
       </div>
-    </div>
+    </PanelColumn>
   );
 }
