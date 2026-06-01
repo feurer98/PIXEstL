@@ -1,0 +1,6 @@
+.column {
+  border-right: 1px solid var(--c-border);
+  padding: 14px 16px;
+  overflow-y: auto;
+  background: var(--c-surface);
+}

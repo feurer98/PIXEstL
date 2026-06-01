@@ -5,6 +5,7 @@ import { UsageBreakdown } from './UsageBreakdown';
 import { ExportControls } from './ExportControls';
 import type { ExportFormat, Filament, LithoStats, PreviewMode } from '../../lib/types';
 import type { ExportState } from '../../hooks/useExport';
+import s from './PalettePanel.module.css';
 
 interface PalettePanelProps {
   paletteName: string;
@@ -30,48 +31,15 @@ export function PalettePanel(props: PalettePanelProps) {
     props.previewMode === 'color';
 
   return (
-    <div
-      style={{
-        padding: '14px 16px',
-        background: 'var(--c-panel)',
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0,
-      }}
-    >
+    <div className={s.column}>
       <SectionLabel>Palette</SectionLabel>
-      <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
-        <div
-          style={{
-            flex: 1,
-            padding: '5px 8px',
-            background: 'var(--c-surface)',
-            border: '1px solid var(--c-border)',
-            borderRadius: 5,
-            fontSize: 10,
-            fontFamily: 'DM Mono',
-            color: 'var(--c-text-mid)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+      <div className={s.loadRow}>
+        <div className={s.name}>
           {props.paletteName}
         </div>
         <button
           onClick={() => paletteInputRef.current?.click()}
-          style={{
-            padding: '5px 9px',
-            border: '1px solid var(--c-border)',
-            borderRadius: 5,
-            cursor: 'pointer',
-            background: 'var(--c-surface)',
-            color: 'var(--c-text)',
-            fontSize: 10,
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-          }}
+          className={s.openBtn}
         >
           Öffnen
         </button>
@@ -79,18 +47,18 @@ export function PalettePanel(props: PalettePanelProps) {
           ref={paletteInputRef}
           type="file"
           accept=".json"
-          style={{ display: 'none' }}
+          className={s.hiddenInput}
           onChange={(e) => props.onLoadPalette(e.target.files?.[0])}
         />
       </div>
 
       {props.paletteError && (
-        <div style={{ fontSize: 9, color: '#c0392b', marginBottom: 8 }}>{props.paletteError}</div>
+        <div className={s.error}>{props.paletteError}</div>
       )}
 
       <FilamentList filaments={props.filaments} onToggle={props.onToggleFilament} />
 
-      <div style={{ fontSize: 9, color: 'var(--c-text-faint)', textAlign: 'center', marginBottom: 10 }}>
+      <div className={s.activeCount}>
         {activeCount}/{props.filaments.length} Filamente aktiv · Klicken zum Umschalten
       </div>
 

@@ -1,10 +1,10 @@
 import type { Dispatch } from 'react';
-import { useTheme } from '../../theme/ThemeContext';
 import { Slider } from '../ui/Slider';
 import { SectionLabel } from '../ui/SectionLabel';
 import { PanelColumn } from './PanelColumn';
 import type { Settings } from '../../lib/types';
 import type { SettingsAction } from '../../state/settingsReducer';
+import s from './DimensionsPanel.module.css';
 
 interface DimensionsPanelProps {
   settings: Settings;
@@ -21,7 +21,6 @@ export function DimensionsPanel({
   onToggleLock,
   calibPlateThickness,
 }: DimensionsPanelProps) {
-  const { theme } = useTheme();
   return (
     <PanelColumn>
       <SectionLabel>Abmessungen</SectionLabel>
@@ -36,39 +35,28 @@ export function DimensionsPanel({
         onChange={(v) => dispatch({ type: 'SET_WIDTH', value: v, lockAspect })}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, marginTop: -4 }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
+      <div className={s.lockRow}>
+        <div className={s.rule} />
         <button
           title={lockAspect ? 'Seitenverhältnis gesperrt' : 'Seitenverhältnis frei'}
           aria-pressed={lockAspect}
           onClick={onToggleLock}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            border: `1.5px solid ${lockAspect ? 'var(--c-accent)' : 'var(--c-border)'}`,
-            background: lockAspect ? 'var(--c-accent-light)' : 'var(--c-surface)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'all 0.15s',
-          }}
+          data-locked={lockAspect}
+          className={s.lockBtn}
         >
           {lockAspect ? (
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <rect x="2" y="5" width="7" height="5" rx="1" stroke={theme.accentText} strokeWidth="1.3" />
-              <path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke={theme.accentText} strokeWidth="1.3" strokeLinecap="round" />
+              <rect x="2" y="5" width="7" height="5" rx="1" className={s.lockIcon} strokeWidth="1.3" />
+              <path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" className={s.lockIcon} strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           ) : (
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <rect x="2" y="5" width="7" height="5" rx="1" stroke={theme.textFaint} strokeWidth="1.3" />
-              <path d="M3.5 5V3.5a2 2 0 0 1 4 0" stroke={theme.textFaint} strokeWidth="1.3" strokeLinecap="round" />
+              <rect x="2" y="5" width="7" height="5" rx="1" className={s.unlockIcon} strokeWidth="1.3" />
+              <path d="M3.5 5V3.5a2 2 0 0 1 4 0" className={s.unlockIcon} strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           )}
         </button>
-        <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
+        <div className={s.rule} />
       </div>
 
       <Slider
@@ -82,21 +70,11 @@ export function DimensionsPanel({
       />
 
       {calibPlateThickness !== null && (
-        <div
-          style={{
-            marginBottom: 10,
-            padding: '6px 9px',
-            background: 'var(--c-accent-light)',
-            borderRadius: 6,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span style={{ fontSize: 9, color: 'var(--c-accent-text)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
+        <div className={s.calib}>
+          <span className={s.calibLabel}>
             JSON Kalibrierung
           </span>
-          <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--c-accent-text)', fontWeight: 600 }}>
+          <span className={s.calibValue}>
             {calibPlateThickness} mm
           </span>
         </div>
@@ -122,10 +100,10 @@ export function DimensionsPanel({
         onChange={(v) => dispatch({ type: 'SET_FIELD', key: 'curve', value: v })}
       />
 
-      <div style={{ marginTop: 8, padding: '7px 9px', background: 'var(--c-accent-light)', borderRadius: 6 }}>
-        <span style={{ fontSize: 10, color: 'var(--c-accent-text)', fontFamily: 'DM Mono' }}>
+      <div className={s.summary}>
+        <span className={s.summaryText}>
           {settings.width} × {settings.height} mm
-          {settings.curve > 0 && <span style={{ color: 'var(--c-text-faint)' }}> · {settings.curve}° Bogen</span>}
+          {settings.curve > 0 && <span className={s.summaryArc}> · {settings.curve}° Bogen</span>}
         </span>
       </div>
     </PanelColumn>

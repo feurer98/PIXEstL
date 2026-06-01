@@ -1,6 +1,7 @@
 import { useTheme } from '../../theme/ThemeContext';
 import { THEMES, type ThemeId } from '../../theme/themes';
 import { SwitchRow } from '../ui/SwitchRow';
+import s from './ThemePanel.module.css';
 
 interface ThemePanelProps {
   open: boolean;
@@ -17,62 +18,26 @@ export function ThemePanel({ open, showGrid, onShowGridChange }: ThemePanelProps
   if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 20,
-        right: 20,
-        width: 210,
-        background: 'var(--c-surface)',
-        border: '1px solid var(--c-border-strong)',
-        borderRadius: 12,
-        padding: 16,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-mid)',
-          marginBottom: 14,
-        }}
-      >
+    <div className={s.drawer}>
+      <div className={s.title}>
         Anpassungen
       </div>
-      <div style={{ marginBottom: 12 }}>
-        <div
-          style={{
-            fontSize: 9,
-            color: 'var(--c-text-faint)',
-            marginBottom: 7,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}
-        >
+      <div className={s.section}>
+        <div className={s.sectionLabel}>
           Design
         </div>
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div className={s.themes}>
           {(Object.entries(THEMES) as [ThemeId, (typeof THEMES)[ThemeId]][]).map(([k, t]) => {
             const selected = themeId === k;
             return (
               <button
                 key={k}
                 onClick={() => setThemeId(k)}
-                style={{
-                  flex: 1,
-                  padding: '6px 4px',
-                  border: `1.5px solid ${selected ? 'var(--c-accent)' : 'var(--c-border)'}`,
-                  borderRadius: 6,
-                  background: t.surface,
-                  cursor: 'pointer',
-                  fontSize: 9,
-                  fontWeight: selected ? 700 : 400,
-                  color: selected ? 'var(--c-accent-text)' : 'var(--c-text-mid)',
-                }}
+                data-selected={selected}
+                className={s.themeBtn}
+                // Each button previews ANOTHER theme's surface color, so this
+                // intentionally stays inline (not var(--c-surface)).
+                style={{ background: t.surface }}
               >
                 {t.name}
               </button>

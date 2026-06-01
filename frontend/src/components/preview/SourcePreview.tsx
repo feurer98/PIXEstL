@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { useTheme } from '../../theme/ThemeContext';
 import type { ImageInfo } from '../../lib/types';
+import s from './SourcePreview.module.css';
 
 interface SourcePreviewProps {
   image: ImageInfo | null;
@@ -11,7 +11,6 @@ interface SourcePreviewProps {
 }
 
 export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePreviewProps) {
-  const { theme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -43,28 +42,8 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
   }, [imageKey, imgElRef]);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        borderRight: '1px solid var(--c-border)',
-        overflow: 'hidden',
-        background: '#111',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          left: 10,
-          zIndex: 2,
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.4)',
-          pointerEvents: 'none',
-        }}
-      >
+    <div className={s.wrap}>
+      <div className={s.badge}>
         Quellbild
       </div>
       {!image ? (
@@ -80,28 +59,18 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
             onFile(e.dataTransfer.files[0]);
           }}
           onClick={() => fileInputRef.current?.click()}
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            gap: 10,
-            background: dragging ? 'rgba(255,255,255,0.04)' : 'transparent',
-            border: dragging ? '2px dashed rgba(255,255,255,0.25)' : '2px dashed transparent',
-          }}
+          data-dragging={dragging}
+          className={s.dropzone}
         >
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
             <rect x="4" y="6" width="28" height="20" rx="3" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
             <circle cx="12" cy="13" r="2.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
             <path d="M4 20L11 14L17 20L23 16L32 23" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M18 30V26M15 28L18 26L21 28" stroke={theme.accentRgb} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M18 30V26M15 28L18 26L21 28" className={s.uploadAccent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>Bild hier ablegen</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>
+          <div className={s.dropText}>
+            <div className={s.dropTitle}>Bild hier ablegen</div>
+            <div className={s.dropHint}>
               oder klicken zum Auswählen · PNG, JPG, WEBP
             </div>
           </div>
@@ -109,7 +78,7 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            style={{ display: 'none' }}
+            className={s.hiddenInput}
             onChange={(e) => onFile(e.target.files?.[0])}
           />
         </div>
@@ -118,7 +87,7 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
           ref={canvasRef}
           width={800}
           height={600}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          className={s.canvas}
         />
       )}
     </div>

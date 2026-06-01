@@ -1,0 +1,81 @@
+.lockRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  margin-top: -4px;
+}
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+.lockBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.lockBtn[data-locked='true'] {
+  border-color: var(--c-accent);
+  background: var(--c-accent-light);
+}
+
+.lockIcon {
+  stroke: var(--c-accent-text);
+}
+
+.unlockIcon {
+  stroke: var(--c-text-faint);
+}
+
+.calib {
+  margin-bottom: 10px;
+  padding: 6px 9px;
+  background: var(--c-accent-light);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calibLabel {
+  font-size: 9px;
+  color: var(--c-accent-text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.calibValue {
+  font-family: 'DM Mono';
+  font-size: 11px;
+  color: var(--c-accent-text);
+  font-weight: 600;
+}
+
+.summary {
+  margin-top: 8px;
+  padding: 7px 9px;
+  background: var(--c-accent-light);
+  border-radius: 6px;
+}
+
+.summaryText {
+  font-size: 10px;
+  color: var(--c-accent-text);
+  font-family: 'DM Mono';
+}
+
+.summaryArc {
+  color: var(--c-text-faint);
+}

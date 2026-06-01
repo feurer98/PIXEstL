@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import s from './PanelColumn.module.css';
 
 /**
  * Shared shell for the three left settings columns (Dimensions, Color, Texture).
@@ -6,16 +7,5 @@ import type { ReactNode } from 'react';
  * The fourth column (PalettePanel) has a distinct layout and does not use this.
  */
 export function PanelColumn({ children }: { children: ReactNode }) {
-  return (
-    <div
-      style={{
-        borderRight: '1px solid var(--c-border)',
-        padding: '14px 16px',
-        overflowY: 'auto',
-        background: 'var(--c-surface)',
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <div className={s.column}>{children}</div>;
 }

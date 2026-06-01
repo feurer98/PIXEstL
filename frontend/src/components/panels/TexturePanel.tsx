@@ -5,6 +5,7 @@ import { SectionLabel } from '../ui/SectionLabel';
 import { PanelColumn } from './PanelColumn';
 import type { Filament, Settings } from '../../lib/types';
 import type { SettingsAction } from '../../state/settingsReducer';
+import s from './TexturePanel.module.css';
 
 interface TexturePanelProps {
   settings: Settings;
@@ -47,42 +48,34 @@ export function TexturePanel({ settings, dispatch, filaments }: TexturePanelProp
         onChange={(v) => dispatch({ type: 'SET_FIELD', key: 'textureMax', value: v })}
       />
 
-      <div style={{ marginBottom: 13 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--c-text-mid)' }}>
+      <div className={s.colorSection}>
+        <div className={s.head}>
+          <div className={s.label}>
             Texturfarbe
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 13, height: 13, borderRadius: 3, background: settings.textureColor, border: '1px solid var(--c-border)' }} />
-            <span style={{ fontFamily: 'DM Mono', fontSize: 9, color: 'var(--c-text-faint)' }}>{settings.textureColor}</span>
+          <div className={s.current}>
+            <div className={s.currentSwatch} style={{ background: settings.textureColor }} />
+            <span className={s.currentHex}>{settings.textureColor}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div className={s.swatches}>
           {activeFilaments.map((f, i) => (
             <div
               key={`${f.name}-${i}`}
               title={f.name}
               onClick={() => setColor(f.color)}
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 4,
-                background: f.color,
-                cursor: 'pointer',
-                flexShrink: 0,
-                outline: `2px solid ${settings.textureColor === f.color ? 'var(--c-text)' : 'transparent'}`,
-                outlineOffset: 1,
-                transition: 'outline 0.1s',
-              }}
+              data-selected={settings.textureColor === f.color}
+              className={s.swatch}
+              style={{ background: f.color }}
             />
           ))}
           {activeFilaments.length === 0 && (
-            <span style={{ fontSize: 9, color: 'var(--c-text-faint)' }}>Palette laden um Farben zu wählen</span>
+            <span className={s.emptyHint}>Palette laden um Farben zu wählen</span>
           )}
         </div>
       </div>
 
-      <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: 12, marginTop: 4 }}>
+      <div className={s.toggles}>
         <SwitchRow
           label="Farbschicht"
           checked={settings.enableColor}
@@ -95,8 +88,8 @@ export function TexturePanel({ settings, dispatch, filaments }: TexturePanelProp
         />
       </div>
 
-      <div style={{ marginTop: 8, padding: '7px 9px', background: 'var(--c-panel2)', borderRadius: 6 }}>
-        <span style={{ fontSize: 10, color: 'var(--c-text-mid)', fontFamily: 'DM Mono' }}>
+      <div className={s.summary}>
+        <span className={s.summaryText}>
           Gesamt: {settings.plateThickness} + {settings.textureMax} ={' '}
           {(settings.plateThickness + settings.textureMax).toFixed(1)} mm
         </span>

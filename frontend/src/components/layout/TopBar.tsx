@@ -1,5 +1,5 @@
-import { useTheme } from '../../theme/ThemeContext';
 import type { ImageInfo, LithoStats } from '../../lib/types';
+import s from './TopBar.module.css';
 
 const LOGO_DOTS: [number, number, number][] = [
   [0, 0, 0.9], [3, 0, 0.7], [6, 0, 0.5],
@@ -15,59 +15,33 @@ interface TopBarProps {
 }
 
 export function TopBar({ image, paletteName, activeCount, stats }: TopBarProps) {
-  const { theme } = useTheme();
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 16px',
-        height: 46,
-        borderBottom: '1px solid var(--c-border)',
-        background: 'var(--c-surface)',
-        flexShrink: 0,
-        gap: 8,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+    <div className={s.bar}>
+      <div className={s.left}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           {LOGO_DOTS.map(([x, y, o], i) => (
-            <rect key={i} x={x} y={y} width="2.5" height="2.5" rx="0.4" fill={theme.accentRgb} opacity={o} />
+            <rect key={i} x={x} y={y} width="2.5" height="2.5" rx="0.4" className={s.logo} opacity={o} />
           ))}
         </svg>
-        <span style={{ fontWeight: 600, fontSize: 12, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+        <span className={s.name}>
           PIXEstL
         </span>
-        <span style={{ color: 'var(--c-text-faint)', fontSize: 11, fontWeight: 300 }}>Farb-Lithophan</span>
+        <span className={s.subtitle}>Farb-Lithophan</span>
         {image && (
           <>
-            <div style={{ width: 1, height: 14, background: 'var(--c-border)' }} />
-            <span
-              style={{
-                fontSize: 10,
-                fontFamily: 'DM Mono',
-                background: 'var(--c-tag)',
-                color: 'var(--c-tag-text)',
-                padding: '2px 7px',
-                borderRadius: 3,
-                maxWidth: 200,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <div className={s.divider} />
+            <span className={s.fileTag}>
               {image.name}
             </span>
           </>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 10, fontFamily: 'DM Mono', color: 'var(--c-text-faint)', whiteSpace: 'nowrap' }}>
+      <div className={s.right}>
+        <span className={s.meta}>
           {paletteName} · {activeCount} aktiv
         </span>
         {stats && (
-          <span style={{ fontSize: 10, fontFamily: 'DM Mono', color: 'var(--c-text-faint)', whiteSpace: 'nowrap' }}>
+          <span className={s.meta}>
             {stats.blocksX}×{stats.blocksY} px
           </span>
         )}
