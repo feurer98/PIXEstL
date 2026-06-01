@@ -1,0 +1,43 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-text-mid);
+}
+
+.track {
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--c-border);
+  position: relative;
+  flex-shrink: 0;
+}
+.track[data-checked='true'] {
+  background: var(--c-toggle-on);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.track[data-checked='true'] .knob {
+  left: 14px;
+}

@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react';
+import s from './Slider.module.css';
+
 interface SliderProps {
   label: string;
   value: number;
@@ -11,56 +14,20 @@ interface SliderProps {
 
 export function Slider({ label, value, min, max, step, unit, hint, onChange }: SliderProps) {
   const pct = ((value - min) / (max - min)) * 100;
-  const fmt = (v: number) =>
-    step < 0.1 ? v.toFixed(2) : step < 1 ? v.toFixed(1) : String(v);
+  const fmt = (v: number) => (step < 0.1 ? v.toFixed(2) : step < 1 ? v.toFixed(1) : String(v));
 
   return (
-    <div style={{ marginBottom: 13 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          marginBottom: 5,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            color: 'var(--c-text-mid)',
-          }}
-        >
-          {label}
-        </span>
-        <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--c-text)', fontWeight: 500 }}>
+    <div className={s.wrap}>
+      <div className={s.head}>
+        <span className={s.label}>{label}</span>
+        <span className={s.value}>
           {fmt(value)}
-          <span style={{ color: 'var(--c-text-faint)', marginLeft: 1 }}>{unit}</span>
+          <span className={s.unit}>{unit}</span>
         </span>
       </div>
-      <div style={{ position: 'relative', height: 18, display: 'flex', alignItems: 'center' }}>
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            height: 2,
-            background: 'var(--c-border)',
-            borderRadius: 1,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: pct + '%',
-              height: '100%',
-              background: 'var(--c-slider-accent)',
-              borderRadius: 1,
-              transition: 'width 0.04s',
-            }}
-          />
+      <div className={s.rail}>
+        <div className={s.track}>
+          <div className={s.fill} style={{ '--fill': pct + '%' } as CSSProperties} />
         </div>
         <input
           type="range"
@@ -69,18 +36,10 @@ export function Slider({ label, value, min, max, step, unit, hint, onChange }: S
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            width: '100%',
-            cursor: 'pointer',
-            height: 18,
-            margin: 0,
-          }}
+          className={s.input}
         />
       </div>
-      {hint && <div style={{ fontSize: 9, color: 'var(--c-text-faint)', marginTop: 2 }}>{hint}</div>}
+      {hint && <div className={s.hint}>{hint}</div>}
     </div>
   );
 }
