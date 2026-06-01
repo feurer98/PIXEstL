@@ -19,6 +19,12 @@ Prop-Drilling. Pseudo-Elemente (Slider-Thumb) liegen in `global.css`.
 Alternative (Tailwind) verworfen: erfordert für drei oklch-Themes ohnehin
 Custom-Properties.
 
+**Folgeschritt (umgesetzt):** Die Style-Deklarationen selbst wurden von
+Inline-Styles auf **CSS Modules** (`*.module.css`, Styling-Phasen 1–3)
+umgestellt; Zustände laufen über `data-*`-Selektoren, genuin dynamische
+Per-Item-Werte bleiben Inline. Das schaltete Responsive-Breakpoints (Phase 4,
+V-MODEL-08) und einen berechneten oklch→Hex-Fallback (Phase 5, V-MODEL-12) frei.
+
 ## ADR-03 — State: useReducer (settings) + Context (theme) + lokaler useState
 **Status:** angenommen.
 Redux/Zustand sind für eine Einzelseite Overkill. Das gekoppelte `settings`-

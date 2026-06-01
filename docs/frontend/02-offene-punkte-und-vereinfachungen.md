@@ -31,11 +31,11 @@ Status: `offen` · `umgesetzt` · `entscheidung-nötig`.
 | V-MODEL-05 | Vereinfachung | `pixelMethod` (Additiv/Voll) ohne Wirkung | Anforderungen / Abnahmetest | offen |
 | V-MODEL-06 | Risiko | `processCanvas` synchron im Main-Thread | Komponentendesign / Integrationstest | teilweise (Debounce) |
 | V-MODEL-07 | Offene Entscheidung | Echter Export (Backend vs. WASM) fehlt | Systemarchitektur / Systemtest | entscheidung-nötig |
-| V-MODEL-08 | Lücke | Kein Responsive-Layout | Anforderungen / Abnahmetest | offen |
+| V-MODEL-08 | Lücke | Kein Responsive-Layout | Anforderungen / Abnahmetest | umgesetzt (Breakpoints) |
 | V-MODEL-09 | Lücke | Texturschicht-Toggles ohne Vorschau-Wirkung | Komponentendesign / Integrationstest | offen |
 | V-MODEL-10 | Lücke | Keine Persistenz (Settings/Palette/Projekt) | Anforderungen / Abnahmetest | offen |
 | V-MODEL-11 | Vereinfachung | i18n: UI hart deutsch | Anforderungen / Abnahmetest | offen |
-| V-MODEL-12 | Risiko | `oklch()`/Browser-Support, kein Fallback-Konzept | Systemarchitektur / Systemtest | offen |
+| V-MODEL-12 | Risiko | `oklch()`/Browser-Support, kein Fallback-Konzept | Systemarchitektur / Systemtest | umgesetzt (Hex-Fallback) |
 
 ---
 
@@ -99,10 +99,12 @@ Vorgeschlagenes Payload-Mapping `settings` → CLI-Flags ist in
 `00-react-analyse.md` skizziert. Bis zur Entscheidung bleibt die
 Zustandsmaschine (`idle→exporting→done/error`) als stabile Schnittstelle.
 
-### V-MODEL-08 — Kein Responsive-Layout
-Layout ist starr Desktop (`100vh`, `overflow:hidden`, feste Grid-Spalten
-`1fr 1fr 1fr 260px`). Keine Breakpoints. Anforderung an Zielgeräte festlegen,
-dann Stacking-/Drawer-Layout für Tablet/Mobile.
+### V-MODEL-08 — Responsive-Layout
+**Umgesetzt** (Styling-Phase 4). `ConverterPage.module.css` macht `.page` zum
+einzigen Scroll-Container; Breakpoints: > 1024 px = Desktop unverändert,
+≤ 1024 px = Panels als 2×2 mit Seiten-Scroll, ≤ 640 px = alles einspaltig
+(Vorschauen erhalten dabei eine Mindesthöhe). **Offen:** echte Geräte-Tests und
+ggf. ein dediziertes Mobile-Drawer-Muster statt reinem Stacking.
 
 ### V-MODEL-09 — Layer-Toggles ohne Vorschau-Wirkung
 `enableColor` / `enableTexture` schalten Schichten nur konzeptionell. In Vorschau
@@ -117,9 +119,12 @@ UI-Texte sind hart deutsch. Falls Mehrsprachigkeit gewünscht: i18n-Schicht
 einziehen (Texte zentralisieren).
 
 ### V-MODEL-12 — Browser-Support / oklch
-Themes nutzen `oklch()`; `accentRgb` existiert als Hex-Fallback, wird aber nicht
-systematisch verwendet. Zielbrowser definieren und Fallback-Strategie festlegen
-(auch `DecompressionStream`, `OffscreenCanvas` für V-MODEL-06).
+**Umgesetzt** (Styling-Phase 5). `lib/oklch.ts` rechnet die oklch-Theme-Tokens
+bei Bedarf **berechnet** (oklch→oklab→sRGB, nicht geraten) nach Hex; der
+`ThemeProvider` prüft `CSS.supports('color','oklch(0 0 0)')` einmalig und setzt
+nur bei fehlender Unterstützung die Hex-Fallbacks. Unit-Tests in
+`oklch.test.ts`. **Offen:** Zielbrowser-Matrix formal festlegen; analog Fallback
+für `DecompressionStream`/`OffscreenCanvas` (Bezug V-MODEL-06).
 
 ---
 

@@ -40,3 +40,7 @@ src/
 > Status: Phasen 0–5 des Migrationsplans umgesetzt (Setup, reine Logik, Theming,
 > State, Vorschau, Panels). Phase 6 (echter Export) ist ein dokumentierter
 > Platzhalter.
+>
+> Styling: vollständig auf **CSS Modules** umgestellt (Theme weiterhin über
+> `--c-*`-Variablen), inkl. responsiver Breakpoints (V-MODEL-08) und eines
+> berechneten oklch→Hex-Fallbacks für ältere Browser (V-MODEL-12).

@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { THEMES, themeToCssVars, type Theme, type ThemeId } from './themes';
+import { supportsOklch, withOklchFallback } from '../lib/oklch';
 
 interface ThemeContextValue {
   themeId: ThemeId;
@@ -19,13 +20,19 @@ export function ThemeProvider({
   const [themeId, setThemeId] = useState<ThemeId>(initial);
   const theme = THEMES[themeId];
 
+  // Detect oklch() support once; older browsers get computed hex fallbacks.
+  const oklchOk = useMemo(() => supportsOklch(), []);
+
   const value = useMemo<ThemeContextValue>(
     () => ({ themeId, theme, setThemeId }),
     [themeId, theme],
   );
 
   // Project the active theme onto CSS custom properties on the wrapper element.
-  const cssVars = themeToCssVars(theme) as React.CSSProperties;
+  const cssVars = useMemo(() => {
+    const vars = themeToCssVars(theme);
+    return (oklchOk ? vars : withOklchFallback(vars)) as React.CSSProperties;
+  }, [theme, oklchOk]);
 
   return (
     <ThemeContext.Provider value={value}>
