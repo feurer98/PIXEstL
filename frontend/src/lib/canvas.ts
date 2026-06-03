@@ -2,10 +2,14 @@ import { matchColor } from './color';
 import type { Filament, LithoStats, PreviewMode, Settings } from './types';
 
 // ─── Canvas processing ───────────────────────────────────────────────────────
-// Ported from the prototype's processCanvas(). Renders a 2D rasterized preview
-// of the lithophane into `canvas` and returns block statistics.
+// Renders a 2D rasterized preview of the lithophane into `canvas` and returns
+// block statistics.
 //
-// NOTE: This is a 2D approximation only. It does NOT model curvature, stacked
+// The canvas bitmap is sized to the block grid's own aspect ratio (one integer
+// cell per block), so paired with CSS `object-fit: contain` the preview shows
+// the true lithophane proportions — fully visible, never cropped or distorted.
+//
+// NOTE: This is still a 2D approximation. It does NOT model curvature, stacked
 // color layers, additive transparent-filament mixing, or AMS color limits.
 // See docs/frontend/02-offene-punkte-und-vereinfachungen.md (V-MODEL-02..05).
 
@@ -17,6 +21,10 @@ export interface ProcessOptions {
 
 const EMPTY_STATS: LithoStats = { blocksX: 0, blocksY: 0, filamentUsage: {} };
 
+// Longest side of the rendered bitmap, in px. Cells are sized so the grid fills
+// roughly this, keeping the preview crisp without an oversized canvas.
+const TARGET_PX = 720;
+
 export function processCanvas(
   imgEl: CanvasImageSource | null,
   settings: Settings,
@@ -26,14 +34,18 @@ export function processCanvas(
   if (!imgEl || !canvas) return EMPTY_STATS;
   const ctx = canvas.getContext('2d');
   if (!ctx) return EMPTY_STATS;
-  const CW = canvas.width;
-  const CH = canvas.height;
 
-  // Block count derives from physical size / pixel width (mm).
+  // Block count derives from physical size / pixel width (mm). The height was
+  // derived from the image aspect on load, so blocksX:blocksY ≈ image aspect.
   const blocksX = Math.max(4, Math.round(settings.width / settings.colorPixelWidth));
   const blocksY = Math.max(4, Math.round(settings.height / settings.colorPixelWidth));
 
-  // Downscale the image to one sample per block using an offscreen canvas.
+  // One integer cell per block; size the bitmap to the grid's aspect ratio.
+  const cell = Math.max(1, Math.min(24, Math.round(TARGET_PX / Math.max(blocksX, blocksY))));
+  canvas.width = blocksX * cell;
+  canvas.height = blocksY * cell;
+
+  // Downscale the image to one representative sample per block.
   const off = document.createElement('canvas');
   off.width = blocksX;
   off.height = blocksY;
@@ -42,9 +54,7 @@ export function processCanvas(
   octx.drawImage(imgEl, 0, 0, blocksX, blocksY);
   const pix = octx.getImageData(0, 0, blocksX, blocksY).data;
 
-  ctx.clearRect(0, 0, CW, CH);
-  const bw = CW / blocksX;
-  const bh = CH / blocksY;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const useLab = settings.colorMatching === 'cie-lab';
   const usage: Record<string, number> = {};
   const activeFilaments = filaments.filter((f) => f.active);
@@ -79,11 +89,11 @@ export function processCanvas(
       }
 
       ctx.fillStyle = color;
-      ctx.fillRect(x * bw, y * bh, bw, bh);
-      if (showGrid && bw > 4) {
+      ctx.fillRect(x * cell, y * cell, cell, cell);
+      if (showGrid && cell > 4) {
         ctx.strokeStyle = 'rgba(0,0,0,0.08)';
         ctx.lineWidth = 0.5;
-        ctx.strokeRect(x * bw, y * bh, bw, bh);
+        ctx.strokeRect(x * cell, y * cell, cell, cell);
       }
     }
   }
