@@ -18,6 +18,20 @@ npm test           # Vitest (Unit-Tests der reinen Logik)
 npm run build      # Produktionsbuild nach dist/
 ```
 
+### Export-Backend
+
+Der Export ruft den [`pixestl-server`](../server) auf. Für funktionierenden
+Export parallel starten:
+
+```bash
+cd rust && cargo build --release
+cd ../server && PIXESTL_BIN=../rust/target/release/pixestl cargo run --release
+```
+
+Der Vite-Dev-Server proxyt `/api` → `http://localhost:8787`. Läuft das Backend
+woanders, `VITE_API_BASE` setzen. Hinweis: Der Export benötigt eine **geladene
+Palette-Datei** (das UI verwirft die Kalibrierungsdaten, V-MODEL-01).
+
 ## Struktur
 
 ```

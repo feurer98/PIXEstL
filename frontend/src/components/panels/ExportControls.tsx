@@ -9,6 +9,7 @@ interface ExportControlsProps {
   exportFormat: ExportFormat;
   onFormatChange: (format: ExportFormat) => void;
   exportState: ExportState;
+  exportError?: string | null;
   onExport: () => void;
 }
 
@@ -22,6 +23,7 @@ export function ExportControls({
   exportFormat,
   onFormatChange,
   exportState,
+  exportError,
   onExport,
 }: ExportControlsProps) {
   return (
@@ -45,7 +47,7 @@ export function ExportControls({
 
       <button
         onClick={onExport}
-        disabled={!hasImage || exportState !== 'idle'}
+        disabled={!hasImage || exportState === 'exporting'}
         data-has-image={hasImage}
         data-state={exportState}
         className={s.exportBtn}
@@ -78,6 +80,7 @@ export function ExportControls({
           Zuerst ein Bild laden
         </p>
       )}
+      {exportState === 'error' && exportError && <p className={s.error}>{exportError}</p>}
     </>
   );
 }

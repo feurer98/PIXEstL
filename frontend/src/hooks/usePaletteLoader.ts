@@ -18,6 +18,9 @@ export function usePaletteLoader(onCalibration?: (cal: Calibration) => void) {
   const [paletteName, setPaletteName] = useState(DEFAULT_PALETTE_NAME);
   const [calibPlateThickness, setCalibPlateThickness] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The original file is kept so the backend export can use the full palette
+  // (incl. per-layer calibration the parser discards — see V-MODEL-01).
+  const [paletteFile, setPaletteFile] = useState<File | null>(null);
 
   const loadPalette = useCallback(
     (file: File | null | undefined) => {
@@ -29,6 +32,7 @@ export function usePaletteLoader(onCalibration?: (cal: Calibration) => void) {
           setFilaments(fs);
           setPaletteName(file.name);
           setError(null);
+          setPaletteFile(file);
           if (plateThickness !== null) setCalibPlateThickness(plateThickness);
           else setCalibPlateThickness(null);
           onCalibration?.({
@@ -54,6 +58,7 @@ export function usePaletteLoader(onCalibration?: (cal: Calibration) => void) {
     setFilaments,
     toggleFilament,
     paletteName,
+    paletteFile,
     calibPlateThickness,
     error,
     loadPalette,

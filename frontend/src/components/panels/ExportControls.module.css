@@ -55,3 +55,11 @@
   text-align: center;
   margin-top: 6px;
 }
+
+.error {
+  font-size: 9px;
+  color: #c0392b;
+  text-align: center;
+  margin-top: 6px;
+  word-break: break-word;
+}

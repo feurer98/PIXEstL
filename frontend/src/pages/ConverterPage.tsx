@@ -30,14 +30,14 @@ export function ConverterPage() {
     (aspect: number) => dispatch({ type: 'APPLY_IMAGE_ASPECT', aspect }),
     [],
   );
-  const { image, imgElRef, loadFile } = useImageLoader(onAspect);
+  const { image, imageFile, imgElRef, loadFile } = useImageLoader(onAspect);
 
   const onCalibration = useCallback(
     (cal: { plateThickness: number | null; firstColor: string | null }) =>
       dispatch({ type: 'APPLY_CALIBRATION', plateThickness: cal.plateThickness, firstColor: cal.firstColor }),
     [],
   );
-  const { filaments, toggleFilament, paletteName, calibPlateThickness, error, loadPalette } =
+  const { filaments, toggleFilament, paletteName, paletteFile, calibPlateThickness, error, loadPalette } =
     usePaletteLoader(onCalibration);
 
   const stats = useLithophaneCanvas(
@@ -48,7 +48,7 @@ export function ConverterPage() {
     image,
   );
 
-  const { exportState, exportFormat, setExportFormat, runExport } = useExport();
+  const { exportState, exportFormat, setExportFormat, exportError, runExport } = useExport();
   const activeCount = filaments.filter((f) => f.active).length;
 
   return (
@@ -87,7 +87,8 @@ export function ConverterPage() {
           exportFormat={exportFormat}
           onFormatChange={setExportFormat}
           exportState={exportState}
-          onExport={() => runExport({ settings, filaments, format: exportFormat, image })}
+          exportError={exportError}
+          onExport={() => runExport({ settings, format: exportFormat, imageFile, paletteFile })}
         />
       </div>
 

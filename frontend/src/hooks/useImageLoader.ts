@@ -10,6 +10,8 @@ import type { ImageInfo } from '../lib/types';
 export function useImageLoader(onAspect?: (aspect: number) => void) {
   const imgElRef = useRef<HTMLImageElement | null>(null);
   const [image, setImage] = useState<ImageInfo | null>(null);
+  // The original File is kept so the backend export can upload the exact bytes.
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const loadFile = useCallback(
     (file: File | null | undefined) => {
@@ -21,6 +23,7 @@ export function useImageLoader(onAspect?: (aspect: number) => void) {
           imgElRef.current = img;
           onAspect?.(img.naturalHeight / img.naturalWidth);
           setImage({ name: file.name, w: img.naturalWidth, h: img.naturalHeight });
+          setImageFile(file);
         };
         img.src = e.target?.result as string;
       };
@@ -29,5 +32,5 @@ export function useImageLoader(onAspect?: (aspect: number) => void) {
     [onAspect],
   );
 
-  return { image, imgElRef, loadFile };
+  return { image, imageFile, imgElRef, loadFile };
 }

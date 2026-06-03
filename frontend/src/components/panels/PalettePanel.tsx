@@ -19,6 +19,7 @@ interface PalettePanelProps {
   exportFormat: ExportFormat;
   onFormatChange: (format: ExportFormat) => void;
   exportState: ExportState;
+  exportError: string | null;
   onExport: () => void;
 }
 
@@ -69,6 +70,7 @@ export function PalettePanel(props: PalettePanelProps) {
         exportFormat={props.exportFormat}
         onFormatChange={props.onFormatChange}
         exportState={props.exportState}
+        exportError={props.exportError}
         onExport={props.onExport}
       />
     </div>

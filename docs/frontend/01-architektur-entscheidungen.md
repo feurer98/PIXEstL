@@ -39,11 +39,15 @@ Seite hält die Canvas-Refs und reicht sie an die Preview-Komponenten; die
 Statistik fließt über den `useLithophaneCanvas`-Hook nach oben. Das entspricht
 der Refs+Effects-Struktur des Prototyps, aber testbar zerlegt.
 
-## ADR-05 — Export bleibt vorerst Platzhalter
-**Status:** offen (siehe V-MODEL-07).
-Die Mesh-Erzeugung leistet das Rust-CLI. Bis die Schnittstelle (Backend-API vs.
-WASM) entschieden ist, bildet `useExport` nur die Zustandsmaschine ab. Die
-Signatur ist real, damit später nur der Funktionsrumpf getauscht wird.
+## ADR-05 — Export über Backend-Service (Rust/axum, CLI-Subprozess, async)
+**Status:** angenommen (umgesetzt; siehe V-MODEL-07).
+Entschieden gegen WASM, für einen schlanken **axum-Server** (`/server`), der das
+`pixestl`-Binary als Subprozess aufruft, **asynchron mit Job + Polling**. Bewusst
+ein **eigenständiger Crate außerhalb des `rust/`-Workspace**, damit die CLI-CI
+unberührt bleibt; die Kopplung ist nur das Binary (auflösbar über
+`$PIXESTL_BIN`/PATH), nicht der Code. `useExport` lädt die Original-Dateien hoch,
+weil das CLI die volle Palette/das echte Bild braucht (Bezug V-MODEL-01).
+Härtungspunkte (TTL, Concurrency, CORS) sind in V-MODEL-07 vermerkt.
 
 ## ADR-06 — Paletten-Parser akzeptiert beide Formate
 **Status:** angenommen (siehe V-MODEL-01).

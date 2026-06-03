@@ -30,7 +30,8 @@ Status: `offen` · `umgesetzt` · `entscheidung-nötig`.
 | V-MODEL-04 | Vereinfachung | AMS-Limit (`amsColors`) ohne Wirkung | Anforderungen / Abnahmetest | offen |
 | V-MODEL-05 | Vereinfachung | `pixelMethod` (Additiv/Voll) ohne Wirkung | Anforderungen / Abnahmetest | offen |
 | V-MODEL-06 | Risiko | `processCanvas` synchron im Main-Thread | Komponentendesign / Integrationstest | teilweise (Debounce) |
-| V-MODEL-07 | Offene Entscheidung | Echter Export (Backend vs. WASM) fehlt | Systemarchitektur / Systemtest | entscheidung-nötig |
+| V-MODEL-07 | Offene Entscheidung | Echter Export (Backend vs. WASM) fehlt | Systemarchitektur / Systemtest | umgesetzt (Backend) |
+| V-MODEL-13 | Unstimmigkeit | UI-Filament-Toggles wirken nicht auf Backend-Export | Komponentendesign / Integrationstest | offen |
 | V-MODEL-08 | Lücke | Kein Responsive-Layout | Anforderungen / Abnahmetest | umgesetzt (Breakpoints) |
 | V-MODEL-09 | Lücke | Texturschicht-Toggles ohne Vorschau-Wirkung | Komponentendesign / Integrationstest | offen |
 | V-MODEL-10 | Lücke | Keine Persistenz (Settings/Palette/Projekt) | Anforderungen / Abnahmetest | offen |
@@ -88,16 +89,23 @@ Matching/Geometrie spezifizieren.
 Auslagern in einen Web Worker / `OffscreenCanvas` bei feiner Pixelbreite (viele
 Blöcke). Integrationstest mit großem Bild + kleiner Pixelbreite (Frame-Budget).
 
-### V-MODEL-07 — Echter Export (Kernfunktion fehlt)
-**Entscheidung nötig.** Der Prototyp simuliert Export per `setTimeout`; auch
-`useExport` ist ein Platzhalter. Optionen:
-- **A) Backend-Endpoint**, der das Rust-CLI (`/rust`) kapselt
-  (`POST /api/generate` → Job → Download). Benötigt `@tanstack/react-query`.
-- **B) WASM** (Rust-Kern via `wasm-bindgen`), voll clientseitig.
+### V-MODEL-07 — Echter Export
+**Umgesetzt: Backend-Variante.** Entscheidung gefallen für einen
+**Rust/axum-Server, der das CLI-Binary aufruft**, **asynchron mit Job +
+Polling**. Implementierung unter [`/server`](../../server):
+- `POST /api/jobs` (multipart `image`+`palette`+`settings`+`format`) → `202
+  { jobId }`, startet `pixestl` als Subprozess.
+- `GET /api/jobs/:id` → `queued|running|done|error` (CLI-stderr im Fehlerfall).
+- `GET /api/jobs/:id/download` → fertiges 3MF/ZIP.
 
-Vorgeschlagenes Payload-Mapping `settings` → CLI-Flags ist in
-`00-react-analyse.md` skizziert. Bis zur Entscheidung bleibt die
-Zustandsmaschine (`idle→exporting→done/error`) als stabile Schnittstelle.
+Frontend: `useExport` lädt Original-**Bild- und Palettendatei** hoch (beide jetzt
+in `useImageLoader`/`usePaletteLoader` vorgehalten), pollt den Job und stößt den
+Browser-Download an. Dev: Vite proxyt `/api` → `:8787`; `VITE_API_BASE` für
+separaten Host. End-to-End gegen Beispielbild + Palette verifiziert (valides
+3MF und ZIP). Mapping `settings` → CLI-Flags: siehe `server/README.md`.
+
+**Offen (Härtung vor geteiltem Deployment):** Job-Cleanup/TTL, Concurrency-Limit,
+restriktive CORS, ggf. Fortschritts-Prozent statt nur Status.
 
 ### V-MODEL-08 — Responsive-Layout
 **Umgesetzt** (Styling-Phase 4). `ConverterPage.module.css` macht `.page` zum
@@ -125,6 +133,16 @@ bei Bedarf **berechnet** (oklch→oklab→sRGB, nicht geraten) nach Hex; der
 nur bei fehlender Unterstützung die Hex-Fallbacks. Unit-Tests in
 `oklch.test.ts`. **Offen:** Zielbrowser-Matrix formal festlegen; analog Fallback
 für `DecompressionStream`/`OffscreenCanvas` (Bezug V-MODEL-06).
+
+### V-MODEL-13 — UI-Filament-Toggles wirken nicht auf den Backend-Export
+Der Backend-Export erhält die **Original-Palettendatei**; die im UI per Klick
+umgeschalteten `active`-Flags (`FilamentList`) fließen **nicht** mit ein — das
+CLI nutzt die `active`-Angaben der Datei. Die 2D-Vorschau berücksichtigt die
+Toggles dagegen schon, sodass Vorschau und Export divergieren können.
+**Lösungsoptionen:** (a) UI-Toggles serverseitig anwenden (modifizierte Palette
+hochladen oder als Override-Liste mitsenden), (b) Toggles deaktivieren, solange
+eine Datei-Palette aktiv ist. Bezug zu V-MODEL-01 (Palette-Datenmodell).
+**Verifikation:** Integrationstest „deaktiviertes Filament fehlt im Export".
 
 ---
 
