@@ -64,9 +64,10 @@ The `settings` JSON mirrors the frontend `Settings` type (camelCase):
 
 ## Known limitations (tracked in docs/frontend)
 
-- **Original palette required.** The backend needs the uploaded palette file —
-  the frontend only keeps base colors, not the per-layer calibration the CLI
-  needs (V-MODEL-01). Exporting without a loaded palette file is rejected.
+- **Palette file required.** The backend needs the palette file (the CLI uses
+  its per-layer calibration, V-MODEL-01). The frontend always sends one — it
+  ships a bundled, calibrated default palette, so export works without an upload;
+  a user upload overrides it.
 - **UI filament toggles are applied** (V-MODEL-13): the request's `activeColors`
   list re-sets each palette color's `active` flag before generation. Note that
   additive mode requires an active `#FFFFFF`; disabling white yields a CLI error.

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { parsePalette } from '../lib/palette';
-import { DEFAULT_FILAMENTS, DEFAULT_PALETTE_NAME } from '../lib/constants';
+import { DEFAULT_PALETTE } from '../lib/defaultPalette';
 import type { Filament } from '../lib/types';
 
 interface Calibration {
@@ -10,17 +10,18 @@ interface Calibration {
 
 /**
  * Owns the active filament palette plus its display name and calibration.
- * `onCalibration` lets the caller push calibration values into settings when a
- * palette carries them.
+ * Starts from the bundled default palette (real, calibrated) so the app is
+ * usable — including export — without an upload. `onCalibration` lets the caller
+ * push calibration values into settings when a palette carries them.
  */
 export function usePaletteLoader(onCalibration?: (cal: Calibration) => void) {
-  const [filaments, setFilaments] = useState<Filament[]>(DEFAULT_FILAMENTS);
-  const [paletteName, setPaletteName] = useState(DEFAULT_PALETTE_NAME);
+  const [filaments, setFilaments] = useState<Filament[]>(DEFAULT_PALETTE.filaments);
+  const [paletteName, setPaletteName] = useState(DEFAULT_PALETTE.name);
   const [calibPlateThickness, setCalibPlateThickness] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // The original file is kept so the backend export can use the full palette
-  // (incl. per-layer calibration the parser discards — see V-MODEL-01).
-  const [paletteFile, setPaletteFile] = useState<File | null>(null);
+  // Holds the exact palette bytes for the backend export. Seeded with the
+  // bundled default so export works out of the box (V-MODEL-01).
+  const [paletteFile, setPaletteFile] = useState<File | null>(DEFAULT_PALETTE.toFile());
 
   const loadPalette = useCallback(
     (file: File | null | undefined) => {
