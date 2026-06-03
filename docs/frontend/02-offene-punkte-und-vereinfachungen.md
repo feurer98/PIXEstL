@@ -62,6 +62,13 @@ der Dateiname (`*-0.10mm.json`) die Schichtdicke — bislang nicht ausgewertet.
 **Verifikation.** Integrationstest „realer Palette-Import setzt aktive
 Filamente + Kalibrierung korrekt".
 
+**Default-Fall gelöst.** Eine echte, kalibrierte Default-Palette ist ins Frontend
+gebündelt (`src/assets/default-palette.json`, geladen über
+`lib/defaultPalette.ts`). Sie dient Anzeige **und** Export, sodass der Export
+ohne Upload funktioniert (vorher Fehlermeldung „Palette laden"). Die volle
+Layer-Kalibrierung bleibt erhalten, weil die Originalbytes hochgeladen werden.
+Regressionstest: `defaultPalette.test.ts` (gültig + aktives Weiß).
+
 ### V-MODEL-02 — Wölbung ohne Vorschau-Wirkung
 `settings.curve` (0–180°) ist als Regler vorhanden, beeinflusst die Vorschau
 nicht (nur Textanzeige). Spezifikation nötig: zylindrische Projektion in der

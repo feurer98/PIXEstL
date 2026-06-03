@@ -29,8 +29,9 @@ cd ../server && PIXESTL_BIN=../rust/target/release/pixestl cargo run --release
 ```
 
 Der Vite-Dev-Server proxyt `/api` → `http://localhost:8787`. Läuft das Backend
-woanders, `VITE_API_BASE` setzen. Hinweis: Der Export benötigt eine **geladene
-Palette-Datei** (das UI verwirft die Kalibrierungsdaten, V-MODEL-01).
+woanders, `VITE_API_BASE` setzen. Hinweis: Es ist eine **kalibrierte
+Default-Palette** gebündelt (`src/assets/default-palette.json`), sodass der
+Export auch ohne Upload funktioniert; eine eigene Palette per „Öffnen" überschreibt sie.
 
 ## Struktur
 
