@@ -1,52 +1,22 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useRef, useState } from 'react';
 import type { ImageInfo } from '../../lib/types';
 import s from './SourcePreview.module.css';
 
 interface SourcePreviewProps {
   image: ImageInfo | null;
-  imgElRef: RefObject<HTMLImageElement | null>;
+  /** Data URL of the source image for display. */
+  previewUrl: string | null;
   onFile: (file: File | null | undefined) => void;
-  /** Bumps when a new image is decoded. */
-  imageKey: unknown;
 }
 
-export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePreviewProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export function SourcePreview({ image, previewUrl, onFile }: SourcePreviewProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  // Draw the source image "contain"-fit onto a dark backdrop.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const imgEl = imgElRef.current;
-    if (!canvas || !imgEl) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const iAR = imgEl.naturalWidth / imgEl.naturalHeight;
-    const cAR = canvas.width / canvas.height;
-    let dw: number, dh: number, dx: number, dy: number;
-    if (iAR > cAR) {
-      dw = canvas.width;
-      dh = dw / iAR;
-      dx = 0;
-      dy = (canvas.height - dh) / 2;
-    } else {
-      dh = canvas.height;
-      dw = dh * iAR;
-      dy = 0;
-      dx = (canvas.width - dw) / 2;
-    }
-    ctx.drawImage(imgEl, dx, dy, dw, dh);
-  }, [imageKey, imgElRef]);
-
   return (
     <div className={s.wrap}>
-      <div className={s.badge}>
-        Quellbild
-      </div>
-      {!image ? (
+      <div className={s.badge}>Quellbild</div>
+      {!image || !previewUrl ? (
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -70,9 +40,7 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
           </svg>
           <div className={s.dropText}>
             <div className={s.dropTitle}>Bild hier ablegen</div>
-            <div className={s.dropHint}>
-              oder klicken zum Auswählen · PNG, JPG, WEBP
-            </div>
+            <div className={s.dropHint}>oder klicken zum Auswählen · PNG, JPG, WEBP</div>
           </div>
           <input
             ref={fileInputRef}
@@ -83,12 +51,8 @@ export function SourcePreview({ image, imgElRef, onFile, imageKey }: SourcePrevi
           />
         </div>
       ) : (
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={600}
-          className={s.canvas}
-        />
+        // object-fit: contain → whole image always visible, aspect kept, never cropped.
+        <img src={previewUrl} alt={image.name} className={s.image} />
       )}
     </div>
   );

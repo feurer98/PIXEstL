@@ -30,7 +30,7 @@ export function ConverterPage() {
     (aspect: number) => dispatch({ type: 'APPLY_IMAGE_ASPECT', aspect }),
     [],
   );
-  const { image, imageFile, imgElRef, loadFile } = useImageLoader(onAspect);
+  const { image, imageFile, previewUrl, imgElRef, loadFile } = useImageLoader(onAspect);
 
   const onCalibration = useCallback(
     (cal: { plateThickness: number | null; firstColor: string | null }) =>
@@ -56,7 +56,7 @@ export function ConverterPage() {
       <TopBar image={image} paletteName={paletteName} activeCount={activeCount} stats={stats} />
 
       <PreviewPane>
-        <SourcePreview image={image} imgElRef={imgElRef} onFile={loadFile} imageKey={image} />
+        <SourcePreview image={image} previewUrl={previewUrl} onFile={loadFile} />
         <LithoPreview
           hasImage={!!image}
           canvasRef={lithoRef}
