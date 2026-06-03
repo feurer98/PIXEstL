@@ -1,0 +1,54 @@
+/* Page shell + responsive layout (styling phase 4).
+   Desktop keeps the fixed-pane, inner-scroll layout. On narrower viewports the
+   panel grid wraps and the whole page becomes a single scroll container. */
+
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* On desktop the children fit exactly; on smaller screens the stacked
+     content overflows and this element scrolls as one document. */
+  overflow-y: auto;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 260px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settingsBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text-mid);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tablet: panels wrap to a 2×2 grid; the page (not each column) scrolls. */
+@media (max-width: 1024px) {
+  .panels {
+    grid-template-columns: 1fr 1fr;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+
+/* Mobile: everything stacks into one column. */
+@media (max-width: 640px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}

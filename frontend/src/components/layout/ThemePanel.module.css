@@ -1,0 +1,54 @@
+.drawer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 210px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-mid);
+  margin-bottom: 14px;
+}
+
+.section {
+  margin-bottom: 12px;
+}
+
+.sectionLabel {
+  font-size: 9px;
+  color: var(--c-text-faint);
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.themes {
+  display: flex;
+  gap: 5px;
+}
+
+.themeBtn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1.5px solid var(--c-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--c-text-mid);
+}
+.themeBtn[data-selected='true'] {
+  border-color: var(--c-accent);
+  font-weight: 700;
+  color: var(--c-accent-text);
+}

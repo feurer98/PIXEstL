@@ -1,0 +1,67 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 46px;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo {
+  fill: var(--c-accent-rgb);
+}
+
+.name {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.subtitle {
+  color: var(--c-text-faint);
+  font-size: 11px;
+  font-weight: 300;
+}
+
+.divider {
+  width: 1px;
+  height: 14px;
+  background: var(--c-border);
+}
+
+.fileTag {
+  font-size: 10px;
+  font-family: 'DM Mono';
+  background: var(--c-tag);
+  color: var(--c-tag-text);
+  padding: 2px 7px;
+  border-radius: 3px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meta {
+  font-size: 10px;
+  font-family: 'DM Mono';
+  color: var(--c-text-faint);
+  white-space: nowrap;
+}

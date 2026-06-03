@@ -1,0 +1,81 @@
+.colorSection {
+  margin-bottom: 13px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-text-mid);
+}
+
+.current {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.currentSwatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid var(--c-border);
+}
+
+.currentHex {
+  font-family: 'DM Mono';
+  font-size: 9px;
+  color: var(--c-text-faint);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  transition: outline 0.1s;
+}
+.swatch[data-selected='true'] {
+  outline-color: var(--c-text);
+}
+
+.emptyHint {
+  font-size: 9px;
+  color: var(--c-text-faint);
+}
+
+.toggles {
+  border-top: 1px solid var(--c-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.summary {
+  margin-top: 8px;
+  padding: 7px 9px;
+  background: var(--c-panel2);
+  border-radius: 6px;
+}
+
+.summaryText {
+  font-size: 10px;
+  color: var(--c-text-mid);
+  font-family: 'DM Mono';
+}

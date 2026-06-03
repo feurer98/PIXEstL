@@ -1,0 +1,57 @@
+.wrap {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: var(--c-panel2);
+  border-radius: 7px;
+}
+
+.title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  margin-bottom: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.name {
+  font-size: 9px;
+  color: var(--c-text-mid);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pct {
+  font-family: 'DM Mono';
+  font-size: 9px;
+  color: var(--c-text-faint);
+}
+
+.bar {
+  width: 32px;
+  height: 3px;
+  background: var(--c-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.barFill {
+  width: var(--bar-width, 0%);
+  height: 100%;
+}
