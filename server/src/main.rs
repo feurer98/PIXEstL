@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use axum::body::Body;
-use axum::extract::{Multipart, Path as AxPath, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -24,6 +24,7 @@ use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
 use tokio::process::Command;
+use tower_http::services::{ServeDir, ServeFile};
 use uuid::Uuid;
 
 // ─── State & job model ───────────────────────────────────────────────────────
@@ -379,11 +380,21 @@ async fn main() {
         pixestl_bin: pixestl_bin.clone(),
     };
 
+    // Serve the built frontend (SPA) from STATIC_DIR; unknown paths fall back to
+    // index.html. In dev the frontend runs under Vite, so this dir is usually
+    // absent and these routes simply 404 — the API is unaffected.
+    let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "static".into());
+    let spa = ServeDir::new(&static_dir)
+        .not_found_service(ServeFile::new(format!("{static_dir}/index.html")));
+
     let app = Router::new()
         .route("/api/jobs", post(create_job))
         .route("/api/jobs/:id", get(get_job))
         .route("/api/jobs/:id/download", get(download))
         .route("/api/health", get(health))
+        .fallback_service(spa)
+        // Raise the 2 MB default body limit so normal photos upload (64 MB).
+        .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
         // Permissive CORS is fine for local dev; restrict in production.
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);

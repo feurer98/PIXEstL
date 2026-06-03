@@ -1,0 +1,9 @@
+# Keep the build context small and reproducible.
+.git
+**/target
+**/node_modules
+**/dist
+frontend/.vite
+**/*.tsbuildinfo
+docs
+attachment

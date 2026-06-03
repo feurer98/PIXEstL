@@ -23,6 +23,11 @@ PIXESTL_BIN=../rust/target/release/pixestl cargo run --release
 Binary resolution order: `$PIXESTL_BIN` → a `pixestl` next to the server
 executable → `pixestl` on `PATH`. Port via `$PORT` (default `8787`).
 
+If `$STATIC_DIR` (default `static`) contains a built frontend, the server also
+serves it as an SPA at `/` (unknown paths fall back to `index.html`), so the API
+and UI share one origin — this is how the Docker image runs. For a one-container
+NAS deployment see [`docs/deployment-docker.md`](../docs/deployment-docker.md).
+
 ## API
 
 | Method | Path | Description |
