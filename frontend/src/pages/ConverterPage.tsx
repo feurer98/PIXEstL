@@ -88,7 +88,15 @@ export function ConverterPage() {
           onFormatChange={setExportFormat}
           exportState={exportState}
           exportError={exportError}
-          onExport={() => runExport({ settings, format: exportFormat, imageFile, paletteFile })}
+          onExport={() =>
+            runExport({
+              settings,
+              format: exportFormat,
+              imageFile,
+              paletteFile,
+              activeColors: filaments.filter((f) => f.active).map((f) => f.color),
+            })
+          }
         />
       </div>
 

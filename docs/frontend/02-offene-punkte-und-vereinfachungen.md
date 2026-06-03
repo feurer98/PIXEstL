@@ -31,7 +31,7 @@ Status: `offen` · `umgesetzt` · `entscheidung-nötig`.
 | V-MODEL-05 | Vereinfachung | `pixelMethod` (Additiv/Voll) ohne Wirkung | Anforderungen / Abnahmetest | offen |
 | V-MODEL-06 | Risiko | `processCanvas` synchron im Main-Thread | Komponentendesign / Integrationstest | teilweise (Debounce) |
 | V-MODEL-07 | Offene Entscheidung | Echter Export (Backend vs. WASM) fehlt | Systemarchitektur / Systemtest | umgesetzt (Backend) |
-| V-MODEL-13 | Unstimmigkeit | UI-Filament-Toggles wirken nicht auf Backend-Export | Komponentendesign / Integrationstest | offen |
+| V-MODEL-13 | Unstimmigkeit | UI-Filament-Toggles wirken nicht auf Backend-Export | Komponentendesign / Integrationstest | umgesetzt |
 | V-MODEL-08 | Lücke | Kein Responsive-Layout | Anforderungen / Abnahmetest | umgesetzt (Breakpoints) |
 | V-MODEL-09 | Lücke | Texturschicht-Toggles ohne Vorschau-Wirkung | Komponentendesign / Integrationstest | offen |
 | V-MODEL-10 | Lücke | Keine Persistenz (Settings/Palette/Projekt) | Anforderungen / Abnahmetest | offen |
@@ -134,15 +134,17 @@ nur bei fehlender Unterstützung die Hex-Fallbacks. Unit-Tests in
 `oklch.test.ts`. **Offen:** Zielbrowser-Matrix formal festlegen; analog Fallback
 für `DecompressionStream`/`OffscreenCanvas` (Bezug V-MODEL-06).
 
-### V-MODEL-13 — UI-Filament-Toggles wirken nicht auf den Backend-Export
-Der Backend-Export erhält die **Original-Palettendatei**; die im UI per Klick
-umgeschalteten `active`-Flags (`FilamentList`) fließen **nicht** mit ein — das
-CLI nutzt die `active`-Angaben der Datei. Die 2D-Vorschau berücksichtigt die
-Toggles dagegen schon, sodass Vorschau und Export divergieren können.
-**Lösungsoptionen:** (a) UI-Toggles serverseitig anwenden (modifizierte Palette
-hochladen oder als Override-Liste mitsenden), (b) Toggles deaktivieren, solange
-eine Datei-Palette aktiv ist. Bezug zu V-MODEL-01 (Palette-Datenmodell).
-**Verifikation:** Integrationstest „deaktiviertes Filament fehlt im Export".
+### V-MODEL-13 — UI-Filament-Toggles im Backend-Export
+**Umgesetzt** (Lösungsweg a). Das Frontend sendet die aktiven Filament-Farben
+als `activeColors` (Hex-Liste) mit; `useExport` hängt sie an den Multipart-Request.
+Der Server (`apply_active_toggles`) setzt im hochgeladenen, hex-keyed Palette-JSON
+pro Farbe das `active`-Flag entsprechend (case-insensitiv), bevor das CLI läuft.
+Vorschau (filtert bereits nach `active`) und Export sind damit konsistent.
+**Verifiziert** (Integrationstest, manuell): Baseline = 8 Farb-Layer; mit nur
+White+Cyan+Magenta+Yellow aktiv enthält das ZIP genau diese 4 — die deaktivierten
+Farben fehlen. **Hinweis:** Im additiven Modus erzwingt das CLI ein aktives
+`#FFFFFF`; wird Weiß deaktiviert, meldet der Export einen entsprechenden
+CLI-Fehler (erwartetes Verhalten).
 
 ---
 

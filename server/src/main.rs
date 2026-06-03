@@ -11,7 +11,7 @@
 //! from $PIXESTL_BIN, else next to this server's executable, else `pixestl` on
 //! PATH. See README.md for the settings -> CLI flag mapping.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -115,6 +115,37 @@ fn build_args(s: &Settings, palette: &Path, input: &Path, output: &Path) -> Vec<
     a
 }
 
+/// True for palette keys that are `#rrggbb` hex colors.
+fn is_hex_key(k: &str) -> bool {
+    k.len() == 7 && k.starts_with('#') && k[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Apply the frontend's filament toggles (V-MODEL-13) to a hex-keyed PIXEstL
+/// palette: each color's `active` flag is set to whether it is in `active`
+/// (case-insensitive). Returns `None` if the palette is not a hex-keyed object
+/// (then the caller keeps the original bytes).
+fn apply_active_toggles(palette_bytes: &[u8], active: &[String]) -> Option<Vec<u8>> {
+    let mut value: serde_json::Value = serde_json::from_slice(palette_bytes).ok()?;
+    let obj = value.as_object_mut()?;
+    let active_lower: HashSet<String> = active.iter().map(|s| s.to_lowercase()).collect();
+
+    let mut changed = false;
+    for (key, val) in obj.iter_mut() {
+        if is_hex_key(key) {
+            if let Some(entry) = val.as_object_mut() {
+                let on = active_lower.contains(&key.to_lowercase());
+                entry.insert("active".into(), serde_json::Value::Bool(on));
+                changed = true;
+            }
+        }
+    }
+    if changed {
+        serde_json::to_vec(&value).ok()
+    } else {
+        None
+    }
+}
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
 #[derive(Serialize)]
@@ -137,6 +168,7 @@ async fn create_job(
     let mut palette: Option<Vec<u8>> = None;
     let mut settings_raw: Option<String> = None;
     let mut format: Option<String> = None;
+    let mut active_colors_raw: Option<String> = None;
 
     while let Some(field) = multipart
         .next_field()
@@ -160,12 +192,25 @@ async fn create_job(
             "format" => {
                 format = Some(field.text().await.map_err(|e| bad(format!("format: {e}")))?);
             }
+            "activeColors" => {
+                active_colors_raw =
+                    Some(field.text().await.map_err(|e| bad(format!("activeColors: {e}")))?);
+            }
             _ => {}
         }
     }
 
     let (img_name, img_bytes) = image.ok_or_else(|| bad("missing 'image' file"))?;
-    let palette_bytes = palette.ok_or_else(|| bad("missing 'palette' file"))?;
+    let mut palette_bytes = palette.ok_or_else(|| bad("missing 'palette' file"))?;
+
+    // Apply the UI filament toggles to the palette before generation (V-MODEL-13).
+    if let Some(raw) = active_colors_raw {
+        let active: Vec<String> = serde_json::from_str(&raw)
+            .map_err(|e| bad(format!("invalid activeColors JSON: {e}")))?;
+        if let Some(patched) = apply_active_toggles(&palette_bytes, &active) {
+            palette_bytes = patched;
+        }
+    }
     let settings: Settings = serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
         .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
     let format = format.unwrap_or_else(|| "3mf".into());

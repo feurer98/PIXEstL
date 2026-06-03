@@ -27,7 +27,7 @@ executable → `pixestl` on `PATH`. Port via `$PORT` (default `8787`).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/jobs` | multipart: `image` (file), `palette` (file), `settings` (JSON), `format` (`3mf`\|`zip`) → `202 { "jobId" }` |
+| `POST` | `/api/jobs` | multipart: `image` (file), `palette` (file), `settings` (JSON), `format` (`3mf`\|`zip`), `activeColors` (JSON hex array, optional) → `202 { "jobId" }` |
 | `GET`  | `/api/jobs/:id` | `{ "status": "queued\|running\|done\|error", "error"?, "filename"? }` |
 | `GET`  | `/api/jobs/:id/download` | generated file bytes once `status == done` |
 | `GET`  | `/api/health` | `ok` |
@@ -62,7 +62,8 @@ The `settings` JSON mirrors the frontend `Settings` type (camelCase):
 - **Original palette required.** The backend needs the uploaded palette file —
   the frontend only keeps base colors, not the per-layer calibration the CLI
   needs (V-MODEL-01). Exporting without a loaded palette file is rejected.
-- **UI filament toggles are not yet applied** to the backend export; the palette
-  file's own `active` flags are authoritative (V-MODEL-13).
+- **UI filament toggles are applied** (V-MODEL-13): the request's `activeColors`
+  list re-sets each palette color's `active` flag before generation. Note that
+  additive mode requires an active `#FFFFFF`; disabling white yields a CLI error.
 - **In-memory jobs, no cleanup/TTL or concurrency limit** yet — fine for local
   use, must be hardened before any shared deployment. CORS is permissive for dev.

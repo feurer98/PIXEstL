@@ -18,6 +18,8 @@ export interface ExportRequest {
   format: ExportFormat;
   imageFile: File | null;
   paletteFile: File | null;
+  /** Hex colors of the currently active filaments (UI toggles, V-MODEL-13). */
+  activeColors: string[];
 }
 
 interface JobView {
@@ -58,6 +60,7 @@ export function useExport() {
         form.append('palette', req.paletteFile);
         form.append('settings', JSON.stringify(req.settings));
         form.append('format', req.format);
+        form.append('activeColors', JSON.stringify(req.activeColors));
 
         const createRes = await fetch(`${API_BASE}/api/jobs`, { method: 'POST', body: form });
         if (!createRes.ok) throw new Error(`Server ${createRes.status}: ${await createRes.text()}`);
