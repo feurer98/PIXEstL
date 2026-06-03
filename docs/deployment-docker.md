@@ -49,6 +49,26 @@ Anderer Host-Port: `-p 9000:8787` (Container-Port bleibt 8787).
   docker run -d -p 8787:8787 --restart unless-stopped pixestl
   ```
 
+## Build über GitHub Actions (tar.gz)
+
+Statt lokal zu bauen, kann GitHub das Image bauen und direkt als `.tar.gz`
+bereitstellen — praktisch, wenn das NAS zu schwach zum Bauen ist.
+
+1. GitHub → **Actions** → Workflow **„Docker image (tar.gz)"** → **Run workflow**,
+   Plattform wählen (`linux/amd64`, `linux/arm64` oder `both`). Läuft auch
+   automatisch bei `v*.*.*`-Tags (amd64).
+2. Nach dem Lauf das Artefakt `pixestl-amd64` bzw. `pixestl-arm64` herunterladen
+   (enthält `pixestl-<arch>.tar.gz`).
+3. Auf dem NAS laden und starten:
+   ```bash
+   gunzip pixestl-amd64.tar.gz
+   docker load < pixestl-amd64.tar
+   docker run -d -p 8787:8787 --restart unless-stopped pixestl:latest
+   ```
+
+> Hinweis: `linux/arm64` wird auf dem amd64-Runner per QEMU emuliert und ist
+> daher deutlich langsamer. Workflow: `.github/workflows/docker-image.yml`.
+
 ## Konfiguration (Env-Variablen)
 
 | Variable | Default | Zweck |
