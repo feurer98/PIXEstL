@@ -389,9 +389,7 @@ impl PaletteLoader {
     fn merge_groups(combi_groups: Vec<Vec<ColorCombi>>) -> Result<Vec<ColorCombi>> {
         let mut iter = combi_groups.into_iter();
         let first = iter.next().ok_or_else(|| {
-            PixestlError::InvalidPalette(
-                "No color combination groups were generated".to_string(),
-            )
+            PixestlError::InvalidPalette("No color combination groups were generated".to_string())
         })?;
 
         Ok(iter.fold(first, |accumulated, next_group| {
@@ -838,11 +836,19 @@ mod tests {
             let mut layers = std::collections::HashMap::new();
             layers.insert(
                 "5".to_string(),
-                LayerDefinition::Hsl { h: 0.0, s: 100.0, l: 50.0 },
+                LayerDefinition::Hsl {
+                    h: 0.0,
+                    s: 100.0,
+                    l: 50.0,
+                },
             );
             m.insert(
                 "#FF0000".to_string(),
-                PaletteColorEntry { name: "Red".to_string(), active: true, layers: Some(layers) },
+                PaletteColorEntry {
+                    name: "Red".to_string(),
+                    active: true,
+                    layers: Some(layers),
+                },
             );
             m
         };
@@ -866,7 +872,10 @@ mod tests {
         let (groups, nb_color_pool) = PaletteLoader::build_ams_groups(&hex_list, &config).unwrap();
 
         assert_eq!(groups.len(), 1);
-        assert!(groups[0].contains(&"#FFFFFF".to_string()), "white must be in group");
+        assert!(
+            groups[0].contains(&"#FFFFFF".to_string()),
+            "white must be in group"
+        );
         assert_eq!(nb_color_pool, 2); // Red + Green
     }
 
@@ -910,9 +919,8 @@ mod tests {
 
     #[test]
     fn test_merge_groups_single_group_is_identity() {
-        let layer = crate::palette::ColorLayer::from_cmyk(
-            "#FF0000".to_string(), 5, 0.0, 1.0, 1.0, 0.0,
-        );
+        let layer =
+            crate::palette::ColorLayer::from_cmyk("#FF0000".to_string(), 5, 0.0, 1.0, 1.0, 0.0);
         let group = vec![crate::palette::ColorCombi::new(layer)];
         let merged = PaletteLoader::merge_groups(vec![group.clone()]).unwrap();
         assert_eq!(merged.len(), group.len());
@@ -931,7 +939,7 @@ mod tests {
         let merged = PaletteLoader::merge_groups(vec![group_a, group_b]).unwrap();
 
         assert_eq!(merged.len(), 4); // 2 × 2
-        // Every result must contain exactly 2 colours (one from each group)
+                                     // Every result must contain exactly 2 colours (one from each group)
         assert!(merged.iter().all(|c| c.total_colors() == 2));
     }
 
