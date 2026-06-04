@@ -1,0 +1,70 @@
+.wrap {
+  margin-bottom: 13px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-text-mid);
+}
+
+.value {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--c-text);
+  font-weight: 500;
+}
+.unit {
+  color: var(--c-text-faint);
+  margin-left: 1px;
+}
+
+.rail {
+  position: relative;
+  height: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--c-border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.fill {
+  width: var(--fill, 0%);
+  height: 100%;
+  background: var(--c-slider-accent);
+  border-radius: 1px;
+  transition: width 0.04s;
+}
+
+.input {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  cursor: pointer;
+  height: 18px;
+  margin: 0;
+}
+
+.hint {
+  font-size: 9px;
+  color: var(--c-text-faint);
+  margin-top: 2px;
+}

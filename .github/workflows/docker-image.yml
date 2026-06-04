@@ -1,0 +1,90 @@
+name: Docker image (tar.gz)
+
+# Builds the single-container image (see Dockerfile) and uploads it as a
+# docker-loadable .tar.gz artifact, so it can be transferred to a NAS:
+#   download artifact → gunzip → `docker load < pixestl-<arch>.tar`
+#
+# Trigger manually (Actions → "Docker image (tar.gz)" → Run workflow) and pick
+# the platform, or it runs on version tags (amd64).
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Target platform(s)
+        type: choice
+        default: linux/amd64
+        options:
+          - linux/amd64
+          - linux/arm64
+          - both
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  # Resolve the platform matrix from the dispatch input (default amd64 for tags).
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        run: |
+          plat="${{ github.event.inputs.platform }}"
+          [ -z "$plat" ] && plat="linux/amd64"
+          case "$plat" in
+            both)        m='{"include":[{"arch":"amd64","platform":"linux/amd64"},{"arch":"arm64","platform":"linux/arm64"}]}' ;;
+            linux/arm64) m='{"include":[{"arch":"arm64","platform":"linux/arm64"}]}' ;;
+            *)           m='{"include":[{"arch":"amd64","platform":"linux/amd64"}]}' ;;
+          esac
+          echo "matrix=$m" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # QEMU lets the amd64 runner also build linux/arm64 (slower, emulated).
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image and export as docker tar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          tags: pixestl:latest
+          outputs: type=docker,dest=pixestl-${{ matrix.arch }}.tar
+
+      - name: Compress
+        run: gzip -f "pixestl-${{ matrix.arch }}.tar"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixestl-${{ matrix.arch }}
+          path: pixestl-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+
+      - name: Summary
+        run: |
+          {
+            echo "### pixestl image (${{ matrix.arch }})"
+            echo ""
+            echo "Artifact: \`pixestl-${{ matrix.arch }}\` → \`pixestl-${{ matrix.arch }}.tar.gz\`"
+            echo ""
+            echo "On the NAS:"
+            echo '```'
+            echo "gunzip pixestl-${{ matrix.arch }}.tar.gz"
+            echo "docker load < pixestl-${{ matrix.arch }}.tar"
+            echo "docker run -d -p 8787:8787 --restart unless-stopped pixestl:latest"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,23 @@
+# One-container setup for testing PIXEstL on a NAS (Synology/QNAP Container
+# Manager, Portainer, or plain docker compose).
+#
+#   docker compose up -d --build      # build + run
+#   open http://<nas-ip>:8787
+#
+services:
+  pixestl:
+    build: .
+    image: pixestl:latest
+    container_name: pixestl
+    ports:
+      - "8787:8787"
+    environment:
+      # Override if you map a different host port or run behind a proxy.
+      PORT: "8787"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8787/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
