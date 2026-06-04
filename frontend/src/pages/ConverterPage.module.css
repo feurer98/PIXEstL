@@ -11,6 +11,15 @@
   overflow-y: auto;
 }
 
+/* Positioning context for the filament manager slide-over, so it overlays the
+   settings region only (the preview above stays visible). */
+.panelsRegion {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .panels {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 260px;
@@ -39,6 +48,10 @@
 
 /* Tablet: panels wrap to a 2×2 grid; the page (not each column) scrolls. */
 @media (max-width: 1024px) {
+  .panelsRegion {
+    flex: 0 0 auto;
+    display: block;
+  }
   .panels {
     grid-template-columns: 1fr 1fr;
     flex: 0 0 auto;

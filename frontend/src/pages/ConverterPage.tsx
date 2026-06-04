@@ -8,6 +8,7 @@ import { DimensionsPanel } from '../components/panels/DimensionsPanel';
 import { ColorLayerPanel } from '../components/panels/ColorLayerPanel';
 import { TexturePanel } from '../components/panels/TexturePanel';
 import { PalettePanel } from '../components/panels/PalettePanel';
+import { FilamentManager } from '../components/panels/FilamentManager';
 import { settingsReducer } from '../state/settingsReducer';
 import { DEFAULT_SETTINGS } from '../lib/constants';
 import { useImageLoader } from '../hooks/useImageLoader';
@@ -23,6 +24,7 @@ export function ConverterPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [lockAspect, setLockAspect] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [filamentManagerOpen, setFilamentManagerOpen] = useState(false);
 
   const lithoRef = useRef<HTMLCanvasElement>(null);
 
@@ -37,8 +39,16 @@ export function ConverterPage() {
       dispatch({ type: 'APPLY_CALIBRATION', plateThickness: cal.plateThickness, firstColor: cal.firstColor }),
     [],
   );
-  const { filaments, toggleFilament, paletteName, paletteFile, calibPlateThickness, error, loadPalette } =
-    usePaletteLoader(onCalibration);
+  const {
+    filaments,
+    setFilaments,
+    toggleFilament,
+    paletteName,
+    paletteFile,
+    calibPlateThickness,
+    error,
+    loadPalette,
+  } = usePaletteLoader(onCalibration);
 
   const stats = useLithophaneCanvas(
     lithoRef,
@@ -65,38 +75,48 @@ export function ConverterPage() {
         />
       </PreviewPane>
 
-      <div className={s.panels}>
-        <DimensionsPanel
-          settings={settings}
-          dispatch={dispatch}
-          lockAspect={lockAspect}
-          onToggleLock={() => setLockAspect((l) => !l)}
-          calibPlateThickness={calibPlateThickness}
-        />
-        <ColorLayerPanel settings={settings} dispatch={dispatch} stats={stats} />
-        <TexturePanel settings={settings} dispatch={dispatch} filaments={filaments} />
-        <PalettePanel
-          paletteName={paletteName}
+      <div className={s.panelsRegion}>
+        <div className={s.panels}>
+          <DimensionsPanel
+            settings={settings}
+            dispatch={dispatch}
+            lockAspect={lockAspect}
+            onToggleLock={() => setLockAspect((l) => !l)}
+            calibPlateThickness={calibPlateThickness}
+          />
+          <ColorLayerPanel settings={settings} dispatch={dispatch} stats={stats} />
+          <TexturePanel settings={settings} dispatch={dispatch} filaments={filaments} />
+          <PalettePanel
+            paletteName={paletteName}
+            filaments={filaments}
+            paletteError={error}
+            onLoadPalette={loadPalette}
+            onManage={() => setFilamentManagerOpen(true)}
+            stats={stats}
+            previewMode={previewMode}
+            hasImage={!!image}
+            exportFormat={exportFormat}
+            onFormatChange={setExportFormat}
+            exportState={exportState}
+            exportError={exportError}
+            onExport={() =>
+              runExport({
+                settings,
+                format: exportFormat,
+                imageFile,
+                paletteFile,
+                activeColors: filaments.filter((f) => f.active).map((f) => f.color),
+              })
+            }
+          />
+        </div>
+
+        <FilamentManager
+          open={filamentManagerOpen}
+          onClose={() => setFilamentManagerOpen(false)}
           filaments={filaments}
-          paletteError={error}
-          onLoadPalette={loadPalette}
-          onToggleFilament={toggleFilament}
-          stats={stats}
-          previewMode={previewMode}
-          hasImage={!!image}
-          exportFormat={exportFormat}
-          onFormatChange={setExportFormat}
-          exportState={exportState}
-          exportError={exportError}
-          onExport={() =>
-            runExport({
-              settings,
-              format: exportFormat,
-              imageFile,
-              paletteFile,
-              activeColors: filaments.filter((f) => f.active).map((f) => f.color),
-            })
-          }
+          onToggleIndex={toggleFilament}
+          onSetFilaments={setFilaments}
         />
       </div>
 
