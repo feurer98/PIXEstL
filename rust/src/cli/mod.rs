@@ -177,7 +177,7 @@ impl Cli {
             color_number: self.color_number,
             distance_method: self.color_distance,
         };
-        let palette = PaletteLoader::load(&self.palette, palette_config)?;
+        let palette = PaletteLoader::load_from_raw(raw_palette, palette_config)?;
         println!("  Farben gefunden: {}", palette.colors().len());
         println!("  Farbgruppen: {}\n", palette.hex_color_groups().len());
 
@@ -342,7 +342,7 @@ impl Cli {
         };
 
         println!();
-        match PaletteLoader::load(&self.palette, palette_config) {
+        match PaletteLoader::load_from_raw(raw_data.clone(), palette_config) {
             Ok(palette) => {
                 println!("Farbkombinationen: {}", palette.color_count());
                 println!("AMS-Gruppen:       {}", palette.nb_groups());
