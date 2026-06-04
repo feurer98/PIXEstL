@@ -323,13 +323,24 @@ impl PaletteLoader {
             .cloned()
             .collect();
 
-        // Determine number of colors per group
+        // Determine number of colors per group.
+        // In Additive mode, one slot is always reserved for white, so color_number=1
+        // would leave 0 slots for non-white colors — guard against that to prevent
+        // a division-by-zero in the group-assignment loop below.
         let nb_color_pool =
             if config.creation_method == PixelCreationMethod::Additive && config.color_number > 0 {
                 config.color_number.saturating_sub(1)
             } else {
                 working_hex_list.len()
             };
+
+        if nb_color_pool == 0 && !working_hex_list.is_empty() {
+            return Err(PixestlError::Config(
+                "color_number must be at least 2 in additive mode \
+                 (1 slot is always reserved for white)"
+                    .to_string(),
+            ));
+        }
 
         // Calculate number of groups
         let nb_groups = if nb_color_pool > 0 {
@@ -752,5 +763,57 @@ mod tests {
 
         let warnings = PaletteLoader::validate_completeness(&data, 1);
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn test_load_color_number_one_returns_error() {
+        // Regression test for B-01: --color-number 1 in Additive mode must not panic
+        // (division-by-zero in the AMS group-assignment loop).
+        let file = create_test_palette_json();
+        let config = PaletteLoaderConfig {
+            color_number: 1,
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+
+        let result = PaletteLoader::load(file.path(), config);
+        assert!(
+            result.is_err(),
+            "color_number=1 with non-white filaments must return an error, not panic"
+        );
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("color_number must be at least 2"),
+            "error message should mention the minimum: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_load_color_number_one_white_only_is_ok() {
+        // Edge-case: palette with only #FFFFFF active; working_hex_list is empty,
+        // so color_number=1 should not trigger the guard.
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        let json = r##"{
+  "#FFFFFF": {
+    "name": "White",
+    "active": true,
+    "layers": { "5": { "H": 0, "S": 0, "L": 100 } }
+  }
+}"##;
+        use std::io::Write as _;
+        write!(file, "{json}").unwrap();
+
+        let config = PaletteLoaderConfig {
+            color_number: 1,
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+
+        // Only white → working_hex_list is empty → guard must not fire
+        let result = PaletteLoader::load(file.path(), config);
+        assert!(
+            result.is_ok(),
+            "white-only palette with color_number=1 should succeed: {result:?}"
+        );
     }
 }
