@@ -1,18 +1,20 @@
 import { useRef } from 'react';
 import { SectionLabel } from '../ui/SectionLabel';
-import { FilamentList } from './FilamentList';
 import { UsageBreakdown } from './UsageBreakdown';
 import { ExportControls } from './ExportControls';
 import type { ExportFormat, Filament, LithoStats, PreviewMode } from '../../lib/types';
 import type { ExportState } from '../../hooks/useExport';
 import s from './PalettePanel.module.css';
 
+const MAX_CHIPS = 18;
+
 interface PalettePanelProps {
   paletteName: string;
   filaments: Filament[];
   paletteError: string | null;
   onLoadPalette: (file: File | null | undefined) => void;
-  onToggleFilament: (index: number) => void;
+  /** Open the filament manager slide-over. */
+  onManage: () => void;
   stats: LithoStats | null;
   previewMode: PreviewMode;
   hasImage: boolean;
@@ -25,7 +27,7 @@ interface PalettePanelProps {
 
 export function PalettePanel(props: PalettePanelProps) {
   const paletteInputRef = useRef<HTMLInputElement | null>(null);
-  const activeCount = props.filaments.filter((f) => f.active).length;
+  const active = props.filaments.filter((f) => f.active);
   const showUsage =
     props.stats &&
     Object.keys(props.stats.filamentUsage).length > 0 &&
@@ -35,13 +37,8 @@ export function PalettePanel(props: PalettePanelProps) {
     <div className={s.column}>
       <SectionLabel>Palette</SectionLabel>
       <div className={s.loadRow}>
-        <div className={s.name}>
-          {props.paletteName}
-        </div>
-        <button
-          onClick={() => paletteInputRef.current?.click()}
-          className={s.openBtn}
-        >
+        <div className={s.name}>{props.paletteName}</div>
+        <button onClick={() => paletteInputRef.current?.click()} className={s.openBtn}>
           Öffnen
         </button>
         <input
@@ -53,14 +50,23 @@ export function PalettePanel(props: PalettePanelProps) {
         />
       </div>
 
-      {props.paletteError && (
-        <div className={s.error}>{props.paletteError}</div>
-      )}
+      {props.paletteError && <div className={s.error}>{props.paletteError}</div>}
 
-      <FilamentList filaments={props.filaments} onToggle={props.onToggleFilament} />
-
-      <div className={s.activeCount}>
-        {activeCount}/{props.filaments.length} Filamente aktiv · Klicken zum Umschalten
+      {/* Compact summary; the full list + tools live in the manager slide-over. */}
+      <div className={s.summary}>
+        <div className={s.chips}>
+          {active.length === 0 && <span className={s.emptyChips}>Keine Filamente aktiv</span>}
+          {active.slice(0, MAX_CHIPS).map((f, i) => (
+            <div key={`${f.name}-${i}`} className={s.chip} style={{ background: f.color }} title={f.name} />
+          ))}
+          {active.length > MAX_CHIPS && <span className={s.more}>+{active.length - MAX_CHIPS}</span>}
+        </div>
+        <button className={s.manageBtn} onClick={props.onManage}>
+          Filamente verwalten
+          <span className={s.manageCount}>
+            {active.length}/{props.filaments.length}
+          </span>
+        </button>
       </div>
 
       {showUsage && props.stats && <UsageBreakdown stats={props.stats} filaments={props.filaments} />}
