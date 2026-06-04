@@ -11,19 +11,6 @@
 
 use crate::color::ColorDistanceMethod;
 
-/// Methode zur Pixel-Erstellung beim Drucken der Farbschichten
-///
-/// Steuert, wie die einzelnen Farbpixel als 3D-Geometrie erzeugt werden:
-/// - `Additive`: Nur die tatsächlich benötigten Schichten werden hinzugefügt.
-/// - `Full`: Jeder Pixel wird vollständig mit allen Schichten befüllt.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PixelCreationMethod {
-    /// Nur die benötigten Schichten werden additiv aufgebaut (spart Material).
-    Additive,
-    /// Jeder Pixel wird mit der vollständigen Schichtzahl befüllt.
-    Full,
-}
-
 /// Vollständige Konfiguration für die Lithophan-Generierung
 ///
 /// Alle Felder steuern gemeinsam die Geometrie und das Druckverhalten.
@@ -54,8 +41,6 @@ pub struct LithophaneConfig {
     pub texture_color: String,
     /// Dicke der Basisplatte in mm
     pub plate_thickness: f64,
-    /// Methode zur Pixel-Erstellung (Additive oder Full)
-    pub pixel_creation_method: PixelCreationMethod,
     /// Anzahl der zu verwendenden Farben (0 = alle aktiven Farben)
     pub color_number: usize,
     /// Methode zur Farbabstandsberechnung (RGB oder CIELab)
@@ -64,12 +49,6 @@ pub struct LithophaneConfig {
     pub curve: f64,
     /// Debug-Ausgaben aktivieren
     pub debug: bool,
-    /// Speichersparender Modus (weniger parallele Verarbeitung)
-    pub low_memory: bool,
-    /// Maximale Thread-Anzahl für Layer-Verarbeitung (0 = unbegrenzt)
-    pub layer_thread_max_number: usize,
-    /// Thread-Anzahl für Zeilen-Verarbeitung (Standard: CPU-Anzahl)
-    pub row_thread_number: usize,
 }
 
 impl Default for LithophaneConfig {
@@ -87,14 +66,10 @@ impl Default for LithophaneConfig {
             texture_layer: true,
             texture_color: "#FFFFFF".to_string(),
             plate_thickness: 0.2,
-            pixel_creation_method: PixelCreationMethod::Additive,
             color_number: 0,
             color_distance_method: ColorDistanceMethod::CieLab,
             curve: 0.0,
             debug: false,
-            low_memory: false,
-            layer_thread_max_number: 0,
-            row_thread_number: num_cpus::get(),
         }
     }
 }

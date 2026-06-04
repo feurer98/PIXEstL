@@ -77,3 +77,16 @@ fn default_transform() -> Mat4 {
 fn is_identity(transform: &Mat4) -> bool {
     *transform == Mat4::IDENTITY
 }
+
+impl Default for BuildItem {
+    fn default() -> Self {
+        Self {
+            object_id: crate::model::ResourceId(0),
+            uuid: None,
+            path: None,
+            part_number: None,
+            transform: Mat4::IDENTITY,
+            printable: None,
+        }
+    }
+}

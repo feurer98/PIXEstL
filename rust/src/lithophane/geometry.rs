@@ -1,10 +1,10 @@
-//! 3D geometry primitives for lithophane generation
+//! 3D-Geometrie-Primitive für die Lithophane-Erzeugung
 //!
-//! Provides Vector3, Triangle, and Mesh structures for building STL models
+//! Stellt Vector3, Triangle und Mesh bereit, um STL-Modelle aufzubauen.
 
 use std::ops::{Add, Mul, Sub};
 
-/// 3D vector
+/// 3D-Vektor
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector3 {
     pub x: f64,
@@ -13,17 +13,20 @@ pub struct Vector3 {
 }
 
 impl Vector3 {
-    /// Creates a new 3D vector
+    /// Erzeugt einen neuen 3D-Vektor.
+    #[inline]
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
 
-    /// Zero vector
+    /// Nullvektor (0, 0, 0).
+    #[inline]
     pub fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0)
     }
 
-    /// Computes the cross product with another vector
+    /// Berechnet das Kreuzprodukt mit einem anderen Vektor.
+    #[inline]
     pub fn cross(&self, other: &Vector3) -> Vector3 {
         Vector3::new(
             self.y * other.z - self.z * other.y,
@@ -32,17 +35,20 @@ impl Vector3 {
         )
     }
 
-    /// Computes the dot product with another vector
+    /// Berechnet das Skalarprodukt mit einem anderen Vektor.
+    #[inline]
     pub fn dot(&self, other: &Vector3) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
-    /// Computes the length (magnitude) of the vector
+    /// Berechnet die Länge (Betrag) des Vektors.
+    #[inline]
     pub fn length(&self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    /// Normalizes the vector to unit length
+    /// Normalisiert den Vektor auf Einheitslänge.
+    #[inline]
     pub fn normalize(&self) -> Vector3 {
         let len = self.length();
         if len > 0.0 {
@@ -56,6 +62,7 @@ impl Vector3 {
 impl Add for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn add(self, other: Vector3) -> Vector3 {
         Vector3::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
@@ -64,6 +71,7 @@ impl Add for Vector3 {
 impl Sub for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn sub(self, other: Vector3) -> Vector3 {
         Vector3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
@@ -72,12 +80,13 @@ impl Sub for Vector3 {
 impl Mul<f64> for Vector3 {
     type Output = Vector3;
 
+    #[inline]
     fn mul(self, scalar: f64) -> Vector3 {
         Vector3::new(self.x * scalar, self.y * scalar, self.z * scalar)
     }
 }
 
-/// 3D triangle with vertices
+/// 3D-Dreieck mit drei Eckpunkten
 #[derive(Debug, Clone, PartialEq)]
 pub struct Triangle {
     pub v0: Vector3,
@@ -86,91 +95,104 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    /// Creates a new triangle
+    /// Erzeugt ein neues Dreieck.
+    #[inline]
     pub fn new(v0: Vector3, v1: Vector3, v2: Vector3) -> Self {
         Self { v0, v1, v2 }
     }
 
-    /// Computes the normal vector for this triangle
+    /// Berechnet den Normalenvektor dieses Dreiecks.
+    #[inline]
     pub fn normal(&self) -> Vector3 {
         let edge1 = self.v1 - self.v0;
         let edge2 = self.v2 - self.v0;
         edge1.cross(&edge2).normalize()
     }
 
-    /// Translates the triangle by a vector
+    /// Verschiebt das Dreieck um einen Offset-Vektor.
+    #[inline]
     pub fn translate(&self, offset: Vector3) -> Triangle {
         Triangle::new(self.v0 + offset, self.v1 + offset, self.v2 + offset)
     }
 }
 
-/// 3D mesh composed of triangles
+/// 3D-Mesh aus Dreiecken
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub triangles: Vec<Triangle>,
 }
 
 impl Mesh {
-    /// Creates a new empty mesh
+    /// Erzeugt ein neues, leeres Mesh.
     pub fn new() -> Self {
         Self {
             triangles: Vec::new(),
         }
     }
 
-    /// Creates a mesh with a given capacity
+    /// Erzeugt ein Mesh mit vorallokierter Kapazität.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             triangles: Vec::with_capacity(capacity),
         }
     }
 
-    /// Adds a triangle to the mesh
+    /// Fügt ein Dreieck zum Mesh hinzu.
+    #[inline]
     pub fn add_triangle(&mut self, triangle: Triangle) {
         self.triangles.push(triangle);
     }
 
-    /// Adds multiple triangles to the mesh
+    /// Fügt mehrere Dreiecke zum Mesh hinzu.
     pub fn extend(&mut self, triangles: impl IntoIterator<Item = Triangle>) {
         self.triangles.extend(triangles);
     }
 
-    /// Gets the number of triangles in the mesh
+    /// Gibt die Anzahl der Dreiecke im Mesh zurück.
+    #[inline]
     pub fn triangle_count(&self) -> usize {
         self.triangles.len()
     }
 
-    /// Translates all triangles in the mesh by a vector
+    /// Verschiebt alle Dreiecke im Mesh um einen Offset-Vektor.
     pub fn translate(&self, offset: Vector3) -> Mesh {
         Mesh {
             triangles: self.triangles.iter().map(|t| t.translate(offset)).collect(),
         }
     }
 
-    /// Merges another mesh into this one (by reference, cloning triangles)
+    /// Fügt ein anderes Mesh per Referenz zusammen (klont die Dreiecke).
     pub fn merge(&mut self, other: &Mesh) {
         self.triangles.extend(other.triangles.iter().cloned());
     }
 
-    /// Merges another mesh into this one by consuming it (no cloning)
+    /// Fügt ein anderes Mesh per Move zusammen (kein Klonen).
     pub fn merge_owned(&mut self, other: Mesh) {
         self.triangles.extend(other.triangles);
     }
 
-    /// Creates a cube mesh
+    /// Erzeugt ein Würfel-Mesh (12 Dreiecke).
     ///
-    /// # Arguments
+    /// # Argumente
     ///
-    /// * `width` - Width (X dimension)
-    /// * `depth` - Depth (Y dimension)
-    /// * `height` - Height (Z dimension)
-    /// * `center` - Center position of the cube
+    /// * `width`  - Breite (X-Achse)
+    /// * `depth`  - Tiefe (Y-Achse)
+    /// * `height` - Höhe (Z-Achse)
+    /// * `center` - Mittelpunkt des Würfels
     pub fn cube(width: f64, depth: f64, height: f64, center: Vector3) -> Self {
+        let mut mesh = Mesh::with_capacity(12);
+        mesh.add_cube(width, depth, height, center);
+        mesh
+    }
+
+    /// Fügt einen Würfel (12 Dreiecke) direkt in dieses Mesh ein,
+    /// ohne Zwischen-Allokation.
+    ///
+    /// In Hot Loops `Mesh::cube()` + `merge()` vorziehen.
+    pub fn add_cube(&mut self, width: f64, depth: f64, height: f64, center: Vector3) {
         let hw = width / 2.0;
         let hd = depth / 2.0;
         let hh = height / 2.0;
-
-        let mut mesh = Mesh::new();
 
         // Define 8 vertices of the cube (relative to center)
         let v000 = center + Vector3::new(-hw, -hd, -hh);
@@ -183,46 +205,47 @@ impl Mesh {
         let v111 = center + Vector3::new(hw, hd, hh);
 
         // Front face (+Y)
-        mesh.add_triangle(Triangle::new(v010, v110, v111));
-        mesh.add_triangle(Triangle::new(v010, v111, v011));
+        self.add_triangle(Triangle::new(v010, v110, v111));
+        self.add_triangle(Triangle::new(v010, v111, v011));
 
         // Back face (-Y)
-        mesh.add_triangle(Triangle::new(v000, v101, v100));
-        mesh.add_triangle(Triangle::new(v000, v001, v101));
+        self.add_triangle(Triangle::new(v000, v101, v100));
+        self.add_triangle(Triangle::new(v000, v001, v101));
 
         // Right face (+X)
-        mesh.add_triangle(Triangle::new(v100, v110, v101));
-        mesh.add_triangle(Triangle::new(v110, v111, v101));
+        self.add_triangle(Triangle::new(v100, v110, v101));
+        self.add_triangle(Triangle::new(v110, v111, v101));
 
         // Left face (-X)
-        mesh.add_triangle(Triangle::new(v000, v011, v001));
-        mesh.add_triangle(Triangle::new(v000, v010, v011));
+        self.add_triangle(Triangle::new(v000, v011, v001));
+        self.add_triangle(Triangle::new(v000, v010, v011));
 
         // Top face (+Z)
-        mesh.add_triangle(Triangle::new(v001, v101, v111));
-        mesh.add_triangle(Triangle::new(v001, v111, v011));
+        self.add_triangle(Triangle::new(v001, v101, v111));
+        self.add_triangle(Triangle::new(v001, v111, v011));
 
         // Bottom face (-Z)
-        mesh.add_triangle(Triangle::new(v000, v110, v010));
-        mesh.add_triangle(Triangle::new(v000, v100, v110));
-
-        mesh
+        self.add_triangle(Triangle::new(v000, v110, v010));
+        self.add_triangle(Triangle::new(v000, v100, v110));
     }
 }
 
 impl Mesh {
-    /// Applies a cylindrical curve transformation to the mesh.
+    /// Wendet eine zylindrische Krümmung auf das Mesh an.
     ///
-    /// Wraps the mesh around a cylinder along the X axis.
-    /// - `curve_degrees`: Arc angle in degrees (0=flat, 90=quarter, 360=full cylinder)
-    /// - `total_width`: Total width of the flat mesh in mm (the arc length)
+    /// Wickelt das Mesh um einen Zylinder entlang der X-Achse.
+    /// - `curve_degrees`: Bogenwinkel in Grad (0=flach, 90=Viertel, 360=Vollzylinder)
+    /// - `total_width`: Gesamtbreite des flachen Meshes in mm (Bogenlänge)
     ///
-    /// The Y axis remains unchanged (cylinder axis).
-    /// The X axis maps to the angular position.
-    /// The Z axis (depth/thickness) becomes the radial offset from the cylinder surface.
-    pub fn apply_curve(&mut self, curve_degrees: f64, total_width: f64) {
+    /// Y-Achse bleibt unverändert (Zylinderachse).
+    /// X-Achse wird auf die Winkelposition abgebildet.
+    /// Z-Achse (Tiefe/Dicke) wird zum radialen Abstand von der Zylinderoberfläche.
+    ///
+    /// Konsumiert `self` und gibt das transformierte Mesh zurück.
+    /// Keine zusätzliche Allokation – Vertices werden in-place modifiziert.
+    pub fn apply_curve(mut self, curve_degrees: f64, total_width: f64) -> Self {
         if curve_degrees == 0.0 || total_width <= 0.0 {
-            return;
+            return self;
         }
 
         let curve_radians = curve_degrees.to_radians();
@@ -236,6 +259,7 @@ impl Mesh {
                 vertex.z = r * angle.cos() - radius;
             }
         }
+        self
     }
 }
 
@@ -392,12 +416,10 @@ mod tests {
 
     #[test]
     fn test_apply_curve_zero_degrees_no_change() {
-        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
-        let original = mesh.clone();
-        mesh.apply_curve(0.0, 100.0);
+        let original = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let curved = original.clone().apply_curve(0.0, 100.0);
 
-        // Should be unchanged
-        for (t_orig, t_curved) in original.triangles.iter().zip(mesh.triangles.iter()) {
+        for (t_orig, t_curved) in original.triangles.iter().zip(curved.triangles.iter()) {
             assert_eq!(t_orig.v0, t_curved.v0);
             assert_eq!(t_orig.v1, t_curved.v1);
             assert_eq!(t_orig.v2, t_curved.v2);
@@ -406,10 +428,10 @@ mod tests {
 
     #[test]
     fn test_apply_curve_preserves_triangle_count() {
-        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
         let count_before = mesh.triangle_count();
-        mesh.apply_curve(90.0, 100.0);
-        assert_eq!(mesh.triangle_count(), count_before);
+        let curved = mesh.apply_curve(90.0, 100.0);
+        assert_eq!(curved.triangle_count(), count_before);
     }
 
     #[test]
@@ -421,17 +443,17 @@ mod tests {
             Vector3::new(10.0, 10.0, 0.0),
             Vector3::new(10.0, 15.0, 0.0),
         ));
-        let original_ys: Vec<f64> = vec![
+        let original_ys = [
             mesh.triangles[0].v0.y,
             mesh.triangles[0].v1.y,
             mesh.triangles[0].v2.y,
         ];
 
-        mesh.apply_curve(180.0, 100.0);
+        let curved = mesh.apply_curve(180.0, 100.0);
 
-        assert_relative_eq!(mesh.triangles[0].v0.y, original_ys[0], epsilon = 1e-10);
-        assert_relative_eq!(mesh.triangles[0].v1.y, original_ys[1], epsilon = 1e-10);
-        assert_relative_eq!(mesh.triangles[0].v2.y, original_ys[2], epsilon = 1e-10);
+        assert_relative_eq!(curved.triangles[0].v0.y, original_ys[0], epsilon = 1e-10);
+        assert_relative_eq!(curved.triangles[0].v1.y, original_ys[1], epsilon = 1e-10);
+        assert_relative_eq!(curved.triangles[0].v2.y, original_ys[2], epsilon = 1e-10);
     }
 
     #[test]
@@ -445,11 +467,11 @@ mod tests {
             Vector3::new(0.0, 2.0, 1.5),
         ));
 
-        mesh.apply_curve(180.0, 100.0);
+        let curved = mesh.apply_curve(180.0, 100.0);
 
         // At x=0: angle=0, new_x = r*sin(0) = 0, new_z = (r+z)*cos(0) - r = z
-        assert_relative_eq!(mesh.triangles[0].v0.x, 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mesh.triangles[0].v0.z, 1.5, epsilon = 1e-10);
+        assert_relative_eq!(curved.triangles[0].v0.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(curved.triangles[0].v0.z, 1.5, epsilon = 1e-10);
     }
 
     #[test]
@@ -464,12 +486,12 @@ mod tests {
             Vector3::new(total_width / 2.0, 1.0, 0.0),
         ));
 
-        mesh.apply_curve(360.0, total_width);
+        let curved = mesh.apply_curve(360.0, total_width);
 
         // v0 at x=0: should stay near origin
-        assert_relative_eq!(mesh.triangles[0].v0.x, 0.0, epsilon = 1e-6);
+        assert_relative_eq!(curved.triangles[0].v0.x, 0.0, epsilon = 1e-6);
         // v1 at x=total_width (360°): should come back near origin
-        assert_relative_eq!(mesh.triangles[0].v1.x, 0.0, epsilon = 1e-6);
+        assert_relative_eq!(curved.triangles[0].v1.x, 0.0, epsilon = 1e-6);
     }
 
     #[test]
@@ -485,23 +507,111 @@ mod tests {
             Vector3::new(0.0, 1.0, 0.0),
         ));
 
-        mesh.apply_curve(90.0, total_width);
+        let curved = mesh.apply_curve(90.0, total_width);
 
         // v0 at x=total_width: angle=π/2
         // new_x = r * sin(π/2) = r ≈ 63.66
         // new_z = r * cos(π/2) - r = 0 - r ≈ -63.66
-        assert_relative_eq!(mesh.triangles[0].v0.x, radius, epsilon = 0.01);
-        assert_relative_eq!(mesh.triangles[0].v0.z, -radius, epsilon = 0.01);
+        assert_relative_eq!(curved.triangles[0].v0.x, radius, epsilon = 0.01);
+        assert_relative_eq!(curved.triangles[0].v0.z, -radius, epsilon = 0.01);
     }
 
     #[test]
     fn test_apply_curve_negative_width_no_change() {
-        let mut mesh = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
-        let original = mesh.clone();
-        mesh.apply_curve(90.0, -1.0); // Invalid width, should skip
+        let original = Mesh::cube(10.0, 10.0, 1.0, Vector3::new(5.0, 5.0, 0.5));
+        let curved = original.clone().apply_curve(90.0, -1.0); // Invalid width, should skip
 
-        for (t_orig, t_curved) in original.triangles.iter().zip(mesh.triangles.iter()) {
+        for (t_orig, t_curved) in original.triangles.iter().zip(curved.triangles.iter()) {
             assert_eq!(t_orig.v0, t_curved.v0);
         }
+    }
+
+    // --- Additional edge case tests ---
+
+    #[test]
+    fn test_normalize_zero_vector_returns_zero() {
+        let v = Vector3::zero();
+        let n = v.normalize();
+        assert_eq!(n, Vector3::zero());
+    }
+
+    #[test]
+    fn test_cross_product_parallel_vectors_is_zero() {
+        let a = Vector3::new(1.0, 0.0, 0.0);
+        let b = Vector3::new(3.0, 0.0, 0.0); // parallel to a
+        let cross = a.cross(&b);
+        assert_relative_eq!(cross.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(cross.y, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(cross.z, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_mesh_merge_owned() {
+        let mut mesh1 = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
+        let mesh2 = Mesh::cube(1.0, 1.0, 1.0, Vector3::new(2.0, 0.0, 0.0));
+        mesh1.merge_owned(mesh2);
+        assert_eq!(mesh1.triangle_count(), 24); // 12 + 12
+    }
+
+    #[test]
+    fn test_mesh_with_capacity() {
+        let mesh = Mesh::with_capacity(100);
+        assert_eq!(mesh.triangle_count(), 0);
+        // Capacity is pre-allocated but not observable beyond "it doesn't crash"
+    }
+
+    #[test]
+    fn test_mesh_extend() {
+        let mut mesh = Mesh::new();
+        let tris = vec![
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 1.0, 0.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(0.0, 1.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
+            Triangle::new(
+                Vector3::zero(),
+                Vector3::new(1.0, 0.0, 0.0),
+                Vector3::new(0.0, 0.0, 1.0),
+            ),
+        ];
+        mesh.extend(tris);
+        assert_eq!(mesh.triangle_count(), 3);
+    }
+
+    #[test]
+    fn test_vector3_sub_self_is_zero() {
+        let v = Vector3::new(42.0, -17.5, 99.9);
+        let result = v - v;
+        assert_relative_eq!(result.x, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(result.y, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(result.z, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_vector3_mul_zero_is_zero() {
+        let v = Vector3::new(42.0, -17.5, 99.9);
+        let result = v * 0.0;
+        assert_eq!(result, Vector3::zero());
+    }
+
+    #[test]
+    fn test_triangle_normal_perpendicular_to_edges() {
+        let t = Triangle::new(
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(3.0, 0.0, 0.0),
+            Vector3::new(0.0, 4.0, 0.0),
+        );
+        let normal = t.normal();
+        let edge1 = t.v1 - t.v0;
+        let edge2 = t.v2 - t.v0;
+        // Normal should be perpendicular to both edges
+        assert_relative_eq!(normal.dot(&edge1), 0.0, epsilon = 1e-10);
+        assert_relative_eq!(normal.dot(&edge2), 0.0, epsilon = 1e-10);
     }
 }

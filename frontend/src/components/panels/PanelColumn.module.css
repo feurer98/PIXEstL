@@ -1,0 +1,14 @@
+.column {
+  border-right: 1px solid var(--c-border);
+  padding: 14px 16px;
+  overflow-y: auto;
+  background: var(--c-surface);
+}
+
+/* When the page becomes the scroll container, columns size to content. */
+@media (max-width: 1024px) {
+  .column {
+    overflow-y: visible;
+    border-bottom: 1px solid var(--c-border);
+  }
+}

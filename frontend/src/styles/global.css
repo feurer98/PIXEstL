@@ -1,0 +1,65 @@
+/* Global resets + shared keyframes, ported from the prototype's <style> blocks.
+   Theme colors are exposed as --c-* custom properties by ThemeProvider. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Range slider thumb — pseudo-elements can't be set inline, so they live here
+   and read the active theme via custom properties. */
+input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-slider-accent);
+  border: 2px solid var(--c-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-slider-accent);
+  border: 2px solid var(--c-surface);
+  cursor: pointer;
+}

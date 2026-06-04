@@ -57,7 +57,7 @@ pub fn generate_calibration_pattern(
 
     // Grid dimensions
     let grid_width =
-        num_columns as f64 * SQUARE_SIZE + (num_columns - 1).max(0) as f64 * COLUMN_GAP;
+        num_columns as f64 * SQUARE_SIZE + num_columns.saturating_sub(1) as f64 * COLUMN_GAP;
     let grid_depth =
         num_filaments as f64 * SQUARE_SIZE + (num_filaments.saturating_sub(1)) as f64 * ROW_GAP;
 

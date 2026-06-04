@@ -40,7 +40,7 @@ fn default_active() -> bool {
 }
 
 /// Generation mode
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum PixelCreationMethod {
     /// Additive color mixing with multiple layers
     Additive,
@@ -114,9 +114,9 @@ impl PaletteLoader {
     ) -> Vec<String> {
         let mut warnings = Vec::new();
 
-        // Sort entries for deterministic output
+        // Sortierung für deterministische Ausgabe
         let mut entries: Vec<_> = palette_data.iter().collect();
-        entries.sort_by_key(|(hex, _)| (*hex).clone());
+        entries.sort_by_key(|(a, _)| *a);
 
         for (hex_code, entry) in &entries {
             if !entry.active {
@@ -178,18 +178,11 @@ impl PaletteLoader {
         warnings
     }
 
-    /// Loads a palette from a JSON file
+    /// Loads a palette from a JSON file.
     ///
-    /// Based on Java Palette constructor
-    ///
-    /// # Arguments
-    ///
-    /// * `path` - Path to the JSON palette file
-    /// * `config` - Loader configuration
-    ///
-    /// # Returns
-    ///
-    /// A fully initialized Palette with all color combinations computed
+    /// Reads the file, parses it, and delegates to [`Self::load_from_raw`].
+    /// If you have already called [`Self::load_raw`] (e.g. to display warnings),
+    /// use [`Self::load_from_raw`] directly to avoid reading the file twice.
     ///
     /// # Example
     ///
@@ -202,31 +195,32 @@ impl PaletteLoader {
     /// println!("Loaded {} colors", palette.color_count());
     /// ```
     pub fn load(path: &Path, config: PaletteLoaderConfig) -> Result<Palette> {
-        // Read and parse JSON
-        let json_content = fs::read_to_string(path)?;
+        Self::load_from_raw(Self::load_raw(path)?, config)
+    }
 
-        let palette_data: HashMap<String, PaletteColorEntry> = serde_json::from_str(&json_content)?;
-
+    /// Builds a fully initialized Palette from already-parsed palette data.
+    ///
+    /// Use this when you have already called [`Self::load_raw`] to validate or
+    /// display palette information, so the file is not read a second time.
+    pub fn load_from_raw(
+        palette_data: HashMap<String, PaletteColorEntry>,
+        config: PaletteLoaderConfig,
+    ) -> Result<Palette> {
         let mut palette = Palette::new(config.nb_layers);
 
-        // Build hex codes map
-        let mut hex_codes_map = HashMap::new();
-        for (hex_code, entry) in &palette_data {
-            hex_codes_map.insert(hex_code.clone(), entry.name.clone());
-        }
-        palette.set_hex_codes(hex_codes_map.clone());
+        let hex_codes_map: HashMap<String, String> = palette_data
+            .iter()
+            .map(|(hex, entry)| (hex.clone(), entry.name.clone()))
+            .collect();
+        palette.set_hex_codes(hex_codes_map);
 
-        // Collect active colors
         let mut hex_color_list: Vec<String> = palette_data
             .iter()
             .filter(|(_, entry)| entry.active && entry.layers.is_some())
             .map(|(hex, _)| hex.clone())
             .collect();
-
-        // Sort by hex code for deterministic order
         hex_color_list.sort();
 
-        // Validate white color in additive mode
         if config.creation_method == PixelCreationMethod::Additive
             && !hex_color_list.contains(&"#FFFFFF".to_string())
         {
@@ -235,10 +229,7 @@ impl PaletteLoader {
             ));
         }
 
-        // Create ColorLayers
         let color_layers = Self::create_color_layers(&palette_data, &config)?;
-
-        // Compute colors by group
         Self::compute_colors_by_group(&mut palette, &color_layers, &hex_color_list, &config)?;
 
         Ok(palette)
@@ -307,23 +298,46 @@ impl PaletteLoader {
         Ok(color_layers)
     }
 
-    /// Computes all color combinations by group (AMS support)
-    ///
-    /// Based on Java Palette.computeColorsByGroup
+    /// Orchestrates AMS group generation, combination computation, and palette population.
     fn compute_colors_by_group(
         palette: &mut Palette,
         color_layers: &[ColorLayer],
         hex_color_list: &[String],
         config: &PaletteLoaderConfig,
     ) -> Result<()> {
-        // Remove white from the list for grouping
+        let (hex_color_groups, nb_color_pool) = Self::build_ams_groups(hex_color_list, config)?;
+        let combi_groups =
+            Self::generate_combis_per_group(&hex_color_groups, color_layers, config.nb_layers);
+        let final_combis = Self::merge_groups(combi_groups)?;
+
+        palette.set_nb_groups(hex_color_groups.len());
+        for mut combi in final_combis {
+            combi.factorize()?;
+            palette.add_combi(combi);
+        }
+        palette.optimize_white_layers(nb_color_pool);
+        Self::init_hex_color_group_list(palette, &hex_color_groups, nb_color_pool);
+
+        Ok(())
+    }
+
+    /// Divides active non-white colours into AMS groups and appends white to each group.
+    ///
+    /// Returns `(groups, nb_color_pool)` where `nb_color_pool` is the number of
+    /// non-white slots per group (used later by `optimize_white_layers` and
+    /// `init_hex_color_group_list`).
+    fn build_ams_groups(
+        hex_color_list: &[String],
+        config: &PaletteLoaderConfig,
+    ) -> Result<(Vec<Vec<String>>, usize)> {
         let working_hex_list: Vec<String> = hex_color_list
             .iter()
             .filter(|h| *h != "#FFFFFF")
             .cloned()
             .collect();
 
-        // Determine number of colors per group
+        // In Additive mode one slot is always reserved for white, so color_number=1
+        // would leave 0 non-white slots — guard against division-by-zero below.
         let nb_color_pool =
             if config.creation_method == PixelCreationMethod::Additive && config.color_number > 0 {
                 config.color_number.saturating_sub(1)
@@ -331,71 +345,59 @@ impl PaletteLoader {
                 working_hex_list.len()
             };
 
-        // Calculate number of groups
+        if nb_color_pool == 0 && !working_hex_list.is_empty() {
+            return Err(PixestlError::Config(
+                "color_number must be at least 2 in additive mode \
+                 (1 slot is always reserved for white)"
+                    .to_string(),
+            ));
+        }
+
         let nb_groups = if nb_color_pool > 0 {
             working_hex_list.len().div_ceil(nb_color_pool)
         } else {
             1
         };
 
-        // Create groups
         let mut hex_color_groups: Vec<Vec<String>> = (0..nb_groups).map(|_| Vec::new()).collect();
-
         for (i, hex_code) in working_hex_list.iter().enumerate() {
-            let group_idx = i / nb_color_pool;
-            if group_idx < hex_color_groups.len() {
-                hex_color_groups[group_idx].push(hex_code.clone());
-            }
+            hex_color_groups[i / nb_color_pool].push(hex_code.clone());
         }
-
-        // Add white to each group
         for group in &mut hex_color_groups {
             group.push("#FFFFFF".to_string());
         }
 
-        // Generate combinations for each group
-        let mut color_combi_list_list: Vec<Vec<ColorCombi>> = Vec::new();
+        Ok((hex_color_groups, nb_color_pool))
+    }
 
-        for group in &hex_color_groups {
-            let combis = create_multi_combi(Some(group), color_layers, config.nb_layers);
-            color_combi_list_list.push(combis);
-        }
+    /// Generates all valid `ColorCombi`s for every AMS group independently.
+    fn generate_combis_per_group(
+        hex_color_groups: &[Vec<String>],
+        color_layers: &[ColorLayer],
+        nb_layers: u32,
+    ) -> Vec<Vec<ColorCombi>> {
+        hex_color_groups
+            .iter()
+            .map(|group| create_multi_combi(Some(group), color_layers, nb_layers))
+            .collect()
+    }
 
-        // Combine groups progressively
-        let mut temp_color_combi_list = vec![color_combi_list_list[0].clone()];
-
-        for i in 0..nb_groups - 1 {
-            let mut temp_list = Vec::new();
-
-            for combi_i in &temp_color_combi_list[i] {
-                for combi_i1 in &color_combi_list_list[i + 1] {
-                    temp_list.push(combi_i.combine_with_combi(combi_i1));
-                }
-            }
-
-            temp_color_combi_list.push(temp_list);
-        }
-
-        let final_combi_list = temp_color_combi_list.last().ok_or_else(|| {
+    /// Merges per-group combination lists via progressive cartesian product.
+    ///
+    /// For groups `[A1, A2]` and `[B1, B2]` the result is
+    /// `[A1+B1, A1+B2, A2+B1, A2+B2]`.
+    fn merge_groups(combi_groups: Vec<Vec<ColorCombi>>) -> Result<Vec<ColorCombi>> {
+        let mut iter = combi_groups.into_iter();
+        let first = iter.next().ok_or_else(|| {
             PixestlError::InvalidPalette("No color combination groups were generated".to_string())
         })?;
 
-        // Set group information
-        palette.set_nb_groups(nb_groups);
-
-        // Factorize and add all combinations
-        for mut combi in final_combi_list.clone() {
-            combi.factorize();
-            palette.add_combi(combi);
-        }
-
-        // Optimize white layers
-        palette.optimize_white_layers(nb_color_pool);
-
-        // Initialize hex color group list for AMS
-        Self::init_hex_color_group_list(palette, &hex_color_groups, nb_color_pool);
-
-        Ok(())
+        Ok(iter.fold(first, |accumulated, next_group| {
+            accumulated
+                .iter()
+                .flat_map(|a| next_group.iter().map(move |b| a.combine_with_combi(b)))
+                .collect()
+        }))
     }
 
     /// Initializes hex color group list for AMS
@@ -430,7 +432,7 @@ impl PaletteLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
+    use std::io::Write as _;
     use tempfile::NamedTempFile;
 
     fn create_test_palette_json() -> NamedTempFile {
@@ -752,5 +754,198 @@ mod tests {
 
         let warnings = PaletteLoader::validate_completeness(&data, 1);
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn test_load_color_number_one_returns_error() {
+        // Regression test for B-01: --color-number 1 in Additive mode must not panic
+        // (division-by-zero in the AMS group-assignment loop).
+        let file = create_test_palette_json();
+        let config = PaletteLoaderConfig {
+            color_number: 1,
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+
+        let result = PaletteLoader::load(file.path(), config);
+        assert!(
+            result.is_err(),
+            "color_number=1 with non-white filaments must return an error, not panic"
+        );
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("color_number must be at least 2"),
+            "error message should mention the minimum: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_load_color_number_one_white_only_is_ok() {
+        // Edge-case: palette with only #FFFFFF active; working_hex_list is empty,
+        // so color_number=1 should not trigger the guard.
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        let json = r##"{
+  "#FFFFFF": {
+    "name": "White",
+    "active": true,
+    "layers": { "5": { "H": 0, "S": 0, "L": 100 } }
+  }
+}"##;
+        use std::io::Write as _;
+        write!(file, "{json}").unwrap();
+
+        let config = PaletteLoaderConfig {
+            color_number: 1,
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+
+        // Only white → working_hex_list is empty → guard must not fire
+        let result = PaletteLoader::load(file.path(), config);
+        assert!(
+            result.is_ok(),
+            "white-only palette with color_number=1 should succeed: {result:?}"
+        );
+    }
+
+    // ── B-05: load_from_raw ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_load_from_raw_equivalent_to_load() {
+        // load_from_raw(load_raw(path)) must produce the same palette as load(path)
+        let file = create_test_palette_json();
+        let config = PaletteLoaderConfig::default();
+
+        let via_load = PaletteLoader::load(file.path(), config.clone()).unwrap();
+        let raw = PaletteLoader::load_raw(file.path()).unwrap();
+        let via_raw = PaletteLoader::load_from_raw(raw, config).unwrap();
+
+        assert_eq!(via_load.color_count(), via_raw.color_count());
+        assert_eq!(via_load.nb_groups(), via_raw.nb_groups());
+        assert_eq!(via_load.hex_color_groups(), via_raw.hex_color_groups());
+        // Name map is identical
+        for hex in ["#FF0000", "#00FF00", "#FFFFFF", "#0000FF"] {
+            assert_eq!(via_load.get_color_name(hex), via_raw.get_color_name(hex));
+        }
+    }
+
+    #[test]
+    fn test_load_from_raw_rejects_missing_white() {
+        let raw = {
+            let mut m = std::collections::HashMap::new();
+            let mut layers = std::collections::HashMap::new();
+            layers.insert(
+                "5".to_string(),
+                LayerDefinition::Hsl {
+                    h: 0.0,
+                    s: 100.0,
+                    l: 50.0,
+                },
+            );
+            m.insert(
+                "#FF0000".to_string(),
+                PaletteColorEntry {
+                    name: "Red".to_string(),
+                    active: true,
+                    layers: Some(layers),
+                },
+            );
+            m
+        };
+        let result = PaletteLoader::load_from_raw(raw, PaletteLoaderConfig::default());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("#FFFFFF"));
+    }
+
+    // ── B-07: build_ams_groups / merge_groups ───────────────────────────────
+
+    #[test]
+    fn test_build_ams_groups_single_group() {
+        // No color_number limit → all non-white colours end up in one group
+        let hex_list = vec![
+            "#FF0000".to_string(),
+            "#00FF00".to_string(),
+            "#FFFFFF".to_string(),
+        ];
+        let config = PaletteLoaderConfig::default(); // color_number = 0
+
+        let (groups, nb_color_pool) = PaletteLoader::build_ams_groups(&hex_list, &config).unwrap();
+
+        assert_eq!(groups.len(), 1);
+        assert!(
+            groups[0].contains(&"#FFFFFF".to_string()),
+            "white must be in group"
+        );
+        assert_eq!(nb_color_pool, 2); // Red + Green
+    }
+
+    #[test]
+    fn test_build_ams_groups_splits_into_two_groups() {
+        // 4 colours + white, color_number=3 → pool=2 → 2 groups of 2 non-white + white each
+        let hex_list = vec![
+            "#FF0000".to_string(),
+            "#00FF00".to_string(),
+            "#0000FF".to_string(),
+            "#FFFF00".to_string(),
+            "#FFFFFF".to_string(),
+        ];
+        let config = PaletteLoaderConfig {
+            color_number: 3, // 3-1=2 non-white per group
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+
+        let (groups, nb_color_pool) = PaletteLoader::build_ams_groups(&hex_list, &config).unwrap();
+
+        assert_eq!(groups.len(), 2);
+        assert_eq!(nb_color_pool, 2);
+        // Every group must end with white
+        for group in &groups {
+            assert!(group.contains(&"#FFFFFF".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_build_ams_groups_color_number_one_errors() {
+        let hex_list = vec!["#FF0000".to_string(), "#FFFFFF".to_string()];
+        let config = PaletteLoaderConfig {
+            color_number: 1,
+            creation_method: PixelCreationMethod::Additive,
+            ..PaletteLoaderConfig::default()
+        };
+        let result = PaletteLoader::build_ams_groups(&hex_list, &config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_merge_groups_single_group_is_identity() {
+        let layer =
+            crate::palette::ColorLayer::from_cmyk("#FF0000".to_string(), 5, 0.0, 1.0, 1.0, 0.0);
+        let group = vec![crate::palette::ColorCombi::new(layer)];
+        let merged = PaletteLoader::merge_groups(vec![group.clone()]).unwrap();
+        assert_eq!(merged.len(), group.len());
+    }
+
+    #[test]
+    fn test_merge_groups_two_groups_cartesian_product() {
+        let make_combi = |hex: &str| {
+            let layer =
+                crate::palette::ColorLayer::from_cmyk(hex.to_string(), 5, 0.0, 0.0, 0.0, 0.0);
+            crate::palette::ColorCombi::new(layer)
+        };
+        let group_a = vec![make_combi("#FF0000"), make_combi("#00FF00")]; // 2
+        let group_b = vec![make_combi("#0000FF"), make_combi("#FFFF00")]; // 2
+
+        let merged = PaletteLoader::merge_groups(vec![group_a, group_b]).unwrap();
+
+        assert_eq!(merged.len(), 4); // 2 × 2
+                                     // Every result must contain exactly 2 colours (one from each group)
+        assert!(merged.iter().all(|c| c.total_colors() == 2));
+    }
+
+    #[test]
+    fn test_merge_groups_empty_returns_error() {
+        let result = PaletteLoader::merge_groups(vec![]);
+        assert!(result.is_err());
     }
 }

@@ -1,7 +1,7 @@
 // Benchmark suite for PIXEstL
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use pixestl::color::{find_closest_color, CieLab, ColorDistance, ColorDistanceMethod, Rgb};
+use pixestl::color::{find_closest_color, CieLab, ColorDistance as _, ColorDistanceMethod, Rgb};
 use pixestl::lithophane::{Mesh, Vector3};
 use pixestl::palette::quantize_pixels;
 

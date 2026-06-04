@@ -2,6 +2,7 @@
 
 use super::ColorLayer;
 use crate::color::{Cmyk, Rgb};
+use crate::error::Result;
 
 /// A combination of color layers that produces a final RGB color
 ///
@@ -132,12 +133,16 @@ impl ColorCombi {
     ///
     /// Based on Java ColorCombi.factorize
     ///
+    /// # Errors
+    ///
+    /// Returns an error if consecutive same-hex layers have mismatched CMYK values.
+    ///
     /// # Example
     ///
     /// `[Red[2], Red[3], Blue[1]]` → `[Red[5], Blue[1]]`
-    pub fn factorize(&mut self) {
+    pub fn factorize(&mut self) -> Result<()> {
         if self.layers.is_empty() {
-            return;
+            return Ok(());
         }
 
         let mut new_layers = Vec::new();
@@ -153,7 +158,7 @@ impl ColorCombi {
 
             if last_layer.hex_code() == layer.hex_code() {
                 // Combine with the last layer
-                let combined = last_layer.combine_with(layer);
+                let combined = last_layer.combine_with(layer)?;
                 new_layers[last_idx] = combined;
             } else {
                 new_layers.push(layer.clone());
@@ -161,6 +166,7 @@ impl ColorCombi {
         }
 
         self.layers = new_layers;
+        Ok(())
     }
 
     /// Gets all layers with a specific hex code
@@ -376,7 +382,7 @@ mod tests {
         assert_eq!(combi.total_colors(), 2);
         assert_eq!(combi.total_layers(), 5);
 
-        combi.factorize();
+        combi.factorize().unwrap();
 
         assert_eq!(combi.total_colors(), 1);
         assert_eq!(combi.total_layers(), 5); // Still 5 total
@@ -394,7 +400,7 @@ mod tests {
         combi.add_layer(green);
         combi.add_layer(red2);
 
-        combi.factorize();
+        combi.factorize().unwrap();
 
         // Non-consecutive reds should NOT be combined
         assert_eq!(combi.total_colors(), 3);

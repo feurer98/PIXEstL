@@ -130,9 +130,21 @@ pub fn resize_image(
     };
 
     if nb_pixel_width == 0 || nb_pixel_height == 0 {
-        return Err(PixestlError::ImageProcess(format!(
+        return Err(PixestlError::Config(format!(
             "Calculated image dimensions are zero (width_mm={width_mm}, height_mm={height_mm}, \
              pixel_mm={pixel_mm}). Specify --width or --height to set the output size."
+        )));
+    }
+
+    // Guard against excessive dimensions that could cause out-of-memory.
+    // 20 000 x 20 000 = 400M pixels x 4 bytes = ~1.6 GB which is a reasonable ceiling.
+    const MAX_PIXELS: u64 = 400_000_000;
+    let total_pixels = u64::from(nb_pixel_width) * u64::from(nb_pixel_height);
+    if total_pixels > MAX_PIXELS {
+        return Err(PixestlError::Config(format!(
+            "Resulting image dimensions are too large ({nb_pixel_width}x{nb_pixel_height} = \
+             {total_pixels} pixels, max {MAX_PIXELS}). Use a smaller --width/--height or \
+             larger --color-pixel-width/--texture-pixel-width to reduce resolution."
         )));
     }
 
@@ -408,6 +420,70 @@ mod tests {
         assert!(pixels[1][1].is_some());
 
         assert_eq!(pixels[0][0].unwrap(), Rgb::new(255, 0, 0));
+    }
+
+    // ── load_image tests ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_load_image_valid_file() {
+        // Write a small PNG to a temp file and load it
+        let buf = ImageBuffer::from_fn(2, 2, |_, _| Rgba([255u8, 0, 0, 255]));
+        let tmp = tempfile::NamedTempFile::with_suffix(".png").unwrap();
+        buf.save(tmp.path()).unwrap();
+
+        let result = load_image(tmp.path());
+        assert!(result.is_ok());
+        let img = result.unwrap();
+        assert_eq!(img.width(), 2);
+        assert_eq!(img.height(), 2);
+    }
+
+    #[test]
+    fn test_load_image_nonexistent_file() {
+        let result = load_image(Path::new("/tmp/pixestl_nonexistent_image_test.png"));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match err {
+            PixestlError::ImageLoad { path, .. } => {
+                assert_eq!(
+                    path,
+                    std::path::PathBuf::from("/tmp/pixestl_nonexistent_image_test.png")
+                );
+            }
+            other => panic!("expected ImageLoad, got: {other}"),
+        }
+    }
+
+    #[test]
+    fn test_load_image_corrupt_file() {
+        let mut tmp = tempfile::NamedTempFile::with_suffix(".png").unwrap();
+        std::io::Write::write_all(&mut tmp, b"this is not a PNG").unwrap();
+
+        let result = load_image(tmp.path());
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            PixestlError::ImageLoad { .. }
+        ));
+    }
+
+    // ── resize_image edge cases ─────────────────────────────────────────────
+
+    #[test]
+    fn test_resize_image_zero_dimensions_returns_error() {
+        let img = DynamicImage::ImageRgba8(create_test_image(100, 50));
+        let result = resize_image(&img, 0.0, 0.0, 0.8);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_resize_image_single_pixel_result() {
+        let img = DynamicImage::ImageRgba8(create_test_image(100, 50));
+        // 0.8mm / 0.8mm = 1 pixel, height: proportional = 0.4/0.8 < 1 → should error
+        // Instead make it produce 1x1: width_mm=0.8 so 1px, height_mm=0.8 so 1px
+        let resized = resize_image(&img, 0.8, 0.8, 0.8).unwrap();
+        assert_eq!(resized.width(), 1);
+        assert_eq!(resized.height(), 1);
     }
 
     #[test]

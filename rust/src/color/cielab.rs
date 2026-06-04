@@ -55,8 +55,16 @@ const D65_Y: f64 = 100.000;
 /// D65 standard illuminant reference white point (Z component)
 const D65_Z: f64 = 108.883;
 
-/// sRGB companding threshold for linearization
+/// sRGB-Kompandierungsschwelle für die Linearisierung
 const SRGB_THRESHOLD: f64 = 0.04045;
+/// sRGB-Offset (Kompandierungsformel: ((n + OFFSET) / DIVISOR)^GAMMA)
+const SRGB_OFFSET: f64 = 0.055;
+/// sRGB-Divisor
+const SRGB_DIVISOR: f64 = 1.055;
+/// sRGB-Gamma-Exponent
+const SRGB_GAMMA: f64 = 2.4;
+/// sRGB-Linearisierungsfaktor für den unteren Bereich (n / LINEAR_DIVISOR)
+const SRGB_LINEAR_DIVISOR: f64 = 12.92;
 
 /// CIELab linearization epsilon: (6/29)^3
 const LAB_EPSILON: f64 = 0.008_856;
@@ -168,14 +176,15 @@ fn rgb_to_xyz(rgb: Rgb) -> Xyz {
     }
 }
 
-/// Gamma correction for RGB → XYZ conversion
+/// Gamma-Korrektur für die RGB → XYZ Umrechnung.
 ///
-/// Based on Java ColorUtil.pivotRgbToXyz implementation
+/// Basiert auf der Java ColorUtil.pivotRgbToXyz Implementierung.
+#[inline]
 fn pivot_rgb_to_xyz(n: f64) -> f64 {
     if n > SRGB_THRESHOLD {
-        ((n + 0.055) / 1.055).powf(2.4)
+        ((n + SRGB_OFFSET) / SRGB_DIVISOR).powf(SRGB_GAMMA)
     } else {
-        n / 12.92
+        n / SRGB_LINEAR_DIVISOR
     }
 }
 
@@ -205,9 +214,10 @@ fn xyz_to_lab(xyz: Xyz) -> CieLab {
     CieLab::new(l, a, b)
 }
 
-/// Lab transformation function for XYZ → CIELab conversion
+/// Lab-Transformationsfunktion für die XYZ → CIELab Umrechnung.
 ///
-/// Based on Java ColorUtil.pivotXyzToLab implementation
+/// Basiert auf der Java ColorUtil.pivotXyzToLab Implementierung.
+#[inline]
 fn pivot_xyz_to_lab(n: f64) -> f64 {
     if n > LAB_EPSILON {
         n.cbrt()
