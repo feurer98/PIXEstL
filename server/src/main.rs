@@ -14,7 +14,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Semaphore};
 
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
@@ -34,6 +34,8 @@ use uuid::Uuid;
 struct AppState {
     jobs: Arc<RwLock<HashMap<String, Job>>>,
     pixestl_bin: PathBuf,
+    /// Limits the number of concurrently running `pixestl` subprocesses.
+    sem: Arc<Semaphore>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -301,8 +303,11 @@ async fn create_job(
     // Run the generation in the background; the client polls GET /jobs/:id.
     let bin = state.pixestl_bin.clone();
     let jobs = state.jobs.clone();
+    let sem = state.sem.clone();
     let job_id = id.clone();
     tokio::spawn(async move {
+        // Acquire a permit before spawning the subprocess; released on drop.
+        let _permit = sem.acquire_owned().await;
         set_status(&jobs, &job_id, JobStatus::Running).await;
         let result = Command::new(&bin).args(&args).output().await;
         let mut map = jobs.write().await;
@@ -441,9 +446,13 @@ fn build_app(state: AppState) -> Router {
 #[tokio::main]
 async fn main() {
     let pixestl_bin = resolve_pixestl_bin();
+    let max_jobs = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
     let state = AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         pixestl_bin: pixestl_bin.clone(),
+        sem: Arc::new(Semaphore::new(max_jobs)),
     };
 
     let port = std::env::var("PORT")
@@ -470,7 +479,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
-    use tokio::sync::RwLock;
+    use tokio::sync::{RwLock, Semaphore};
     use tempfile::TempDir;
     use tower::ServiceExt;
 
@@ -478,6 +487,7 @@ mod tests {
         AppState {
             jobs: Arc::new(RwLock::new(HashMap::new())),
             pixestl_bin: PathBuf::from("pixestl"),
+            sem: Arc::new(Semaphore::new(2)),
         }
     }
 

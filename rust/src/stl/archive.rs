@@ -5,6 +5,19 @@ use crate::lithophane::layer::NamedLayer;
 use crate::stl::writer::write_stl;
 use crate::stl::StlFormat;
 
+fn check_unique_names(layers: &[NamedLayer]) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    for layer in layers {
+        if !seen.insert(layer.name.as_str()) {
+            return Err(PixestlError::Export(format!(
+                "duplicate layer name: \"{}\"",
+                layer.name
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// Exportiert mehrere Layer als einzelne `.stl`-Dateien in ein Verzeichnis.
 ///
 /// Das Verzeichnis wird erstellt, falls es noch nicht existiert.
@@ -18,6 +31,7 @@ use crate::stl::StlFormat;
 ///
 /// # Errors
 ///
+/// Gibt `PixestlError::Export` zurück, wenn zwei Layer denselben Namen haben.
 /// Gibt `PixestlError::Io` zurück, wenn das Verzeichnis nicht erstellt oder
 /// eine Datei nicht geschrieben werden kann.
 pub fn export_to_dir<P: AsRef<std::path::Path>>(
@@ -26,6 +40,8 @@ pub fn export_to_dir<P: AsRef<std::path::Path>>(
     format: StlFormat,
 ) -> Result<()> {
     use std::fs;
+
+    check_unique_names(layers)?;
 
     let dir = dir_path.as_ref();
     fs::create_dir_all(dir).map_err(PixestlError::Io)?;
@@ -52,6 +68,7 @@ pub fn export_to_dir<P: AsRef<std::path::Path>>(
 ///
 /// # Errors
 ///
+/// Gibt `PixestlError::Export` zurück, wenn zwei Layer denselben Namen haben.
 /// Gibt `PixestlError::Io` zurück, wenn die Datei nicht erstellt werden kann,
 /// oder `PixestlError::Zip` bei ZIP-Schreibfehlern.
 pub fn export_to_zip<P: AsRef<std::path::Path>>(
@@ -62,6 +79,8 @@ pub fn export_to_zip<P: AsRef<std::path::Path>>(
     use std::fs::File;
     use zip::write::SimpleFileOptions;
     use zip::ZipWriter;
+
+    check_unique_names(layers)?;
 
     let file = File::create(output_path).map_err(PixestlError::Io)?;
     let mut zip = ZipWriter::new(file);
@@ -84,6 +103,11 @@ mod tests {
     use super::*;
     use crate::lithophane::geometry::{Mesh, Vector3};
 
+    fn cube_layer(name: &str) -> NamedLayer {
+        let mesh = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
+        NamedLayer::without_color(name.to_string(), mesh)
+    }
+
     #[test]
     fn test_export_to_dir_creates_directory_and_files() {
         let mesh = Mesh::cube(1.0, 1.0, 1.0, Vector3::zero());
@@ -105,6 +129,15 @@ mod tests {
     }
 
     #[test]
+    fn test_export_to_dir_duplicate_name_errors() {
+        let layers = vec![cube_layer("plate"), cube_layer("plate")];
+        let dir = tempfile::tempdir().unwrap();
+        let result = export_to_dir(&layers, dir.path(), StlFormat::Binary);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("duplicate layer name"));
+    }
+
+    #[test]
     fn test_export_to_zip_empty_layers() {
         let layers: Vec<NamedLayer> = vec![];
         let tmp = tempfile::NamedTempFile::new().unwrap();
@@ -113,5 +146,14 @@ mod tests {
         let file = std::fs::File::open(tmp.path()).unwrap();
         let archive = zip::ZipArchive::new(file).unwrap();
         assert_eq!(archive.len(), 0);
+    }
+
+    #[test]
+    fn test_export_to_zip_duplicate_name_errors() {
+        let layers = vec![cube_layer("color"), cube_layer("color")];
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let result = export_to_zip(&layers, tmp.path(), StlFormat::Binary);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("duplicate layer name"));
     }
 }
