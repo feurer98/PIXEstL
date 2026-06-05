@@ -43,7 +43,7 @@ impl LithophaneGenerator {
                 .map(|row| row.iter().filter_map(|&p| p).collect())
                 .collect();
 
-            let palette_colors = palette.colors();
+            let palette_colors: Vec<Rgb> = palette.colors().collect();
             let quantized_pixels =
                 quantize_image(&pixels, &palette_colors, self.config.color_distance_method)?;
 

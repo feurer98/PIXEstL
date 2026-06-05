@@ -178,7 +178,7 @@ impl Cli {
             distance_method: self.color_distance,
         };
         let palette = PaletteLoader::load_from_raw(raw_palette, palette_config)?;
-        println!("  Farben gefunden: {}", palette.colors().len());
+        println!("  Farben gefunden: {}", palette.colors().count());
         println!("  Farbgruppen: {}\n", palette.hex_color_groups().len());
 
         // --- Bild laden und Auflösung prüfen ---

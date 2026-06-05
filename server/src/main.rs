@@ -13,7 +13,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
@@ -31,7 +32,7 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 struct AppState {
-    jobs: Arc<Mutex<HashMap<String, Job>>>,
+    jobs: Arc<RwLock<HashMap<String, Job>>>,
     pixestl_bin: PathBuf,
 }
 
@@ -284,7 +285,7 @@ async fn create_job(
     let id = Uuid::new_v4().to_string();
     let dir = Arc::new(dir);
     {
-        let mut jobs = state.jobs.lock().unwrap();
+        let mut jobs = state.jobs.write().await;
         jobs.insert(
             id.clone(),
             Job {
@@ -302,9 +303,9 @@ async fn create_job(
     let jobs = state.jobs.clone();
     let job_id = id.clone();
     tokio::spawn(async move {
-        set_status(&jobs, &job_id, JobStatus::Running);
+        set_status(&jobs, &job_id, JobStatus::Running).await;
         let result = Command::new(&bin).args(&args).output().await;
-        let mut map = jobs.lock().unwrap();
+        let mut map = jobs.write().await;
         if let Some(job) = map.get_mut(&job_id) {
             match result {
                 Ok(out) if out.status.success() => {
@@ -331,8 +332,8 @@ async fn create_job(
     Ok((StatusCode::ACCEPTED, Json(CreateResp { job_id: id })))
 }
 
-fn set_status(jobs: &Arc<Mutex<HashMap<String, Job>>>, id: &str, status: JobStatus) {
-    if let Some(job) = jobs.lock().unwrap().get_mut(id) {
+async fn set_status(jobs: &Arc<RwLock<HashMap<String, Job>>>, id: &str, status: JobStatus) {
+    if let Some(job) = jobs.write().await.get_mut(id) {
         job.status = status;
     }
 }
@@ -350,7 +351,7 @@ async fn get_job(
     State(state): State<AppState>,
     AxPath(id): AxPath<String>,
 ) -> Result<Json<JobView>, ApiError> {
-    let jobs = state.jobs.lock().unwrap();
+    let jobs = state.jobs.read().await;
     let job = jobs
         .get(&id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
@@ -366,7 +367,7 @@ async fn download(
     AxPath(id): AxPath<String>,
 ) -> Result<Response, ApiError> {
     let (path, filename) = {
-        let jobs = state.jobs.lock().unwrap();
+        let jobs = state.jobs.read().await;
         let job = jobs
             .get(&id)
             .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
@@ -437,7 +438,7 @@ fn build_app(state: AppState) -> Router {
 async fn main() {
     let pixestl_bin = resolve_pixestl_bin();
     let state = AppState {
-        jobs: Arc::new(Mutex::new(HashMap::new())),
+        jobs: Arc::new(RwLock::new(HashMap::new())),
         pixestl_bin: pixestl_bin.clone(),
     };
 
@@ -464,13 +465,14 @@ mod tests {
     use axum::http::{Method, Request, StatusCode};
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
     use tempfile::TempDir;
     use tower::ServiceExt;
 
     fn test_state() -> AppState {
         AppState {
-            jobs: Arc::new(Mutex::new(HashMap::new())),
+            jobs: Arc::new(RwLock::new(HashMap::new())),
             pixestl_bin: PathBuf::from("pixestl"),
         }
     }
@@ -637,7 +639,7 @@ mod tests {
         let job_id = "test-job-queued".to_string();
         {
             let dir = Arc::new(TempDir::new().unwrap());
-            let mut jobs = state.jobs.lock().unwrap();
+            let mut jobs = state.jobs.write().await;
             jobs.insert(
                 job_id.clone(),
                 Job {

@@ -80,8 +80,8 @@ impl Palette {
     }
 
     /// Gets all available RGB colors
-    pub fn colors(&self) -> Vec<Rgb> {
-        self.quantized_colors.keys().copied().collect()
+    pub fn colors(&self) -> impl Iterator<Item = Rgb> + '_ {
+        self.quantized_colors.keys().copied()
     }
 
     /// Gets the ColorCombi for a specific RGB color
@@ -121,10 +121,10 @@ impl Palette {
 
     /// Finds the closest palette color to the given RGB color
     pub fn find_closest(&self, color: &Rgb, method: ColorDistanceMethod) -> Option<Rgb> {
-        let colors = self.colors();
-        if colors.is_empty() {
+        if self.quantized_colors.is_empty() {
             return None;
         }
+        let colors: Vec<Rgb> = self.quantized_colors.keys().copied().collect();
         find_closest_color(color, &colors, method).ok()
     }
 

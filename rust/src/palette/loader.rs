@@ -138,7 +138,10 @@ impl PaletteLoader {
                     continue;
                 }
 
-                let max_defined = *defined_layers.iter().max().unwrap();
+                let max_defined = *defined_layers
+                    .iter()
+                    .max()
+                    .expect("invariant: non-empty after is_empty check");
 
                 // Warn if only 1 layer defined but target is higher
                 if defined_layers.len() == 1 && target_layers > 1 {
