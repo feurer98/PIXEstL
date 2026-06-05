@@ -4,7 +4,7 @@
 //!   POST /jobs                 multipart: image, palette, settings(JSON), format
 //!                              -> 202 { "jobId": "..." }
 //!   GET  /jobs/:id             -> { "status", "error"?, "filename"? }
-//!   GET  /jobs/:id/download    -> generated 3MF/ZIP bytes (when status == done)
+//!   GET  /jobs/:id/download    -> generated 3MF/ZIP bytes (when done); deletes job
 //!   GET  /health               -> "ok"
 //!
 //! The job runs the `pixestl` binary as a subprocess. The binary is resolved
@@ -380,6 +380,10 @@ async fn download(
     let bytes = tokio::fs::read(&path)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Remove the job now that the file is in memory; this drops the TempDir.
+    state.jobs.write().await.remove(&id);
+
     let content_type = if filename.ends_with(".zip") {
         "application/zip"
     } else {
@@ -659,6 +663,43 @@ mod tests {
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn test_download_removes_job() {
+        let state = test_state();
+        let job_id = "test-job-done".to_string();
+        let dir = Arc::new(TempDir::new().unwrap());
+        let output_path = dir.path().join("lithophane.3mf");
+        tokio::fs::write(&output_path, b"fake 3mf content")
+            .await
+            .unwrap();
+        {
+            let mut jobs = state.jobs.write().await;
+            jobs.insert(
+                job_id.clone(),
+                Job {
+                    status: JobStatus::Done,
+                    filename: "lithophane.3mf".to_string(),
+                    output_path: Some(output_path),
+                    error: None,
+                    _dir: dir,
+                },
+            );
+        }
+        let jobs_ref = state.jobs.clone();
+        let app = build_app(state);
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri(format!("/api/jobs/{job_id}/download"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(
+            !jobs_ref.read().await.contains_key(&job_id),
+            "job must be removed after download"
+        );
     }
 
     #[test]
