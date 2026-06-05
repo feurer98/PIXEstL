@@ -14,7 +14,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Semaphore};
 
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
@@ -34,6 +34,8 @@ use uuid::Uuid;
 struct AppState {
     jobs: Arc<RwLock<HashMap<String, Job>>>,
     pixestl_bin: PathBuf,
+    /// Limits the number of concurrently running `pixestl` subprocesses.
+    sem: Arc<Semaphore>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -151,10 +153,13 @@ fn apply_active_toggles(palette_bytes: &[u8], active: &[String]) -> Option<Vec<u
     let mut changed = false;
     for (key, val) in obj.iter_mut() {
         if is_hex_key(key) {
-            if let Some(entry) = val.as_object_mut() {
-                let on = active_lower.contains(&key.to_lowercase());
-                entry.insert("active".into(), serde_json::Value::Bool(on));
-                changed = true;
+            match val.as_object_mut() {
+                Some(entry) => {
+                    let on = active_lower.contains(&key.to_lowercase());
+                    entry.insert("active".into(), serde_json::Value::Bool(on));
+                    changed = true;
+                }
+                None => return None,
             }
         }
     }
@@ -163,6 +168,56 @@ fn apply_active_toggles(palette_bytes: &[u8], active: &[String]) -> Option<Vec<u
     } else {
         None
     }
+}
+
+/// Returns `Err(bad(...))` if any f64 setting is non-finite (NaN, ±Inf).
+/// Without this guard, `f64::to_string()` can produce `"inf"` / `"NaN"` which
+/// the CLI rejects with a non-zero exit code, causing a 500 instead of a 400.
+fn validate_settings(s: &Settings) -> Result<(), ApiError> {
+    let fields: &[(&str, f64)] = &[
+        ("width", s.width),
+        ("height", s.height),
+        ("plateThickness", s.plate_thickness),
+        ("curve", s.curve),
+        ("colorPixelWidth", s.color_pixel_width),
+        ("colorLayerThickness", s.color_layer_thickness),
+        ("texturePixelWidth", s.texture_pixel_width),
+        ("textureMin", s.texture_min),
+        ("textureMax", s.texture_max),
+    ];
+    for (name, val) in fields {
+        if !val.is_finite() {
+            return Err(bad(format!(
+                "settings.{name} must be a finite number, got {val}"
+            )));
+        }
+    }
+
+    if !["cie-lab", "rgb"].contains(&s.color_matching.as_str()) {
+        return Err(bad(format!(
+            "settings.colorMatching must be one of [\"cie-lab\", \"rgb\"], got {:?}",
+            s.color_matching
+        )));
+    }
+
+    if !["additive", "full"].contains(&s.pixel_method.as_str()) {
+        return Err(bad(format!(
+            "settings.pixelMethod must be one of [\"additive\", \"full\"], got {:?}",
+            s.pixel_method
+        )));
+    }
+
+    if s.texture_color.len() != 7
+        || !s.texture_color.starts_with('#')
+        || !s.texture_color[1..].chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return Err(bad(format!(
+            "settings.textureColor must be a valid #rrggbb hex color, got {:?}",
+            s.texture_color
+        )));
+    }
+
+    Ok(())
 }
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
@@ -256,6 +311,7 @@ async fn create_job(
     let settings: Settings =
         serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
             .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
+    validate_settings(&settings)?;
     let format = format.unwrap_or_else(|| "3mf".into());
     if format != "3mf" && format != "zip" {
         return Err(bad("format must be '3mf' or 'zip'"));
@@ -301,8 +357,11 @@ async fn create_job(
     // Run the generation in the background; the client polls GET /jobs/:id.
     let bin = state.pixestl_bin.clone();
     let jobs = state.jobs.clone();
+    let sem = state.sem.clone();
     let job_id = id.clone();
     tokio::spawn(async move {
+        // Acquire a permit before spawning the subprocess; released on drop.
+        let _permit = sem.acquire_owned().await;
         set_status(&jobs, &job_id, JobStatus::Running).await;
         let result = Command::new(&bin).args(&args).output().await;
         let mut map = jobs.write().await;
@@ -351,15 +410,21 @@ async fn get_job(
     State(state): State<AppState>,
     AxPath(id): AxPath<String>,
 ) -> Result<Json<JobView>, ApiError> {
-    let jobs = state.jobs.read().await;
+    let mut jobs = state.jobs.write().await;
     let job = jobs
         .get(&id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
-    Ok(Json(JobView {
+    let view = Json(JobView {
         status: job.status.as_str().to_string(),
         error: job.error.clone(),
         filename: (job.status == JobStatus::Done).then(|| job.filename.clone()),
-    }))
+    });
+    // Error jobs are never downloaded; remove them on first read to avoid leaking
+    // the job entry (and its empty TempDir) forever.
+    if job.status == JobStatus::Error {
+        jobs.remove(&id);
+    }
+    Ok(view)
 }
 
 async fn download(
@@ -377,12 +442,10 @@ async fn download(
         }
     };
 
-    let bytes = tokio::fs::read(&path)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-    // Remove the job now that the file is in memory; this drops the TempDir.
+    let bytes = tokio::fs::read(&path).await;
+    // Remove the job and drop the TempDir regardless of read success or failure.
     state.jobs.write().await.remove(&id);
+    let bytes = bytes.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let content_type = if filename.ends_with(".zip") {
         "application/zip"
@@ -441,9 +504,13 @@ fn build_app(state: AppState) -> Router {
 #[tokio::main]
 async fn main() {
     let pixestl_bin = resolve_pixestl_bin();
+    let max_jobs = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
     let state = AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         pixestl_bin: pixestl_bin.clone(),
+        sem: Arc::new(Semaphore::new(max_jobs)),
     };
 
     let port = std::env::var("PORT")
@@ -470,14 +537,15 @@ mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
-    use tokio::sync::RwLock;
     use tempfile::TempDir;
+    use tokio::sync::{RwLock, Semaphore};
     use tower::ServiceExt;
 
     fn test_state() -> AppState {
         AppState {
             jobs: Arc::new(RwLock::new(HashMap::new())),
             pixestl_bin: PathBuf::from("pixestl"),
+            sem: Arc::new(Semaphore::new(2)),
         }
     }
 
@@ -758,5 +826,101 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&result).unwrap();
         assert!(json["#FF0000"]["active"].as_bool().unwrap());
         assert!(!json["#00FF00"]["active"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_apply_active_toggles_non_object_entry_returns_none() {
+        // A hex key whose value is not an object — apply_active_toggles must return None
+        let palette = r##"{"#FF0000": "not-an-object"}"##;
+        let active = vec!["#FF0000".to_string()];
+        let result = apply_active_toggles(palette.as_bytes(), &active);
+        assert!(result.is_none(), "expected None for non-object hex entry");
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_color_matching() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "additive".to_string(),
+            color_matching: "INVALID".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.color_matching = "cie-lab".to_string();
+        assert!(validate_settings(&s).is_ok());
+
+        s.color_matching = "rgb".to_string();
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_pixel_method() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "UNKNOWN".to_string(),
+            color_matching: "cie-lab".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.pixel_method = "additive".to_string();
+        assert!(validate_settings(&s).is_ok());
+
+        s.pixel_method = "full".to_string();
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_texture_color() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "additive".to_string(),
+            color_matching: "cie-lab".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "white".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.texture_color = "#GGGGGG".to_string();
+        assert!(validate_settings(&s).is_err());
+
+        s.texture_color = "#FFFFFF".to_string();
+        assert!(validate_settings(&s).is_ok());
     }
 }

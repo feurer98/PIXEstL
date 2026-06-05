@@ -214,16 +214,15 @@ impl ColorCombi {
     ///
     /// 1. Split layers into: bottom white, middle colored, top white
     /// 2. Reassemble as: bottom + middle + top
-    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize) {
+    pub(crate) fn optimize_white_layers(&mut self) {
         let mut bottom_white = Vec::new();
         let mut middle_colored = Vec::new();
         let mut top_white = Vec::new();
 
-        let mut layer_count = 0;
-
         for layer in &self.layers {
             if layer.hex_code() == "#FFFFFF" {
-                if layer_count <= nb_color_pool {
+                // White before any colored layer → physical bottom; after → physical top.
+                if middle_colored.is_empty() {
                     bottom_white.push(layer.clone());
                 } else {
                     top_white.push(layer.clone());
@@ -231,7 +230,6 @@ impl ColorCombi {
             } else {
                 middle_colored.push(layer.clone());
             }
-            layer_count += layer.layer() as usize;
         }
 
         self.layers.clear();
@@ -426,7 +424,7 @@ mod tests {
         combi.add_layer(red.clone());
         combi.add_layer(white2.clone());
 
-        combi.optimize_white_layers(2);
+        combi.optimize_white_layers();
 
         // White layers should be at bottom and top
         assert_eq!(combi.layers()[0].hex_code(), "#FFFFFF"); // Bottom white
