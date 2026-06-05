@@ -75,6 +75,10 @@ pub fn create_multi_combi(
 /// # Returns
 ///
 /// Vector of all valid ColorCombis that can be formed
+///
+/// # Recursion depth
+///
+/// Bounded by `nb_layers_max / min_layer_count`; typically ≤ 5 in practice.
 fn compute_combination(
     restrict_colors: Option<&[String]>,
     current_combi: &ColorCombi,

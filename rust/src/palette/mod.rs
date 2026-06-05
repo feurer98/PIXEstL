@@ -26,14 +26,16 @@
 
 pub mod color_combi;
 pub mod color_layer;
+pub mod config;
 pub mod generator;
 pub mod loader;
 pub mod quantize;
 
 pub use color_combi::ColorCombi;
 pub use color_layer::ColorLayer;
+pub use config::{PaletteLoaderConfig, PixelCreationMethod};
 pub use generator::create_multi_combi;
-pub use loader::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
+pub use loader::{PaletteColorEntry, PaletteLoader};
 pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
@@ -49,12 +51,12 @@ pub struct Palette {
     hex_codes_map: HashMap<String, String>,
 
     /// Number of layers per color pixel
-    nb_layers: u32,
+    color_layer_count: u32,
 
     /// Number of AMS groups (for multi-color printing)
     nb_groups: usize,
 
-    /// Total layer count (nb_layers * nb_groups)
+    /// Total layer count (color_layer_count * nb_groups)
     layer_count: usize,
 
     /// Color groups for AMS (each group contains hex codes)
@@ -63,11 +65,11 @@ pub struct Palette {
 
 impl Palette {
     /// Creates a new empty palette
-    pub fn new(nb_layers: u32) -> Self {
+    pub fn new(color_layer_count: u32) -> Self {
         Self {
             quantized_colors: HashMap::new(),
             hex_codes_map: HashMap::new(),
-            nb_layers,
+            color_layer_count,
             nb_groups: 0,
             layer_count: 0,
             hex_color_group_list: Vec::new(),
@@ -80,8 +82,8 @@ impl Palette {
     }
 
     /// Gets all available RGB colors
-    pub fn colors(&self) -> Vec<Rgb> {
-        self.quantized_colors.keys().copied().collect()
+    pub fn colors(&self) -> impl Iterator<Item = Rgb> + '_ {
+        self.quantized_colors.keys().copied()
     }
 
     /// Gets the ColorCombi for a specific RGB color
@@ -100,8 +102,8 @@ impl Palette {
     }
 
     /// Gets the number of layers per color pixel
-    pub fn nb_layers(&self) -> u32 {
-        self.nb_layers
+    pub fn color_layer_count(&self) -> u32 {
+        self.color_layer_count
     }
 
     /// Gets the number of AMS groups
@@ -121,10 +123,10 @@ impl Palette {
 
     /// Finds the closest palette color to the given RGB color
     pub fn find_closest(&self, color: &Rgb, method: ColorDistanceMethod) -> Option<Rgb> {
-        let colors = self.colors();
-        if colors.is_empty() {
+        if self.quantized_colors.is_empty() {
             return None;
         }
+        let colors: Vec<Rgb> = self.quantized_colors.keys().copied().collect();
         find_closest_color(color, &colors, method).ok()
     }
 
@@ -142,7 +144,7 @@ impl Palette {
     /// Sets the number of groups
     pub(crate) fn set_nb_groups(&mut self, nb_groups: usize) {
         self.nb_groups = nb_groups;
-        self.layer_count = self.nb_layers as usize * nb_groups;
+        self.layer_count = self.color_layer_count as usize * nb_groups;
     }
 
     /// Sets the hex color groups
@@ -153,7 +155,7 @@ impl Palette {
     /// Optimizes white layers (moves white to bottom and top)
     pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize) {
         for combi in self.quantized_colors.values_mut() {
-            combi.optimize_white_layers(nb_color_pool, self.nb_layers as usize);
+            combi.optimize_white_layers(nb_color_pool);
         }
     }
 }

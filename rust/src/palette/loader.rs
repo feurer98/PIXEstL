@@ -1,7 +1,8 @@
 //! JSON Palette loader with serde
 
-use crate::color::{ColorDistanceMethod, Rgb};
+use crate::color::Rgb;
 use crate::error::{PixestlError, Result};
+use crate::palette::config::{PaletteLoaderConfig, PixelCreationMethod};
 use crate::palette::{create_multi_combi, ColorCombi, ColorLayer, Palette};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -37,39 +38,6 @@ pub struct PaletteColorEntry {
 
 fn default_active() -> bool {
     true
-}
-
-/// Generation mode
-#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
-pub enum PixelCreationMethod {
-    /// Additive color mixing with multiple layers
-    Additive,
-    /// Full color layers (no mixing)
-    Full,
-}
-
-/// Palette loader configuration
-#[derive(Debug, Clone)]
-pub struct PaletteLoaderConfig {
-    /// Number of layers per color pixel
-    pub nb_layers: u32,
-    /// Pixel creation method
-    pub creation_method: PixelCreationMethod,
-    /// Number of colors to use (0 = all active colors)
-    pub color_number: usize,
-    /// Color distance method for quantization
-    pub distance_method: ColorDistanceMethod,
-}
-
-impl Default for PaletteLoaderConfig {
-    fn default() -> Self {
-        Self {
-            nb_layers: 5,
-            creation_method: PixelCreationMethod::Additive,
-            color_number: 0,
-            distance_method: ColorDistanceMethod::CieLab,
-        }
-    }
 }
 
 /// Loads palettes from JSON files
@@ -138,7 +106,10 @@ impl PaletteLoader {
                     continue;
                 }
 
-                let max_defined = *defined_layers.iter().max().unwrap();
+                let max_defined = *defined_layers
+                    .iter()
+                    .max()
+                    .expect("invariant: non-empty after is_empty check");
 
                 // Warn if only 1 layer defined but target is higher
                 if defined_layers.len() == 1 && target_layers > 1 {
@@ -206,7 +177,7 @@ impl PaletteLoader {
         palette_data: HashMap<String, PaletteColorEntry>,
         config: PaletteLoaderConfig,
     ) -> Result<Palette> {
-        let mut palette = Palette::new(config.nb_layers);
+        let mut palette = Palette::new(config.color_layer_count);
 
         let hex_codes_map: HashMap<String, String> = palette_data
             .iter()
@@ -283,7 +254,7 @@ impl PaletteLoader {
 
                     color_layers.push(ColorLayer::new(
                         hex_code.clone(),
-                        config.nb_layers,
+                        config.color_layer_count,
                         hsl.h,
                         hsl.s,
                         hsl.l,
@@ -306,8 +277,11 @@ impl PaletteLoader {
         config: &PaletteLoaderConfig,
     ) -> Result<()> {
         let (hex_color_groups, nb_color_pool) = Self::build_ams_groups(hex_color_list, config)?;
-        let combi_groups =
-            Self::generate_combis_per_group(&hex_color_groups, color_layers, config.nb_layers);
+        let combi_groups = Self::generate_combis_per_group(
+            &hex_color_groups,
+            color_layers,
+            config.color_layer_count,
+        );
         let final_combis = Self::merge_groups(combi_groups)?;
 
         palette.set_nb_groups(hex_color_groups.len());
@@ -374,11 +348,11 @@ impl PaletteLoader {
     fn generate_combis_per_group(
         hex_color_groups: &[Vec<String>],
         color_layers: &[ColorLayer],
-        nb_layers: u32,
+        color_layer_count: u32,
     ) -> Vec<Vec<ColorCombi>> {
         hex_color_groups
             .iter()
-            .map(|group| create_multi_combi(Some(group), color_layers, nb_layers))
+            .map(|group| create_multi_combi(Some(group), color_layers, color_layer_count))
             .collect()
     }
 

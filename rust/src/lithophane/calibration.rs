@@ -49,11 +49,11 @@ pub fn generate_calibration_pattern(
         .collect();
     active_filaments.sort_by_key(|(hex, _)| hex.to_string());
 
-    let nb_layers = config.color_pixel_layer_number;
+    let color_layer_count = config.color_layer_count;
     let layer_thickness = config.color_pixel_layer_thickness;
     let plate_thickness = config.plate_thickness;
     let num_filaments = active_filaments.len();
-    let num_columns = nb_layers as usize;
+    let num_columns = color_layer_count as usize;
 
     // Grid dimensions
     let grid_width =
@@ -74,7 +74,7 @@ pub fn generate_calibration_pattern(
         let mut filament_mesh = Mesh::new();
         let row_y = row_idx as f64 * (SQUARE_SIZE + ROW_GAP);
 
-        for layer_count in 1..=nb_layers {
+        for layer_count in 1..=color_layer_count {
             let col_idx = (layer_count - 1) as usize;
             let col_x = col_idx as f64 * (SQUARE_SIZE + COLUMN_GAP);
 
@@ -103,8 +103,8 @@ pub fn generate_calibration_pattern(
 /// Returns the grid dimensions (width_mm, depth_mm) for a calibration pattern.
 #[must_use]
 #[allow(clippy::cast_precision_loss)]
-pub fn calibration_grid_dimensions(num_filaments: usize, nb_layers: u32) -> (f64, f64) {
-    let num_columns = nb_layers as usize;
+pub fn calibration_grid_dimensions(num_filaments: usize, color_layer_count: u32) -> (f64, f64) {
+    let num_columns = color_layer_count as usize;
     let width =
         num_columns as f64 * SQUARE_SIZE + (num_columns.saturating_sub(1)) as f64 * COLUMN_GAP;
     let depth =
@@ -237,7 +237,7 @@ mod tests {
     fn test_calibration_pattern_squares_per_filament() {
         let palette_data = create_test_palette_data();
         let config = LithophaneConfig {
-            color_pixel_layer_number: 5,
+            color_layer_count: 5,
             ..LithophaneConfig::default()
         };
 
@@ -308,7 +308,7 @@ mod tests {
         );
 
         let config = LithophaneConfig {
-            color_pixel_layer_number: 1,
+            color_layer_count: 1,
             ..LithophaneConfig::default()
         };
 
