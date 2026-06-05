@@ -309,7 +309,6 @@ mod tests {
             ),
             NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
         ];
-        let colors = vec!["#AA0000", "#00BB00"];
         let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
 
         // Objekt-IDs und Extruder-Zuweisung
@@ -368,7 +367,6 @@ mod tests {
             None,
         ));
 
-        let colors: Vec<&str> = colors_list.to_vec();
         let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
 
         // Alle 8 Extruder-Werte müssen korrekt zugewiesen sein
