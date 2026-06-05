@@ -51,12 +51,12 @@ pub struct Palette {
     hex_codes_map: HashMap<String, String>,
 
     /// Number of layers per color pixel
-    nb_layers: u32,
+    color_layer_count: u32,
 
     /// Number of AMS groups (for multi-color printing)
     nb_groups: usize,
 
-    /// Total layer count (nb_layers * nb_groups)
+    /// Total layer count (color_layer_count * nb_groups)
     layer_count: usize,
 
     /// Color groups for AMS (each group contains hex codes)
@@ -65,11 +65,11 @@ pub struct Palette {
 
 impl Palette {
     /// Creates a new empty palette
-    pub fn new(nb_layers: u32) -> Self {
+    pub fn new(color_layer_count: u32) -> Self {
         Self {
             quantized_colors: HashMap::new(),
             hex_codes_map: HashMap::new(),
-            nb_layers,
+            color_layer_count,
             nb_groups: 0,
             layer_count: 0,
             hex_color_group_list: Vec::new(),
@@ -102,8 +102,8 @@ impl Palette {
     }
 
     /// Gets the number of layers per color pixel
-    pub fn nb_layers(&self) -> u32 {
-        self.nb_layers
+    pub fn color_layer_count(&self) -> u32 {
+        self.color_layer_count
     }
 
     /// Gets the number of AMS groups
@@ -144,7 +144,7 @@ impl Palette {
     /// Sets the number of groups
     pub(crate) fn set_nb_groups(&mut self, nb_groups: usize) {
         self.nb_groups = nb_groups;
-        self.layer_count = self.nb_layers as usize * nb_groups;
+        self.layer_count = self.color_layer_count as usize * nb_groups;
     }
 
     /// Sets the hex color groups

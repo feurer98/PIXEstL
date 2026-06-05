@@ -13,7 +13,7 @@ pub enum PixelCreationMethod {
 #[derive(Debug, Clone)]
 pub struct PaletteLoaderConfig {
     /// Number of layers per color pixel
-    pub nb_layers: u32,
+    pub color_layer_count: u32,
     /// Pixel creation method
     pub creation_method: PixelCreationMethod,
     /// Number of colors to use (0 = all active colors)
@@ -25,7 +25,7 @@ pub struct PaletteLoaderConfig {
 impl Default for PaletteLoaderConfig {
     fn default() -> Self {
         Self {
-            nb_layers: 5,
+            color_layer_count: 5,
             creation_method: PixelCreationMethod::Additive,
             color_number: 0,
             distance_method: ColorDistanceMethod::CieLab,

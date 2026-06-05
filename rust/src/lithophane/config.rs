@@ -26,7 +26,7 @@ pub struct LithophaneConfig {
     /// Dicke einer einzelnen Druckschicht in mm (z.B. 0.1)
     pub color_pixel_layer_thickness: f64,
     /// Anzahl der Farbschichten pro Pixel (bestimmt Farbintensität, z.B. 5)
-    pub color_pixel_layer_number: u32,
+    pub color_layer_count: u32,
     /// Ob eine Farbschicht generiert werden soll
     pub color_layer: bool,
     /// Breite eines Texturpixels in mm (kleiner als color_pixel_width für mehr Detail)
@@ -58,7 +58,7 @@ impl Default for LithophaneConfig {
             dest_height_mm: 0.0,
             color_pixel_width: 0.8,
             color_pixel_layer_thickness: 0.1,
-            color_pixel_layer_number: 5,
+            color_layer_count: 5,
             color_layer: true,
             texture_pixel_width: 0.25,
             texture_min_thickness: 0.3,
@@ -81,7 +81,7 @@ impl LithophaneConfig {
     ///
     /// Gibt einen `PixestlError::Config`-Fehler zurück, wenn:
     /// - `color_pixel_width`, `texture_pixel_width` oder `color_pixel_layer_thickness` nicht positiv sind
-    /// - `color_pixel_layer_number` null ist
+    /// - `color_layer_count` null ist
     /// - `texture_min_thickness` nicht positiv ist
     /// - `texture_max_thickness` nicht größer als `texture_min_thickness` ist
     /// - `plate_thickness` negativ ist
@@ -103,9 +103,9 @@ impl LithophaneConfig {
                 "color_pixel_layer_thickness must be positive".to_string(),
             ));
         }
-        if self.color_pixel_layer_number == 0 {
+        if self.color_layer_count == 0 {
             return Err(crate::error::PixestlError::Config(
-                "color_pixel_layer_number must be positive".to_string(),
+                "color_layer_count must be positive".to_string(),
             ));
         }
         if self.texture_min_thickness <= 0.0 {
@@ -140,9 +140,9 @@ impl LithophaneConfig {
     ///
     /// # Returns
     ///
-    /// `color_pixel_layer_thickness * color_pixel_layer_number` als `f64`-Wert in Millimetern.
+    /// `color_pixel_layer_thickness * color_layer_count` als `f64`-Wert in Millimetern.
     pub fn total_color_layer_height(&self) -> f64 {
-        self.color_pixel_layer_thickness * self.color_pixel_layer_number as f64
+        self.color_pixel_layer_thickness * self.color_layer_count as f64
     }
 }
 
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn test_invalid_layer_number() {
         let config = LithophaneConfig {
-            color_pixel_layer_number: 0,
+            color_layer_count: 0,
             ..LithophaneConfig::default()
         };
         assert!(config.validate().is_err());
@@ -225,7 +225,7 @@ mod tests {
     fn test_total_color_layer_height() {
         let config = LithophaneConfig {
             color_pixel_layer_thickness: 0.1,
-            color_pixel_layer_number: 5,
+            color_layer_count: 5,
             ..LithophaneConfig::default()
         };
         assert!((config.total_color_layer_height() - 0.5).abs() < 1e-10);

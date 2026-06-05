@@ -130,7 +130,7 @@ impl Cli {
             dest_height_mm: self.height,
             color_pixel_width: self.color_pixel_width,
             color_pixel_layer_thickness: self.color_layer_thickness,
-            color_pixel_layer_number: self.color_layers,
+            color_layer_count: self.color_layers,
             color_layer: !self.no_color,
             texture_pixel_width: self.texture_pixel_width,
             texture_min_thickness: self.texture_min,
@@ -172,7 +172,7 @@ impl Cli {
         self.print_palette_warnings(&raw_palette);
 
         let palette_config = PaletteLoaderConfig {
-            nb_layers: self.color_layers,
+            color_layer_count: self.color_layers,
             creation_method: self.pixel_method,
             color_number: self.color_number,
             distance_method: self.color_distance,
@@ -335,7 +335,7 @@ impl Cli {
 
         // Try to load full palette for combination count and AMS info
         let palette_config = PaletteLoaderConfig {
-            nb_layers: self.color_layers,
+            color_layer_count: self.color_layers,
             creation_method: self.pixel_method,
             color_number: self.color_number,
             distance_method: self.color_distance,

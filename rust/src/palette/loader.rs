@@ -177,7 +177,7 @@ impl PaletteLoader {
         palette_data: HashMap<String, PaletteColorEntry>,
         config: PaletteLoaderConfig,
     ) -> Result<Palette> {
-        let mut palette = Palette::new(config.nb_layers);
+        let mut palette = Palette::new(config.color_layer_count);
 
         let hex_codes_map: HashMap<String, String> = palette_data
             .iter()
@@ -254,7 +254,7 @@ impl PaletteLoader {
 
                     color_layers.push(ColorLayer::new(
                         hex_code.clone(),
-                        config.nb_layers,
+                        config.color_layer_count,
                         hsl.h,
                         hsl.s,
                         hsl.l,
@@ -277,8 +277,11 @@ impl PaletteLoader {
         config: &PaletteLoaderConfig,
     ) -> Result<()> {
         let (hex_color_groups, nb_color_pool) = Self::build_ams_groups(hex_color_list, config)?;
-        let combi_groups =
-            Self::generate_combis_per_group(&hex_color_groups, color_layers, config.nb_layers);
+        let combi_groups = Self::generate_combis_per_group(
+            &hex_color_groups,
+            color_layers,
+            config.color_layer_count,
+        );
         let final_combis = Self::merge_groups(combi_groups)?;
 
         palette.set_nb_groups(hex_color_groups.len());
@@ -345,11 +348,11 @@ impl PaletteLoader {
     fn generate_combis_per_group(
         hex_color_groups: &[Vec<String>],
         color_layers: &[ColorLayer],
-        nb_layers: u32,
+        color_layer_count: u32,
     ) -> Vec<Vec<ColorCombi>> {
         hex_color_groups
             .iter()
-            .map(|group| create_multi_combi(Some(group), color_layers, nb_layers))
+            .map(|group| create_multi_combi(Some(group), color_layers, color_layer_count))
             .collect()
     }
 
