@@ -89,23 +89,40 @@ struct Settings {
 /// Translate the frontend settings + paths + output format into `pixestl` args.
 fn build_args(s: &Settings, palette: &Path, input: &Path, output: &Path) -> Vec<String> {
     let mut a: Vec<String> = vec![
-        "--palette".into(), palette.display().to_string(),
-        "--input".into(), input.display().to_string(),
-        "--output".into(), output.display().to_string(),
-        "--width".into(), s.width.to_string(),
-        "--height".into(), s.height.to_string(),
-        "--color-pixel-width".into(), s.color_pixel_width.to_string(),
-        "--color-layer-thickness".into(), s.color_layer_thickness.to_string(),
-        "--color-layers".into(), s.color_layers.to_string(),
-        "--texture-pixel-width".into(), s.texture_pixel_width.to_string(),
-        "--texture-min".into(), s.texture_min.to_string(),
-        "--texture-max".into(), s.texture_max.to_string(),
-        "--texture-color".into(), s.texture_color.clone(),
-        "--plate-thickness".into(), s.plate_thickness.to_string(),
-        "--color-distance".into(), s.color_matching.clone(),
-        "--pixel-method".into(), s.pixel_method.clone(),
-        "--color-number".into(), s.ams_colors.to_string(),
-        "--curve".into(), s.curve.to_string(),
+        "--palette".into(),
+        palette.display().to_string(),
+        "--input".into(),
+        input.display().to_string(),
+        "--output".into(),
+        output.display().to_string(),
+        "--width".into(),
+        s.width.to_string(),
+        "--height".into(),
+        s.height.to_string(),
+        "--color-pixel-width".into(),
+        s.color_pixel_width.to_string(),
+        "--color-layer-thickness".into(),
+        s.color_layer_thickness.to_string(),
+        "--color-layers".into(),
+        s.color_layers.to_string(),
+        "--texture-pixel-width".into(),
+        s.texture_pixel_width.to_string(),
+        "--texture-min".into(),
+        s.texture_min.to_string(),
+        "--texture-max".into(),
+        s.texture_max.to_string(),
+        "--texture-color".into(),
+        s.texture_color.clone(),
+        "--plate-thickness".into(),
+        s.plate_thickness.to_string(),
+        "--color-distance".into(),
+        s.color_matching.clone(),
+        "--pixel-method".into(),
+        s.pixel_method.clone(),
+        "--color-number".into(),
+        s.ams_colors.to_string(),
+        "--curve".into(),
+        s.curve.to_string(),
     ];
     if !s.enable_color {
         a.push("--no-color".into());
@@ -180,22 +197,45 @@ async fn create_job(
         let file_name = field.file_name().map(|s| s.to_string());
         match name.as_str() {
             "image" => {
-                let bytes = field.bytes().await.map_err(|e| bad(format!("image: {e}")))?;
-                image = Some((file_name.unwrap_or_else(|| "input.png".into()), bytes.to_vec()));
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|e| bad(format!("image: {e}")))?;
+                image = Some((
+                    file_name.unwrap_or_else(|| "input.png".into()),
+                    bytes.to_vec(),
+                ));
             }
             "palette" => {
-                let bytes = field.bytes().await.map_err(|e| bad(format!("palette: {e}")))?;
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|e| bad(format!("palette: {e}")))?;
                 palette = Some(bytes.to_vec());
             }
             "settings" => {
-                settings_raw = Some(field.text().await.map_err(|e| bad(format!("settings: {e}")))?);
+                settings_raw = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|e| bad(format!("settings: {e}")))?,
+                );
             }
             "format" => {
-                format = Some(field.text().await.map_err(|e| bad(format!("format: {e}")))?);
+                format = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|e| bad(format!("format: {e}")))?,
+                );
             }
             "activeColors" => {
-                active_colors_raw =
-                    Some(field.text().await.map_err(|e| bad(format!("activeColors: {e}")))?);
+                active_colors_raw = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|e| bad(format!("activeColors: {e}")))?,
+                );
             }
             _ => {}
         }
@@ -212,8 +252,9 @@ async fn create_job(
             palette_bytes = patched;
         }
     }
-    let settings: Settings = serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
-        .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
+    let settings: Settings =
+        serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
+            .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
     let format = format.unwrap_or_else(|| "3mf".into());
     if format != "3mf" && format != "zip" {
         return Err(bad("format must be '3mf' or 'zip'"));
@@ -310,7 +351,9 @@ async fn get_job(
     AxPath(id): AxPath<String>,
 ) -> Result<Json<JobView>, ApiError> {
     let jobs = state.jobs.lock().unwrap();
-    let job = jobs.get(&id).ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
+    let job = jobs
+        .get(&id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
     Ok(Json(JobView {
         status: job.status.as_str().to_string(),
         error: job.error.clone(),
@@ -324,7 +367,9 @@ async fn download(
 ) -> Result<Response, ApiError> {
     let (path, filename) = {
         let jobs = state.jobs.lock().unwrap();
-        let job = jobs.get(&id).ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
+        let job = jobs
+            .get(&id)
+            .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
         match (&job.status, &job.output_path) {
             (JobStatus::Done, Some(p)) => (p.clone(), job.filename.clone()),
             _ => return Err((StatusCode::CONFLICT, "job not finished".into())),
@@ -372,6 +417,22 @@ fn resolve_pixestl_bin() -> PathBuf {
     PathBuf::from("pixestl")
 }
 
+fn build_app(state: AppState) -> Router {
+    let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "static".into());
+    let spa = ServeDir::new(&static_dir)
+        .not_found_service(ServeFile::new(format!("{static_dir}/index.html")));
+
+    Router::new()
+        .route("/api/jobs", post(create_job))
+        .route("/api/jobs/:id", get(get_job))
+        .route("/api/jobs/:id/download", get(download))
+        .route("/api/health", get(health))
+        .fallback_service(spa)
+        .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
+        .layer(tower_http::cors::CorsLayer::permissive())
+        .with_state(state)
+}
+
 #[tokio::main]
 async fn main() {
     let pixestl_bin = resolve_pixestl_bin();
@@ -380,26 +441,10 @@ async fn main() {
         pixestl_bin: pixestl_bin.clone(),
     };
 
-    // Serve the built frontend (SPA) from STATIC_DIR; unknown paths fall back to
-    // index.html. In dev the frontend runs under Vite, so this dir is usually
-    // absent and these routes simply 404 — the API is unaffected.
-    let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "static".into());
-    let spa = ServeDir::new(&static_dir)
-        .not_found_service(ServeFile::new(format!("{static_dir}/index.html")));
-
-    let app = Router::new()
-        .route("/api/jobs", post(create_job))
-        .route("/api/jobs/:id", get(get_job))
-        .route("/api/jobs/:id/download", get(download))
-        .route("/api/health", get(health))
-        .fallback_service(spa)
-        // Raise the 2 MB default body limit so normal photos upload (64 MB).
-        .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
-        // Permissive CORS is fine for local dev; restrict in production.
-        .layer(tower_http::cors::CorsLayer::permissive())
-        .with_state(state);
-
-    let port = std::env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8787u16);
+    let port = std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8787u16);
     let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
@@ -407,5 +452,268 @@ async fn main() {
 
     eprintln!("pixestl-server listening on http://{addr}");
     eprintln!("using pixestl binary: {}", pixestl_bin.display());
-    axum::serve(listener, app).await.expect("server error");
+    axum::serve(listener, build_app(state))
+        .await
+        .expect("server error");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Method, Request, StatusCode};
+    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
+    use std::sync::{Arc, Mutex};
+    use tempfile::TempDir;
+    use tower::ServiceExt;
+
+    fn test_state() -> AppState {
+        AppState {
+            jobs: Arc::new(Mutex::new(HashMap::new())),
+            pixestl_bin: PathBuf::from("pixestl"),
+        }
+    }
+
+    fn multipart_body(boundary: &str, parts: &[(&str, Option<&str>, &[u8])]) -> Vec<u8> {
+        let mut body = Vec::new();
+        for (name, filename, content) in parts {
+            body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+            if let Some(fname) = filename {
+                body.extend_from_slice(
+                    format!(
+                        "Content-Disposition: form-data; name=\"{name}\"; filename=\"{fname}\"\r\n"
+                    )
+                    .as_bytes(),
+                );
+            } else {
+                body.extend_from_slice(
+                    format!("Content-Disposition: form-data; name=\"{name}\"\r\n").as_bytes(),
+                );
+            }
+            body.extend_from_slice(b"\r\n");
+            body.extend_from_slice(content);
+            body.extend_from_slice(b"\r\n");
+        }
+        body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
+        body
+    }
+
+    fn default_settings_json() -> String {
+        serde_json::json!({
+            "width": 100.0,
+            "height": 75.0,
+            "plateThickness": 2.0,
+            "curve": 0.0,
+            "colorPixelWidth": 1.0,
+            "colorLayerThickness": 0.12,
+            "colorLayers": 5,
+            "pixelMethod": "additive",
+            "colorMatching": "cie-lab",
+            "amsColors": 4,
+            "texturePixelWidth": 1.0,
+            "textureMin": 0.0,
+            "textureMax": 2.0,
+            "textureColor": "#FFFFFF",
+            "enableColor": true,
+            "enableTexture": true
+        })
+        .to_string()
+    }
+
+    #[tokio::test]
+    async fn test_health() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("/api/health")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 64).await.unwrap();
+        assert_eq!(bytes.as_ref(), b"ok");
+    }
+
+    #[tokio::test]
+    async fn test_get_unknown_job() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("/api/jobs/no-such-id")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_create_job_missing_image() {
+        let app = build_app(test_state());
+        let boundary = "test_boundary";
+        let settings = default_settings_json();
+        let body = multipart_body(
+            boundary,
+            &[
+                ("settings", None, settings.as_bytes()),
+                ("format", None, b"3mf"),
+            ],
+        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("/api/jobs")
+            .header(
+                "content-type",
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_create_job_invalid_format() {
+        let app = build_app(test_state());
+        let boundary = "test_boundary";
+        let settings = default_settings_json();
+        let palette = r##"{"#FFFFFF":{"name":"White","active":true,"layers":{"Filled":5}}}"##;
+        let body = multipart_body(
+            boundary,
+            &[
+                ("image", Some("test.png"), b"\x89PNG"),
+                ("palette", Some("palette.json"), palette.as_bytes()),
+                ("settings", None, settings.as_bytes()),
+                ("format", None, b"stl"),
+            ],
+        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("/api/jobs")
+            .header(
+                "content-type",
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_create_job_returns_job_id() {
+        let app = build_app(test_state());
+        let boundary = "test_boundary";
+        let settings = default_settings_json();
+        let palette = r##"{"#FFFFFF":{"name":"White","active":true,"layers":{"Filled":5}}}"##;
+        let body = multipart_body(
+            boundary,
+            &[
+                ("image", Some("input.png"), b"\x89PNG fake"),
+                ("palette", Some("palette.json"), palette.as_bytes()),
+                ("settings", None, settings.as_bytes()),
+                ("format", None, b"3mf"),
+            ],
+        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("/api/jobs")
+            .header(
+                "content-type",
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::ACCEPTED);
+        let bytes = axum::body::to_bytes(resp.into_body(), 256).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(json["jobId"].as_str().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_download_not_ready() {
+        let state = test_state();
+        let job_id = "test-job-queued".to_string();
+        {
+            let dir = Arc::new(TempDir::new().unwrap());
+            let mut jobs = state.jobs.lock().unwrap();
+            jobs.insert(
+                job_id.clone(),
+                Job {
+                    status: JobStatus::Queued,
+                    filename: "lithophane.3mf".to_string(),
+                    output_path: None,
+                    error: None,
+                    _dir: dir,
+                },
+            );
+        }
+        let app = build_app(state);
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri(format!("/api/jobs/{job_id}/download"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CONFLICT);
+    }
+
+    #[test]
+    fn test_build_args_maps_all_settings() {
+        let settings = Settings {
+            width: 120.0,
+            height: 80.0,
+            plate_thickness: 2.5,
+            curve: 1.0,
+            color_pixel_width: 0.6,
+            color_layer_thickness: 0.10,
+            color_layers: 4,
+            pixel_method: "full".to_string(),
+            color_matching: "rgb".to_string(),
+            ams_colors: 3,
+            texture_pixel_width: 0.8,
+            texture_min: 0.5,
+            texture_max: 1.5,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: false,
+            enable_texture: true,
+        };
+        let args = build_args(
+            &settings,
+            Path::new("/tmp/palette.json"),
+            Path::new("/tmp/input.png"),
+            Path::new("/tmp/out.3mf"),
+        );
+        let joined = args.join(" ");
+        assert!(joined.contains("--width 120"), "width flag missing");
+        assert!(joined.contains("--height 80"), "height flag missing");
+        assert!(
+            joined.contains("--pixel-method full"),
+            "pixel-method flag missing"
+        );
+        assert!(
+            joined.contains("--color-distance rgb"),
+            "color-distance flag missing"
+        );
+        assert!(
+            joined.contains("--color-number 3"),
+            "color-number flag missing"
+        );
+        assert!(joined.contains("--no-color"), "--no-color flag missing");
+        assert!(
+            !joined.contains("--no-texture"),
+            "--no-texture should be absent"
+        );
+    }
+
+    #[test]
+    fn test_apply_active_toggles_marks_inactive() {
+        let palette = r##"{"#FF0000":{"name":"Red","active":true},"#00FF00":{"name":"Green","active":true}}"##;
+        let active = vec!["#FF0000".to_string()];
+        let result = apply_active_toggles(palette.as_bytes(), &active).unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&result).unwrap();
+        assert!(json["#FF0000"]["active"].as_bool().unwrap());
+        assert!(!json["#00FF00"]["active"].as_bool().unwrap());
+    }
 }
