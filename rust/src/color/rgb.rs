@@ -182,8 +182,8 @@ mod tests {
         assert!(Rgb::from_hex("#FF00").is_err()); // Too short
         assert!(Rgb::from_hex("#FF00000").is_err()); // Too long
         assert!(Rgb::from_hex("#GGGGGG").is_err()); // Invalid hex
-        // 7-byte non-ASCII: without the is_ascii() guard this would panic
-        // because byte index 3 falls in the middle of the 2-byte char 'å'
+                                                    // 7-byte non-ASCII: without the is_ascii() guard this would panic
+                                                    // because byte index 3 falls in the middle of the 2-byte char 'å'
         assert!(Rgb::from_hex("#aåaab").is_err());
     }
 

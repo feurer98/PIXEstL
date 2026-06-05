@@ -134,7 +134,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let result = export_to_dir(&layers, dir.path(), StlFormat::Binary);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("duplicate layer name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate layer name"));
     }
 
     #[test]
@@ -154,6 +157,9 @@ mod tests {
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let result = export_to_zip(&layers, tmp.path(), StlFormat::Binary);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("duplicate layer name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate layer name"));
     }
 }
