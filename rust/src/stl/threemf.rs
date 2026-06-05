@@ -138,8 +138,8 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
 
     // Bambu-Konfigurationsdateien als Attachments direkt ins Modell einfügen.
     // lib3mf-core schreibt model.attachments automatisch ins ZIP – kein Two-Pass nötig.
-    let model_config_xml = filament_mapping.generate_model_settings_config(layers);
-    let project_config = filament_mapping.generate_project_settings_config();
+    let model_config_xml = generate_model_settings_config(&filament_mapping, layers);
+    let project_config = generate_project_settings_config(&filament_mapping);
 
     model.attachments.insert(
         "Metadata/model_settings.config".to_string(),
@@ -158,6 +158,114 @@ pub fn export_to_3mf<P: AsRef<std::path::Path>>(
         .map_err(|e| PixestlError::Export(e.to_string()))?;
 
     Ok(())
+}
+
+/// Hex-Farbe als RGBA für Bambu Studio (z.B. `"#FF0000"` → `"#FF0000FF"`).
+fn hex_to_rgba(hex: &str) -> String {
+    if hex.len() == 7 && hex.starts_with('#') {
+        format!("{}FF", hex)
+    } else {
+        hex.to_string()
+    }
+}
+
+/// Escapes XML special characters in attribute values.
+fn xml_escape(s: &str) -> String {
+    // Order matters: & must come first to avoid double-escaping
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+/// Generiert `Metadata/model_settings.config` XML für Bambu Studio.
+///
+/// Enthält:
+/// 1. `<object>` mit `<metadata key="extruder">` (Filamentslot pro Objekt)
+/// 2. `<part>` Sub-Elemente (Bambu erwartet mindestens ein Part)
+/// 3. `<plate>` mit `<filament>` Einträgen und `<model_instance>` Verknüpfungen
+///
+/// Die object-IDs beginnen bei 2 (ID 1 = ColorGroup-Resource).
+fn generate_model_settings_config(mapping: &FilamentMapping, layers: &[NamedLayer]) -> String {
+    let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
+
+    // Object-Einträge mit part-Sub-Elementen (zwingend für Bambu-Erkennung)
+    for (idx, layer) in layers.iter().enumerate() {
+        let object_id = (idx + 2) as u32; // ID 1 = ColorGroup
+        let extruder = mapping.extruder_for_layer(idx);
+        let name = xml_escape(&layer.name);
+        xml.push_str(&format!(
+            "  <object id=\"{object_id}\">\n\
+             \x20   <metadata key=\"name\" value=\"{name}\"/>\n\
+             \x20   <metadata key=\"extruder\" value=\"{extruder}\"/>\n\
+             \x20   <part id=\"1\" subtype=\"normal_part\">\n\
+             \x20     <metadata key=\"name\" value=\"{name}\"/>\n\
+             \x20     <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n\
+             \x20     <metadata key=\"source_volume_id\" value=\"0\"/>\n\
+             \x20   </part>\n\
+             \x20 </object>\n",
+        ));
+    }
+
+    // Plate-Abschnitt
+    let filament_map: String = (1..=mapping.colors().len())
+        .map(|i| i.to_string())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    xml.push_str(&format!(
+        "  <plate>\n\
+         \x20   <metadata key=\"plater_id\" value=\"1\"/>\n\
+         \x20   <metadata key=\"locked\" value=\"false\"/>\n\
+         \x20   <metadata key=\"filament_map\" value=\"{filament_map}\"/>\n",
+    ));
+
+    // Filament-Einträge mit RGBA-Farben
+    for (i, color) in mapping.colors().iter().enumerate() {
+        let rgba = hex_to_rgba(color);
+        xml.push_str(&format!(
+            "    <filament id=\"{}\" type=\"PLA\" color=\"{}\" used_m=\"0\" used_g=\"0\"/>\n",
+            i + 1,
+            rgba
+        ));
+    }
+
+    // model_instance Verknüpfungen
+    for (idx, _layer) in layers.iter().enumerate() {
+        let object_id = (idx + 2) as u32;
+        let identify_id = (idx + 1) as u32;
+        xml.push_str(&format!(
+            "    <model_instance>\n\
+             \x20     <metadata key=\"object_id\" value=\"{object_id}\"/>\n\
+             \x20     <metadata key=\"instance_id\" value=\"0\"/>\n\
+             \x20     <metadata key=\"identify_id\" value=\"{identify_id}\"/>\n\
+             \x20   </model_instance>\n"
+        ));
+    }
+    xml.push_str("  </plate>\n");
+
+    xml.push_str("</config>");
+    xml
+}
+
+/// Generiert `Metadata/project_settings.config` für Bambu Studio.
+///
+/// Diese Datei definiert die Projekt-Filamente auf Projektebene.
+/// Ohne diese Datei verwendet Bambu Studio die Standard-Druckerprofil-Filamente
+/// (typischerweise 4 Slots) und ignoriert zusätzliche Extruder-Zuweisungen.
+///
+/// Format: JSON-Objekt (kein INI/XML), wie von BambuStudio/OrcaSlicer erwartet.
+/// Siehe `lib3mf-core::parser::bambu_config::parse_project_settings`.
+fn generate_project_settings_config(mapping: &FilamentMapping) -> String {
+    let colours: Vec<String> = mapping.colors().iter().map(|c| hex_to_rgba(c)).collect();
+    let types: Vec<&str> = mapping.colors().iter().map(|_| "PLA").collect();
+
+    let json = serde_json::json!({
+        "filament_colour": colours,
+        "filament_type": types,
+    });
+
+    serde_json::to_string_pretty(&json).unwrap_or_else(|_| json.to_string())
 }
 
 #[cfg(test)]
@@ -309,7 +417,7 @@ mod tests {
             ),
             NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
         ];
-        let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
+        let xml = generate_model_settings_config(&FilamentMapping::from_layers(&layers), &layers);
 
         // Objekt-IDs und Extruder-Zuweisung
         assert!(xml.contains(r#"id="2""#));
@@ -367,7 +475,7 @@ mod tests {
             None,
         ));
 
-        let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
+        let xml = generate_model_settings_config(&FilamentMapping::from_layers(&layers), &layers);
 
         // Alle 8 Extruder-Werte müssen korrekt zugewiesen sein
         for i in 1..=8 {
@@ -455,5 +563,82 @@ mod tests {
             "Expected 4 unique vertices for a quad, got {}",
             lib_mesh.vertices.len()
         );
+    }
+
+    #[test]
+    fn test_hex_to_rgba() {
+        assert_eq!(hex_to_rgba("#FF0000"), "#FF0000FF");
+        assert_eq!(hex_to_rgba("#00FF00"), "#00FF00FF");
+        assert_eq!(hex_to_rgba("#FFFFFF"), "#FFFFFFFF");
+        // Already RGBA
+        assert_eq!(hex_to_rgba("#FF0000FF"), "#FF0000FF");
+    }
+
+    #[test]
+    fn test_xml_escape() {
+        assert_eq!(xml_escape("normal"), "normal");
+        assert_eq!(xml_escape("layer & color"), "layer &amp; color");
+        assert_eq!(xml_escape("<bold>"), "&lt;bold&gt;");
+        assert_eq!(xml_escape("say \"hi\""), "say &quot;hi&quot;");
+        // & must not be double-escaped
+        assert_eq!(xml_escape("a&b"), "a&amp;b");
+    }
+
+    #[test]
+    fn test_project_settings_config_output() {
+        let mesh = Mesh::new();
+        let layers = vec![
+            NamedLayer::new(
+                "layer-Red".to_string(),
+                mesh.clone(),
+                Some("#FF0000".to_string()),
+            ),
+            NamedLayer::new(
+                "layer-Green".to_string(),
+                mesh.clone(),
+                Some("#00FF00".to_string()),
+            ),
+        ];
+
+        let mapping = FilamentMapping::from_layers(&layers);
+        let config = generate_project_settings_config(&mapping);
+
+        // JSON format: parseable by BambuStudio/OrcaSlicer
+        let json: serde_json::Value =
+            serde_json::from_str(&config).expect("project_settings.config must be valid JSON");
+
+        let colours = json["filament_colour"]
+            .as_array()
+            .expect("filament_colour must be an array");
+        assert_eq!(colours.len(), 2);
+        assert_eq!(colours[0].as_str().unwrap(), "#FF0000FF");
+        assert_eq!(colours[1].as_str().unwrap(), "#00FF00FF");
+
+        let types = json["filament_type"]
+            .as_array()
+            .expect("filament_type must be an array");
+        assert_eq!(types.len(), 2);
+        assert_eq!(types[0].as_str().unwrap(), "PLA");
+    }
+
+    #[test]
+    fn test_model_settings_config_xml_escaping() {
+        // A layer name with XML special characters must not produce invalid XML
+        let mesh = Mesh::new();
+        let layers = vec![NamedLayer::new(
+            "layer <Red> & \"Blue\"".to_string(),
+            mesh,
+            Some("#FF0000".to_string()),
+        )];
+        let mapping = FilamentMapping::from_layers(&layers);
+        let xml = generate_model_settings_config(&mapping, &layers);
+
+        assert!(
+            xml.contains("layer &lt;Red&gt; &amp; &quot;Blue&quot;"),
+            "Special chars must be XML-escaped; got: {xml}"
+        );
+        // Must not contain raw unescaped special chars in attribute values
+        assert!(!xml.contains("\"Blue\""), "Raw quotes must be escaped");
+        assert!(!xml.contains("<Red>"), "Raw angle brackets must be escaped");
     }
 }
