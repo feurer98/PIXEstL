@@ -167,6 +167,31 @@ fn apply_active_toggles(palette_bytes: &[u8], active: &[String]) -> Option<Vec<u
     }
 }
 
+/// Returns `Err(bad(...))` if any f64 setting is non-finite (NaN, ±Inf).
+/// Without this guard, `f64::to_string()` can produce `"inf"` / `"NaN"` which
+/// the CLI rejects with a non-zero exit code, causing a 500 instead of a 400.
+fn validate_settings(s: &Settings) -> Result<(), ApiError> {
+    let fields: &[(&str, f64)] = &[
+        ("width", s.width),
+        ("height", s.height),
+        ("plateThickness", s.plate_thickness),
+        ("curve", s.curve),
+        ("colorPixelWidth", s.color_pixel_width),
+        ("colorLayerThickness", s.color_layer_thickness),
+        ("texturePixelWidth", s.texture_pixel_width),
+        ("textureMin", s.texture_min),
+        ("textureMax", s.texture_max),
+    ];
+    for (name, val) in fields {
+        if !val.is_finite() {
+            return Err(bad(format!(
+                "settings.{name} must be a finite number, got {val}"
+            )));
+        }
+    }
+    Ok(())
+}
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
 #[derive(Serialize)]
@@ -258,6 +283,7 @@ async fn create_job(
     let settings: Settings =
         serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
             .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
+    validate_settings(&settings)?;
     let format = format.unwrap_or_else(|| "3mf".into());
     if format != "3mf" && format != "zip" {
         return Err(bad("format must be '3mf' or 'zip'"));
@@ -356,15 +382,21 @@ async fn get_job(
     State(state): State<AppState>,
     AxPath(id): AxPath<String>,
 ) -> Result<Json<JobView>, ApiError> {
-    let jobs = state.jobs.read().await;
+    let mut jobs = state.jobs.write().await;
     let job = jobs
         .get(&id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "unknown job".into()))?;
-    Ok(Json(JobView {
+    let view = Json(JobView {
         status: job.status.as_str().to_string(),
         error: job.error.clone(),
         filename: (job.status == JobStatus::Done).then(|| job.filename.clone()),
-    }))
+    });
+    // Error jobs are never downloaded; remove them on first read to avoid leaking
+    // the job entry (and its empty TempDir) forever.
+    if job.status == JobStatus::Error {
+        jobs.remove(&id);
+    }
+    Ok(view)
 }
 
 async fn download(
@@ -382,12 +414,10 @@ async fn download(
         }
     };
 
-    let bytes = tokio::fs::read(&path)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-    // Remove the job now that the file is in memory; this drops the TempDir.
+    let bytes = tokio::fs::read(&path).await;
+    // Remove the job and drop the TempDir regardless of read success or failure.
     state.jobs.write().await.remove(&id);
+    let bytes = bytes.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let content_type = if filename.ends_with(".zip") {
         "application/zip"
@@ -479,8 +509,8 @@ mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
-    use tokio::sync::{RwLock, Semaphore};
     use tempfile::TempDir;
+    use tokio::sync::{RwLock, Semaphore};
     use tower::ServiceExt;
 
     fn test_state() -> AppState {

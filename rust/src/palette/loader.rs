@@ -289,7 +289,7 @@ impl PaletteLoader {
             combi.factorize()?;
             palette.add_combi(combi);
         }
-        palette.optimize_white_layers(nb_color_pool);
+        palette.optimize_white_layers();
         Self::init_hex_color_group_list(palette, &hex_color_groups, nb_color_pool);
 
         Ok(())

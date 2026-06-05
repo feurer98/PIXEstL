@@ -153,9 +153,9 @@ impl Palette {
     }
 
     /// Optimizes white layers (moves white to bottom and top)
-    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize) {
+    pub(crate) fn optimize_white_layers(&mut self) {
         for combi in self.quantized_colors.values_mut() {
-            combi.optimize_white_layers(nb_color_pool);
+            combi.optimize_white_layers();
         }
     }
 }

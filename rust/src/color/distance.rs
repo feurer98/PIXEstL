@@ -132,6 +132,13 @@ pub fn find_closest_color_precomputed(
             "Color list cannot be empty".to_string(),
         ));
     }
+    if colors.len() != palette_labs.len() {
+        return Err(PixestlError::InvalidPalette(format!(
+            "colors ({}) and palette_labs ({}) must have the same length",
+            colors.len(),
+            palette_labs.len()
+        )));
+    }
 
     match method {
         ColorDistanceMethod::Rgb => Ok(find_closest_rgb(target, colors)),
@@ -298,6 +305,18 @@ mod tests {
 
         let result = find_closest_color(&target, &palette, ColorDistanceMethod::Rgb);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_closest_color_precomputed_mismatched_lengths() {
+        let target = Rgb::new(128, 128, 128);
+        let colors = vec![Rgb::new(0, 0, 0), Rgb::new(255, 255, 255)];
+        let labs = vec![CieLab::from(Rgb::new(0, 0, 0))]; // one entry fewer
+
+        let result =
+            find_closest_color_precomputed(&target, &colors, &labs, ColorDistanceMethod::CieLab);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("same length"));
     }
 
     #[test]
