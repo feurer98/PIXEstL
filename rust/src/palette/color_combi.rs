@@ -53,7 +53,7 @@ impl ColorCombi {
             return None;
         }
 
-        let mut new_combi = self.duplicate();
+        let mut new_combi = self.clone();
         new_combi.layers.push(layer);
 
         Some(new_combi)
@@ -64,7 +64,7 @@ impl ColorCombi {
     /// Based on Java ColorCombi.combineLithoColorCombi
     #[must_use]
     pub fn combine_with_combi(&self, other: &Self) -> Self {
-        let mut new_combi = self.duplicate();
+        let mut new_combi = self.clone();
         new_combi.layers.extend(other.layers.clone());
         new_combi
     }
@@ -115,15 +115,6 @@ impl ColorCombi {
         let cmyk = Cmyk::new(c.min(1.0), m.min(1.0), y.min(1.0), k.min(1.0));
 
         Rgb::from_cmyk(cmyk)
-    }
-
-    /// Duplicates this ColorCombi
-    ///
-    /// Based on Java ColorCombi.duplicate
-    fn duplicate(&self) -> Self {
-        Self {
-            layers: self.layers.clone(),
-        }
     }
 
     /// Factorizes consecutive layers with the same hex code
@@ -223,7 +214,7 @@ impl ColorCombi {
     ///
     /// 1. Split layers into: bottom white, middle colored, top white
     /// 2. Reassemble as: bottom + middle + top
-    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize, _nb_layers: usize) {
+    pub(crate) fn optimize_white_layers(&mut self, nb_color_pool: usize) {
         let mut bottom_white = Vec::new();
         let mut middle_colored = Vec::new();
         let mut top_white = Vec::new();
@@ -435,7 +426,7 @@ mod tests {
         combi.add_layer(red.clone());
         combi.add_layer(white2.clone());
 
-        combi.optimize_white_layers(2, 5);
+        combi.optimize_white_layers(2);
 
         // White layers should be at bottom and top
         assert_eq!(combi.layers()[0].hex_code(), "#FFFFFF"); // Bottom white

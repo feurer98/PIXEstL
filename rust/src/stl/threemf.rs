@@ -23,25 +23,6 @@ fn get_or_add_vertex(
     }
 }
 
-/// Generiert das `Metadata/model_settings.config` XML für Bambu Studio.
-///
-/// Delegiert an `FilamentMapping::generate_model_settings_config()`.
-/// Wird nur noch für Abwärtskompatibilität in Tests verwendet.
-#[cfg(test)]
-fn generate_model_settings_config(layers: &[NamedLayer], colors: &[&str]) -> String {
-    let mapping = FilamentMapping::from_layers(layers);
-    debug_assert_eq!(
-        mapping
-            .colors()
-            .iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<_>>(),
-        colors,
-        "FilamentMapping color order mismatch"
-    );
-    mapping.generate_model_settings_config(layers)
-}
-
 /// Exportiert mehrere Layer in eine `.3mf`-Datei mit eingebetteten Farbmetadaten.
 ///
 /// Jeder Layer mit einem `hex_color` wird als Objekt mit Farbzuweisung in der
@@ -329,7 +310,7 @@ mod tests {
             NamedLayer::new("layer-plate".to_string(), mesh.clone(), None),
         ];
         let colors = vec!["#AA0000", "#00BB00"];
-        let xml = generate_model_settings_config(&layers, &colors);
+        let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
 
         // Objekt-IDs und Extruder-Zuweisung
         assert!(xml.contains(r#"id="2""#));
@@ -388,7 +369,7 @@ mod tests {
         ));
 
         let colors: Vec<&str> = colors_list.to_vec();
-        let xml = generate_model_settings_config(&layers, &colors);
+        let xml = FilamentMapping::from_layers(&layers).generate_model_settings_config(&layers);
 
         // Alle 8 Extruder-Werte müssen korrekt zugewiesen sein
         for i in 1..=8 {
