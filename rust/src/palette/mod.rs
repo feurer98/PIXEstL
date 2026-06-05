@@ -26,14 +26,16 @@
 
 pub mod color_combi;
 pub mod color_layer;
+pub mod config;
 pub mod generator;
 pub mod loader;
 pub mod quantize;
 
 pub use color_combi::ColorCombi;
 pub use color_layer::ColorLayer;
+pub use config::{PaletteLoaderConfig, PixelCreationMethod};
 pub use generator::create_multi_combi;
-pub use loader::{PaletteColorEntry, PaletteLoader, PaletteLoaderConfig, PixelCreationMethod};
+pub use loader::{PaletteColorEntry, PaletteLoader};
 pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};

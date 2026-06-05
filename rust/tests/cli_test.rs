@@ -238,7 +238,7 @@ fn test_palette_info_mode() {
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Palette Information"));
+        .stdout(predicate::str::contains("Paletteninformation"));
 }
 
 // ── Calibration mode ────────────────────────────────────────────────────────

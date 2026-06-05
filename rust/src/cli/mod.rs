@@ -296,7 +296,7 @@ impl Cli {
 
     /// Displays palette information and exits without generating.
     fn run_palette_info(&self) -> Result<()> {
-        println!("PIXEstL - Palette Information");
+        println!("PIXEstL - Paletteninformation");
         println!("============================\n");
 
         println!("Datei:          {}", self.palette.display());
