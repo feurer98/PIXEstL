@@ -153,10 +153,13 @@ fn apply_active_toggles(palette_bytes: &[u8], active: &[String]) -> Option<Vec<u
     let mut changed = false;
     for (key, val) in obj.iter_mut() {
         if is_hex_key(key) {
-            if let Some(entry) = val.as_object_mut() {
-                let on = active_lower.contains(&key.to_lowercase());
-                entry.insert("active".into(), serde_json::Value::Bool(on));
-                changed = true;
+            match val.as_object_mut() {
+                Some(entry) => {
+                    let on = active_lower.contains(&key.to_lowercase());
+                    entry.insert("active".into(), serde_json::Value::Bool(on));
+                    changed = true;
+                }
+                None => return None,
             }
         }
     }
@@ -189,6 +192,31 @@ fn validate_settings(s: &Settings) -> Result<(), ApiError> {
             )));
         }
     }
+
+    if !["cie-lab", "rgb"].contains(&s.color_matching.as_str()) {
+        return Err(bad(format!(
+            "settings.colorMatching must be one of [\"cie-lab\", \"rgb\"], got {:?}",
+            s.color_matching
+        )));
+    }
+
+    if !["additive", "full"].contains(&s.pixel_method.as_str()) {
+        return Err(bad(format!(
+            "settings.pixelMethod must be one of [\"additive\", \"full\"], got {:?}",
+            s.pixel_method
+        )));
+    }
+
+    if s.texture_color.len() != 7
+        || !s.texture_color.starts_with('#')
+        || !s.texture_color[1..].chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return Err(bad(format!(
+            "settings.textureColor must be a valid #rrggbb hex color, got {:?}",
+            s.texture_color
+        )));
+    }
+
     Ok(())
 }
 
@@ -798,5 +826,101 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&result).unwrap();
         assert!(json["#FF0000"]["active"].as_bool().unwrap());
         assert!(!json["#00FF00"]["active"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_apply_active_toggles_non_object_entry_returns_none() {
+        // A hex key whose value is not an object — apply_active_toggles must return None
+        let palette = r##"{"#FF0000": "not-an-object"}"##;
+        let active = vec!["#FF0000".to_string()];
+        let result = apply_active_toggles(palette.as_bytes(), &active);
+        assert!(result.is_none(), "expected None for non-object hex entry");
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_color_matching() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "additive".to_string(),
+            color_matching: "INVALID".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.color_matching = "cie-lab".to_string();
+        assert!(validate_settings(&s).is_ok());
+
+        s.color_matching = "rgb".to_string();
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_pixel_method() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "UNKNOWN".to_string(),
+            color_matching: "cie-lab".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.pixel_method = "additive".to_string();
+        assert!(validate_settings(&s).is_ok());
+
+        s.pixel_method = "full".to_string();
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_invalid_texture_color() {
+        let mut s = Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "additive".to_string(),
+            color_matching: "cie-lab".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "white".to_string(),
+            enable_color: true,
+            enable_texture: true,
+        };
+        assert!(validate_settings(&s).is_err());
+
+        s.texture_color = "#GGGGGG".to_string();
+        assert!(validate_settings(&s).is_err());
+
+        s.texture_color = "#FFFFFF".to_string();
+        assert!(validate_settings(&s).is_ok());
     }
 }

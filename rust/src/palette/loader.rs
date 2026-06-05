@@ -138,6 +138,25 @@ impl PaletteLoader {
                         target_layers
                     ));
                 }
+
+                // Check for gaps within the defined range (non-contiguous layer numbers)
+                if defined_layers.len() > 1 {
+                    let missing: Vec<u32> = (1..=max_defined)
+                        .filter(|n| !defined_layers.contains(n))
+                        .collect();
+                    if !missing.is_empty() {
+                        let missing_str = missing
+                            .iter()
+                            .map(|n| n.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        warnings.push(format!(
+                            "Filament {} ('{}') hat Luecken in den Layer-Definitionen \
+                            (fehlend: {}).",
+                            hex_code, entry.name, missing_str
+                        ));
+                    }
+                }
             } else {
                 warnings.push(format!(
                     "Filament {} ('{}') ist aktiv, hat aber keine Layer-Definitionen.",
@@ -658,6 +677,51 @@ mod tests {
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("Schichten bis 3 definiert"));
         assert!(warnings[0].contains("4 bis 5 fehlen"));
+    }
+
+    #[test]
+    fn test_validate_completeness_gap_warning() {
+        // Palette with layers 1, 3, 5 — gap at 2 and 4
+        let mut data = HashMap::new();
+        let mut layers = HashMap::new();
+        for n in [1u32, 3, 5] {
+            layers.insert(
+                n.to_string(),
+                LayerDefinition::Hsl {
+                    h: 200.0,
+                    s: 100.0,
+                    l: 80.0 - (n as f64 * 8.0),
+                },
+            );
+        }
+        data.insert(
+            "#0086D6".to_string(),
+            PaletteColorEntry {
+                name: "Cyan".to_string(),
+                active: true,
+                layers: Some(layers),
+            },
+        );
+
+        let warnings = PaletteLoader::validate_completeness(&data, 5);
+        assert_eq!(
+            warnings.len(),
+            1,
+            "expected exactly one gap warning: {warnings:?}"
+        );
+        assert!(
+            warnings[0].contains("Luecken"),
+            "warning should mention gaps: {}",
+            warnings[0]
+        );
+        assert!(
+            warnings[0].contains('2'),
+            "missing layer 2 should be listed"
+        );
+        assert!(
+            warnings[0].contains('4'),
+            "missing layer 4 should be listed"
+        );
     }
 
     #[test]

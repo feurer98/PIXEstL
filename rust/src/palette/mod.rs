@@ -126,7 +126,8 @@ impl Palette {
         if self.quantized_colors.is_empty() {
             return None;
         }
-        let colors: Vec<Rgb> = self.quantized_colors.keys().copied().collect();
+        let mut colors: Vec<Rgb> = self.quantized_colors.keys().copied().collect();
+        colors.sort_by_key(|c| (c.r, c.g, c.b));
         find_closest_color(color, &colors, method).ok()
     }
 
