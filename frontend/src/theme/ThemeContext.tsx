@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from 'react';
 import { THEMES, themeToCssVars, type Theme, type ThemeId } from './themes';
 import { supportsOklch, withOklchFallback } from '../lib/oklch';
 
@@ -8,16 +8,34 @@ interface ThemeContextValue {
   setThemeId: (id: ThemeId) => void;
 }
 
+const THEME_STORAGE_KEY = 'pixestl-theme';
+
+function getInitialTheme(): ThemeId {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null;
+    if (stored && stored in THEMES) return stored;
+  } catch {
+    // localStorage unavailable
+  }
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+  return 'studio';
+}
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({
   children,
-  initial = 'studio',
+  initial,
 }: {
   children: ReactNode;
   initial?: ThemeId;
 }) {
-  const [themeId, setThemeId] = useState<ThemeId>(initial);
+  const [themeId, setThemeIdRaw] = useState<ThemeId>(() => initial ?? getInitialTheme());
+
+  const setThemeId = useCallback((id: ThemeId) => {
+    setThemeIdRaw(id);
+    try { localStorage.setItem(THEME_STORAGE_KEY, id); } catch { /* ignore */ }
+  }, []);
   const theme = THEMES[themeId];
 
   // Detect oklch() support once; older browsers get computed hex fallbacks.

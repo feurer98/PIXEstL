@@ -22,12 +22,14 @@ export function LithoPreview({ hasImage, canvasRef, previewMode, onModeChange }:
       <div className={s.badge}>
         Lithophan Vorschau
       </div>
-      <div className={s.modes}>
+      <div className={s.modes} role="tablist" aria-label="Vorschaumodus">
         {MODES.map(([v, lbl]) => (
           <button
             key={v}
+            role="tab"
             onClick={() => onModeChange(v)}
             data-selected={previewMode === v}
+            aria-selected={previewMode === v}
             className={s.modeBtn}
           >
             {lbl}
