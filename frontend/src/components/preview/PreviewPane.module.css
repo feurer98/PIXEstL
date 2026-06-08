@@ -4,6 +4,12 @@
   flex: 0 0 38%;
   border-bottom: 1px solid var(--c-border);
   min-height: 0;
+  transition: flex-grow 0.3s ease;
+}
+
+.gridFocused {
+  flex: 1;
+  border-bottom: none;
 }
 
 /* Tablet/mobile: previews get an intrinsic height so they stay visible once

@@ -14,14 +14,21 @@ interface LithoPreviewProps {
   canvasRef: RefObject<HTMLCanvasElement>;
   previewMode: PreviewMode;
   onModeChange: (mode: PreviewMode) => void;
+  focusMode: boolean;
+  onFocusToggle: () => void;
 }
 
-export function LithoPreview({ hasImage, canvasRef, previewMode, onModeChange }: LithoPreviewProps) {
+export function LithoPreview({
+  hasImage,
+  canvasRef,
+  previewMode,
+  onModeChange,
+  focusMode,
+  onFocusToggle,
+}: LithoPreviewProps) {
   return (
     <div className={s.wrap}>
-      <div className={s.badge}>
-        Lithophan Vorschau
-      </div>
+      <div className={s.badge}>Lithophan Vorschau</div>
       <div className={s.modes} role="tablist" aria-label="Vorschaumodus">
         {MODES.map(([v, lbl]) => (
           <button
@@ -35,6 +42,14 @@ export function LithoPreview({ hasImage, canvasRef, previewMode, onModeChange }:
             {lbl}
           </button>
         ))}
+        <button
+          className={s.focusBtn}
+          onClick={onFocusToggle}
+          aria-label={focusMode ? 'Fokus-Modus verlassen' : 'Vorschau vergrößern (Fokus-Modus)'}
+          title={focusMode ? 'Fokus-Modus verlassen (Esc)' : 'Vorschau vergrößern'}
+        >
+          {focusMode ? '✕' : '⤢'}
+        </button>
       </div>
       {!hasImage ? (
         <div className={s.empty}>
