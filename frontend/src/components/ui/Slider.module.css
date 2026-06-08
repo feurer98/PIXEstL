@@ -17,12 +17,6 @@
   color: var(--c-text-mid);
 }
 
-.value {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  color: var(--c-text);
-  font-weight: 500;
-}
 .unit {
   color: var(--c-text-faint);
   margin-left: 1px;
@@ -67,4 +61,37 @@
   font-size: 9px;
   color: var(--c-text-faint);
   margin-top: 2px;
+}
+
+/* F-013: editable value input */
+.value {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--c-text);
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.value:hover {
+  text-decoration: underline dotted var(--c-text-faint);
+}
+
+.valueInput {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--c-text);
+  font-weight: 500;
+  background: var(--c-panel2);
+  border: 1px solid var(--c-accent);
+  border-radius: 3px;
+  width: 56px;
+  padding: 0 3px;
+  text-align: right;
+  outline: none;
+}
+.valueInput::-webkit-inner-spin-button,
+.valueInput::-webkit-outer-spin-button {
+  opacity: 0.5;
 }

@@ -15,8 +15,17 @@ export type SettingsAction =
 
 export function settingsReducer(state: Settings, action: SettingsAction): Settings {
   switch (action.type) {
-    case 'SET_FIELD':
-      return { ...state, [action.key]: action.value };
+    case 'SET_FIELD': {
+      const next = { ...state, [action.key]: action.value };
+      // Enforce textureMin ≤ textureMax
+      if (action.key === 'textureMin' && next.textureMin > next.textureMax) {
+        next.textureMax = next.textureMin;
+      }
+      if (action.key === 'textureMax' && next.textureMax < next.textureMin) {
+        next.textureMin = next.textureMax;
+      }
+      return next;
+    }
 
     case 'SET_WIDTH': {
       const next: Settings = { ...state, width: action.value };

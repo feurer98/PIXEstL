@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { TopBar } from '../components/layout/TopBar';
 import { ThemePanel } from '../components/layout/ThemePanel';
 import { PreviewPane } from '../components/preview/PreviewPane';
@@ -11,6 +11,17 @@ import { PalettePanel } from '../components/panels/PalettePanel';
 import { FilamentManager } from '../components/panels/FilamentManager';
 import { settingsReducer } from '../state/settingsReducer';
 import { DEFAULT_SETTINGS } from '../lib/constants';
+import type { Settings } from '../lib/types';
+
+const SETTINGS_STORAGE_KEY = 'pixestl-settings';
+
+function loadStoredSettings(): Settings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return DEFAULT_SETTINGS;
+}
 import { useImageLoader } from '../hooks/useImageLoader';
 import { usePaletteLoader } from '../hooks/usePaletteLoader';
 import { useLithophaneCanvas } from '../hooks/useLithophaneCanvas';
@@ -19,7 +30,7 @@ import type { PreviewMode } from '../lib/types';
 import s from './ConverterPage.module.css';
 
 export function ConverterPage() {
-  const [settings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS);
+  const [settings, dispatch] = useReducer(settingsReducer, undefined, loadStoredSettings);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('color');
   const [showGrid, setShowGrid] = useState(false);
   const [lockAspect, setLockAspect] = useState(false);
@@ -57,6 +68,11 @@ export function ConverterPage() {
     { mode: previewMode, showGrid, filaments },
     image,
   );
+
+  // F-003: persist settings to localStorage on change
+  useEffect(() => {
+    try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); } catch { /* ignore */ }
+  }, [settings]);
 
   const { exportState, exportFormat, setExportFormat, exportError, runExport } = useExport();
   const activeCount = filaments.filter((f) => f.active).length;
@@ -120,8 +136,13 @@ export function ConverterPage() {
         />
       </div>
 
-      {/* Settings drawer toggle (replaces the prototype's postMessage edit-mode). */}
-      <button aria-label="Anpassungen" onClick={() => setShowSettings((v) => !v)} className={s.settingsBtn}>
+      {/* F-010: visually hidden h1 for document structure / screen readers */}
+      <h1 style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        PIXEstL — Farb-Lithophan Konverter
+      </h1>
+
+      {/* Settings drawer toggle */}
+      <button aria-label="Design & Anpassungen" title="Design & Anpassungen" onClick={() => setShowSettings((v) => !v)} className={s.settingsBtn}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <circle cx="8" cy="8" r="2.2" stroke="currentColor" strokeWidth="1.3" />
           <path
