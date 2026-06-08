@@ -76,9 +76,43 @@ bereitstellen — praktisch, wenn das NAS zu schwach zum Bauen ist.
 | `PORT` | `8787` | Lausch-Port im Container |
 | `STATIC_DIR` | `/app/static` | Verzeichnis des Frontend-Bundles |
 | `PIXESTL_BIN` | `/usr/local/bin/pixestl` | Pfad zum CLI-Binary |
+| `PIXESTL_MAX_JOBS` | `min(CPU-Kerne, 2)` | Gleichzeitig laufende Generierungen. Jeder Job belegt das ganze Mesh im RAM — höher nur mit ausreichend Speicher. |
+| `PIXESTL_JOB_TIMEOUT_SECS` | `240` | Harte Zeitgrenze pro Job; danach wird der Subprozess **gekillt** und der Job als Fehler markiert (verhindert hängende Prozesse). |
+| `PIXESTL_MAX_TRIANGLES` | `20000000` | Obergrenze der geschätzten Mesh-Größe. Größere Anfragen werden mit **400** abgelehnt, statt das RAM zu sprengen. Auf speicherarmen Hosts senken. |
 
 Das Frontend ruft `/api` **same-origin** auf — im Container ist daher kein
 `VITE_API_BASE` nötig.
+
+## Reverse-Proxy (gegen 502 Bad Gateway)
+
+Läuft der Container hinter einem Reverse-Proxy (Nginx Proxy Manager, Traefik,
+Caddy, Cloudflare Tunnel …) — wie bei einer HTTPS-Domain üblich — **erzeugt der
+Proxy einen 502**, sobald das Backend nicht rechtzeitig antwortet oder abstürzt.
+Zwei Proxy-Einstellungen müssen zum Backend passen:
+
+- **Upload-Limit ≥ 64 MB**, sonst scheitert der Bild-Upload.
+  Nginx: `client_max_body_size 64m;`
+- **Lese-Timeout ≥ `PIXESTL_JOB_TIMEOUT_SECS`.** Der initiale `POST /api/jobs`
+  überträgt das ganze Bild; bei großen Uploads/langsamen Verbindungen kann ein
+  kurzer Default-Timeout (Nginx: 60 s) in einen 502/504 laufen.
+  Nginx: `proxy_read_timeout 300s; proxy_send_timeout 300s;`
+
+Beispiel (Nginx):
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8787;
+    client_max_body_size 64m;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+}
+```
+
+Tritt der 502 trotzdem auf, am Container-Port prüfen, ob das Backend noch lebt:
+`curl http://<nas-ip>:8787/api/health`. Antwortet `health` weiter, ist es ein
+Proxy-Timeout/-Limit (s. o.); ist der Container weg, wurde der Prozess
+OOM-gekillt — dann `PIXESTL_MAX_TRIANGLES` / `PIXESTL_MAX_JOBS` senken bzw. dem
+Container mehr RAM geben (`docker logs pixestl` zeigt OOM/`SIGKILL`).
 
 ## Wichtige Hinweise
 
@@ -86,8 +120,9 @@ Das Frontend ruft `/api` **same-origin** auf — im Container ist daher kein
   Temp-Verzeichnis im Container. Für einen Test reicht das; es gibt nichts zu
   persistieren.
 - **Noch nicht härtungsreif** (siehe `docs/frontend/02-…`, V-MODEL-07): kein
-  Job-TTL/Cleanup, kein Concurrency-Limit, CORS permissiv. Vor einer Freigabe
-  über das lokale Netz hinaus absichern.
+  Job-TTL/Cleanup, CORS permissiv. Vor einer Freigabe über das lokale Netz
+  hinaus absichern. (Concurrency-Limit, Job-Timeout und Mesh-Größen-Guard sind
+  vorhanden — siehe Env-Variablen oben.)
 - **Healthcheck:** `GET /api/health` → `ok` (in Dockerfile/Compose hinterlegt).
 - **Upload-Limit:** 64 MB pro Request (für große Bilder; anpassbar im Server).
 

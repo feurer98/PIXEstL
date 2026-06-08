@@ -12,6 +12,8 @@ export type ExportState = 'idle' | 'exporting' | 'done' | 'error';
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const POLL_INTERVAL_MS = 1000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+// Mirrors the server's DefaultBodyLimit (64 MB); reject early with a clear message.
+const MAX_UPLOAD_BYTES = 64 * 1024 * 1024;
 
 export interface ExportRequest {
   settings: Settings;
@@ -42,6 +44,13 @@ export function useExport() {
       if (exportState === 'exporting') return; // allow retry from idle/done/error
       if (!req.imageFile) {
         setExportError('Zuerst ein Bild laden');
+        setExportState('error');
+        return;
+      }
+      if (req.imageFile.size > MAX_UPLOAD_BYTES) {
+        setExportError(
+          `Bild zu groß (${(req.imageFile.size / 1024 / 1024).toFixed(1)} MB, max. 64 MB)`,
+        );
         setExportState('error');
         return;
       }
