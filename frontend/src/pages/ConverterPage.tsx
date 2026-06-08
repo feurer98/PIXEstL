@@ -35,7 +35,17 @@ export function ConverterPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [lockAspect, setLockAspect] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [filamentManagerOpen, setFilamentManagerOpen] = useState(false);
+
+  // Escape key exits focus mode
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && focusMode) setFocusMode(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [focusMode]);
 
   const lithoRef = useRef<HTMLCanvasElement>(null);
 
@@ -81,17 +91,19 @@ export function ConverterPage() {
     <div className={s.page}>
       <TopBar image={image} paletteName={paletteName} activeCount={activeCount} stats={stats} />
 
-      <PreviewPane>
+      <PreviewPane focusMode={focusMode}>
         <SourcePreview image={image} previewUrl={previewUrl} onFile={loadFile} />
         <LithoPreview
           hasImage={!!image}
           canvasRef={lithoRef}
           previewMode={previewMode}
           onModeChange={setPreviewMode}
+          focusMode={focusMode}
+          onFocusToggle={() => setFocusMode((v) => !v)}
         />
       </PreviewPane>
 
-      <div className={s.panelsRegion}>
+      <div className={focusMode ? `${s.panelsRegion} ${s.panelsRegionHidden}` : s.panelsRegion}>
         <div className={s.panels}>
           <DimensionsPanel
             settings={settings}
