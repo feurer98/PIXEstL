@@ -6,57 +6,48 @@ on:
   pull_request:
     branches: [ master, main ]
 
+# Bricht einen laufenden Run ab, wenn auf denselben Branch/PR neu gepusht wird.
+# Spart Runner-Minuten bei schnellen Folge-Pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
 jobs:
   test:
-    name: Test Suite
+    name: Test (${{ matrix.os }} / ${{ matrix.rust }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        rust: [stable, beta]
+        # windows+beta entfernt (seltenste Bug-Kombination).
+        # Zum Zurückholen einfach { os: windows-latest, rust: beta } ergänzen.
+        include:
+          - { os: ubuntu-latest,  rust: stable }
+          - { os: ubuntu-latest,  rust: beta }
+          - { os: windows-latest, rust: stable }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
 
-      - name: Cache cargo registry
-        uses: actions/cache@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+          workspaces: rust
+          # Stabiler, branch-unabhängiger Key -> Feature-Branches finden
+          # den Cache vom main-Branch wieder.
+          shared-key: test-${{ matrix.os }}
 
-      - name: Cache cargo index
-        uses: actions/cache@v5
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-index-
-
-      - name: Cache cargo build
-        uses: actions/cache@v5
-        with:
-          path: rust/target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-target-
-
-      - name: Run tests
+      - name: Tests
         working-directory: ./rust
         run: cargo test --all-features --verbose
 
-      - name: Run doc tests
+      - name: Doc-Tests
         working-directory: ./rust
         run: cargo test --doc --all-features --verbose
 
@@ -64,15 +55,12 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-
-      - name: Check formatting
+      # Kein Cache nötig: fmt kompiliert nicht, es parst nur.
+      - name: Formatierung prüfen
         working-directory: ./rust
         run: cargo fmt --all -- --check
 
@@ -80,33 +68,15 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-
-      - name: Cache cargo registry
-        uses: actions/cache@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v5
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v5
-        with:
-          path: rust/target
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run clippy
+          workspaces: rust
+          shared-key: clippy
+      - name: Clippy
         working-directory: ./rust
         run: cargo clippy --all-targets --all-features -- -D warnings
 
@@ -114,43 +84,41 @@ jobs:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
-
-      - name: Generate coverage
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          shared-key: coverage
+      # Vorkompiliertes Binary herunterladen statt 'cargo install'
+      # (das tarpaulin sonst aus dem Quellcode baut -> mehrere Minuten).
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
+      - name: Coverage erzeugen
         working-directory: ./rust
         run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v6
         with:
           files: ./rust/cobertura.xml
           fail_ci_if_error: false
 
   build:
-    name: Build Release
+    name: Build Release (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build release
-        working-directory: ./rust
-        run: cargo build --release --verbose
-
-      - name: Test release build
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          shared-key: release-${{ matrix.os }}
+      # 'cargo test --release' baut alles im Release-Profil UND testet.
+      # Das separate 'cargo build --release' war dadurch redundant.
+      - name: Release-Build + Tests
         working-directory: ./rust
         run: cargo test --release --verbose
 
@@ -158,34 +126,16 @@ jobs:
     name: Benchmarks
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v5
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      - name: Cache cargo build
-        uses: actions/cache@v5
-        with:
-          path: rust/target
-          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-bench-
-
-      - name: Run benchmarks
+          workspaces: rust
+          shared-key: bench
+      - name: Benchmarks
         working-directory: ./rust
         run: cargo bench --all-features 2>&1 | tee benchmark-output.txt
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: benchmark-results
