@@ -14,6 +14,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{RwLock, Semaphore};
 
 use axum::body::Body;
@@ -36,6 +37,10 @@ struct AppState {
     pixestl_bin: PathBuf,
     /// Limits the number of concurrently running `pixestl` subprocesses.
     sem: Arc<Semaphore>,
+    /// Hard wall-clock limit for a single generation; runaway jobs are killed.
+    job_timeout: Duration,
+    /// Reject jobs whose estimated mesh exceeds this many triangles (OOM guard).
+    max_triangles: u64,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -136,6 +141,33 @@ fn build_args(s: &Settings, palette: &Path, input: &Path, output: &Path) -> Vec<
     a
 }
 
+/// Conservative upper-bound estimate of the triangles the generator will emit.
+/// The whole mesh is held in memory (≈72 bytes/triangle) and then serialized, so
+/// an oversized request can OOM the process — and a dead backend makes the
+/// reverse proxy answer 502. We estimate the size up front and reject with a
+/// clean 400 instead of letting the container get OOM-killed.
+fn estimate_triangles(s: &Settings) -> u64 {
+    let cells = |pixel_width: f64| -> u64 {
+        if pixel_width <= 0.0 || !pixel_width.is_finite() {
+            return u64::MAX; // invalid → treat as "too large", rejected by the caller
+        }
+        let cols = (s.width / pixel_width).ceil().max(0.0) as u64;
+        let rows = (s.height / pixel_width).ceil().max(0.0) as u64;
+        cols.saturating_mul(rows)
+    };
+    let mut tris: u64 = 0;
+    if s.enable_texture {
+        // ~2 surface triangles per cell, plus walls/base — use 4× as a safe bound.
+        tris = tris.saturating_add(cells(s.texture_pixel_width).saturating_mul(4));
+    }
+    if s.enable_color {
+        // Color cubes use run-length merging; ~2 triangles per cell per layer.
+        let per_cell = 2u64.saturating_mul(s.color_layers.max(1) as u64);
+        tris = tris.saturating_add(cells(s.color_pixel_width).saturating_mul(per_cell));
+    }
+    tris
+}
+
 /// True for palette keys that are `#rrggbb` hex colors.
 fn is_hex_key(k: &str) -> bool {
     k.len() == 7 && k.starts_with('#') && k[1..].chars().all(|c| c.is_ascii_hexdigit())
@@ -189,6 +221,22 @@ fn validate_settings(s: &Settings) -> Result<(), ApiError> {
         if !val.is_finite() {
             return Err(bad(format!(
                 "settings.{name} must be a finite number, got {val}"
+            )));
+        }
+    }
+
+    // Dimensions and pixel widths must be positive — a zero/negative pixel width
+    // would divide into an absurd grid (and divide-by-zero in size estimates).
+    let positive: &[(&str, f64)] = &[
+        ("width", s.width),
+        ("height", s.height),
+        ("colorPixelWidth", s.color_pixel_width),
+        ("texturePixelWidth", s.texture_pixel_width),
+    ];
+    for (name, val) in positive {
+        if *val <= 0.0 {
+            return Err(bad(format!(
+                "settings.{name} must be greater than 0, got {val}"
             )));
         }
     }
@@ -312,6 +360,17 @@ async fn create_job(
         serde_json::from_str(&settings_raw.ok_or_else(|| bad("missing 'settings'"))?)
             .map_err(|e| bad(format!("invalid settings JSON: {e}")))?;
     validate_settings(&settings)?;
+
+    // Reject models that would exhaust memory before we even spawn the CLI.
+    let est_triangles = estimate_triangles(&settings);
+    if est_triangles > state.max_triangles {
+        return Err(bad(format!(
+            "Modell zu groß (~{est_triangles} Dreiecke, Limit {}). \
+             Bitte Breite/Höhe reduzieren oder die Pixelbreite erhöhen.",
+            state.max_triangles
+        )));
+    }
+
     let format = format.unwrap_or_else(|| "3mf".into());
     if format != "3mf" && format != "zip" {
         return Err(bad("format must be '3mf' or 'zip'"));
@@ -358,31 +417,59 @@ async fn create_job(
     let bin = state.pixestl_bin.clone();
     let jobs = state.jobs.clone();
     let sem = state.sem.clone();
+    let job_timeout = state.job_timeout;
     let job_id = id.clone();
     tokio::spawn(async move {
         // Acquire a permit before spawning the subprocess; released on drop.
         let _permit = sem.acquire_owned().await;
         set_status(&jobs, &job_id, JobStatus::Running).await;
-        let result = Command::new(&bin).args(&args).output().await;
+
+        // Spawn with a hard timeout. `kill_on_drop` guarantees the child is
+        // killed when the timeout future is dropped, so a runaway generation can
+        // never hold memory/CPU forever (which would OOM the container → 502).
+        let outcome: Result<PathBuf, String> = {
+            use std::process::Stdio;
+            match Command::new(&bin)
+                .args(&args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .kill_on_drop(true)
+                .spawn()
+            {
+                Err(e) => Err(format!("failed to run pixestl: {e}")),
+                Ok(child) => {
+                    match tokio::time::timeout(job_timeout, child.wait_with_output()).await {
+                        Err(_elapsed) => Err(format!(
+                            "Zeitüberschreitung nach {}s — bitte kleinere Maße oder eine \
+                             größere Pixelbreite wählen",
+                            job_timeout.as_secs()
+                        )),
+                        Ok(Err(e)) => Err(format!("failed to run pixestl: {e}")),
+                        Ok(Ok(out)) if out.status.success() => Ok(output_path),
+                        Ok(Ok(out)) => {
+                            let msg = String::from_utf8_lossy(&out.stderr);
+                            Err(if msg.trim().is_empty() {
+                                format!("pixestl exited with {}", out.status)
+                            } else {
+                                msg.trim().to_string()
+                            })
+                        }
+                    }
+                }
+            }
+        };
+
         let mut map = jobs.write().await;
         if let Some(job) = map.get_mut(&job_id) {
-            match result {
-                Ok(out) if out.status.success() => {
+            match outcome {
+                Ok(path) => {
                     job.status = JobStatus::Done;
-                    job.output_path = Some(output_path);
+                    job.output_path = Some(path);
                 }
-                Ok(out) => {
+                Err(msg) => {
                     job.status = JobStatus::Error;
-                    let msg = String::from_utf8_lossy(&out.stderr);
-                    job.error = Some(if msg.trim().is_empty() {
-                        format!("pixestl exited with {}", out.status)
-                    } else {
-                        msg.trim().to_string()
-                    });
-                }
-                Err(e) => {
-                    job.status = JobStatus::Error;
-                    job.error = Some(format!("failed to run pixestl: {e}"));
+                    job.error = Some(msg);
                 }
             }
         }
@@ -504,13 +591,44 @@ fn build_app(state: AppState) -> Router {
 #[tokio::main]
 async fn main() {
     let pixestl_bin = resolve_pixestl_bin();
-    let max_jobs = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(4);
+
+    // Concurrency: each generation already saturates the CPU (rayon) and holds
+    // its whole mesh in RAM, so running many at once mostly multiplies memory.
+    // Default to a small number; raise via PIXESTL_MAX_JOBS if you have the RAM.
+    let max_jobs = std::env::var("PIXESTL_MAX_JOBS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or_else(|| {
+            std::thread::available_parallelism()
+                .map(|n| n.get().min(2))
+                .unwrap_or(2)
+        });
+
+    // Per-job wall-clock timeout (kept below the frontend's 5-minute poll budget
+    // so the user gets a clear server error rather than a generic client timeout).
+    let job_timeout = Duration::from_secs(
+        std::env::var("PIXESTL_JOB_TIMEOUT_SECS")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|n| *n > 0)
+            .unwrap_or(240),
+    );
+
+    // OOM guard: reject requests whose estimated mesh exceeds this. Lower it on
+    // memory-constrained hosts (a triangle is ≈72 bytes, held twice while saving).
+    let max_triangles = std::env::var("PIXESTL_MAX_TRIANGLES")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or(20_000_000);
+
     let state = AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         pixestl_bin: pixestl_bin.clone(),
         sem: Arc::new(Semaphore::new(max_jobs)),
+        job_timeout,
+        max_triangles,
     };
 
     let port = std::env::var("PORT")
@@ -524,6 +642,10 @@ async fn main() {
 
     eprintln!("pixestl-server listening on http://{addr}");
     eprintln!("using pixestl binary: {}", pixestl_bin.display());
+    eprintln!(
+        "limits: max_jobs={max_jobs}, job_timeout={}s, max_triangles={max_triangles}",
+        job_timeout.as_secs()
+    );
     axum::serve(listener, build_app(state))
         .await
         .expect("server error");
@@ -537,6 +659,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
+    use std::time::Duration;
     use tempfile::TempDir;
     use tokio::sync::{RwLock, Semaphore};
     use tower::ServiceExt;
@@ -546,6 +669,29 @@ mod tests {
             jobs: Arc::new(RwLock::new(HashMap::new())),
             pixestl_bin: PathBuf::from("pixestl"),
             sem: Arc::new(Semaphore::new(2)),
+            job_timeout: Duration::from_secs(240),
+            max_triangles: 20_000_000,
+        }
+    }
+
+    fn base_settings() -> Settings {
+        Settings {
+            width: 100.0,
+            height: 75.0,
+            plate_thickness: 2.0,
+            curve: 0.0,
+            color_pixel_width: 1.0,
+            color_layer_thickness: 0.12,
+            color_layers: 5,
+            pixel_method: "additive".to_string(),
+            color_matching: "cie-lab".to_string(),
+            ams_colors: 4,
+            texture_pixel_width: 1.0,
+            texture_min: 0.0,
+            texture_max: 2.0,
+            texture_color: "#FFFFFF".to_string(),
+            enable_color: true,
+            enable_texture: true,
         }
     }
 
@@ -922,5 +1068,94 @@ mod tests {
 
         s.texture_color = "#FFFFFF".to_string();
         assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_nonpositive_dimensions() {
+        let mut s = base_settings();
+        s.width = 0.0;
+        assert!(validate_settings(&s).is_err());
+
+        s = base_settings();
+        s.height = -1.0;
+        assert!(validate_settings(&s).is_err());
+
+        s = base_settings();
+        s.texture_pixel_width = 0.0;
+        assert!(validate_settings(&s).is_err());
+
+        s = base_settings();
+        s.color_pixel_width = 0.0;
+        assert!(validate_settings(&s).is_err());
+
+        assert!(validate_settings(&base_settings()).is_ok());
+    }
+
+    #[test]
+    fn test_estimate_triangles_texture_grid() {
+        let mut s = base_settings();
+        s.enable_color = false;
+        s.enable_texture = true;
+        s.width = 100.0;
+        s.height = 100.0;
+        s.texture_pixel_width = 1.0;
+        // 100×100 cells × 4 triangles/cell
+        assert_eq!(estimate_triangles(&s), 40_000);
+    }
+
+    #[test]
+    fn test_estimate_triangles_flags_oversized_request() {
+        let mut s = base_settings();
+        s.width = 300.0;
+        s.height = 300.0;
+        s.texture_pixel_width = 0.05; // 6000×6000 = 36M cells → well over any sane limit
+        assert!(estimate_triangles(&s) > 100_000_000);
+    }
+
+    #[tokio::test]
+    async fn test_create_job_rejects_oversized_model() {
+        let app = build_app(test_state());
+        let boundary = "test_boundary";
+        // Fine texture pixel width over large dimensions → estimate exceeds limit.
+        let settings = serde_json::json!({
+            "width": 300.0,
+            "height": 300.0,
+            "plateThickness": 2.0,
+            "curve": 0.0,
+            "colorPixelWidth": 1.0,
+            "colorLayerThickness": 0.12,
+            "colorLayers": 5,
+            "pixelMethod": "additive",
+            "colorMatching": "cie-lab",
+            "amsColors": 4,
+            "texturePixelWidth": 0.05,
+            "textureMin": 0.0,
+            "textureMax": 2.0,
+            "textureColor": "#FFFFFF",
+            "enableColor": true,
+            "enableTexture": true
+        })
+        .to_string();
+        let palette = r##"{"#FFFFFF":{"name":"White","active":true,"layers":{"Filled":5}}}"##;
+        let body = multipart_body(
+            boundary,
+            &[
+                ("image", Some("input.png"), b"\x89PNG fake"),
+                ("palette", Some("palette.json"), palette.as_bytes()),
+                ("settings", None, settings.as_bytes()),
+                ("format", None, b"3mf"),
+            ],
+        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("/api/jobs")
+            .header(
+                "content-type",
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     }
 }
