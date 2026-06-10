@@ -81,7 +81,8 @@ impl LithophaneGenerator {
         }
 
         if let Some(ref texture_img) = texture_image {
-            let mut texture_mesh = texture_layer::generate_texture_layer(texture_img, &self.config)?;
+            let mut texture_mesh =
+                texture_layer::generate_texture_layer(texture_img, &self.config)?;
             // The texture relief sits on top of the color stack (Java original:
             // CSGThreadTextureRow translates by colorPixelLayerThickness * layerCount).
             // Without this offset the texture and color solids would interpenetrate.
