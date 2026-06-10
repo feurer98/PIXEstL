@@ -303,3 +303,96 @@ fn test_full_pipeline_both_layers() {
         "ZIP must contain one file per layer"
     );
 }
+
+// ── Mesh-Invarianten über die gesamte Pipeline ───────────────────────────────
+
+/// Asserts that for every directed edge a→b the reverse edge b→a occurs
+/// equally often. This holds for any union of closed, consistently outward-
+/// wound solids (color cubes, plate, texture body) and fails as soon as a
+/// single triangle is wound the wrong way or a solid has a hole.
+fn assert_edges_balanced(mesh: &pixestl::lithophane::Mesh, layer_name: &str) {
+    use pixestl::lithophane::Vector3;
+    let key = |v: &Vector3| (v.x.to_bits(), v.y.to_bits(), v.z.to_bits());
+    let mut edges = std::collections::HashMap::new();
+    for t in &mesh.triangles {
+        for (a, b) in [(t.v0, t.v1), (t.v1, t.v2), (t.v2, t.v0)] {
+            *edges.entry((key(&a), key(&b))).or_insert(0i64) += 1;
+        }
+    }
+    for ((a, b), count) in &edges {
+        let reverse = edges.get(&(*b, *a)).copied().unwrap_or(0);
+        assert_eq!(
+            *count, reverse,
+            "layer '{layer_name}': directed edge occurs {count}x but its \
+             reverse {reverse}x — inverted winding or open solid"
+        );
+    }
+}
+
+#[test]
+fn test_full_pipeline_meshes_are_closed_and_outward_wound() {
+    use pixestl::palette::{PaletteLoader, PaletteLoaderConfig};
+    use pixestl::LithophaneGenerator;
+
+    let palette_file = test_palette_file();
+    let palette = PaletteLoader::load(palette_file.path(), PaletteLoaderConfig::default()).unwrap();
+    let image = test_image(12, 10);
+
+    let config = LithophaneConfig {
+        dest_width_mm: 12.0,
+        dest_height_mm: 10.0,
+        color_pixel_width: 1.0,
+        texture_pixel_width: 1.0,
+        color_layer: true,
+        texture_layer: true,
+        ..Default::default()
+    };
+    let generator = LithophaneGenerator::new(config).unwrap();
+    let layers = generator.generate(&image, &palette).unwrap();
+
+    assert!(layers.len() >= 3, "expected plate + color + texture layers");
+    for layer in &layers {
+        assert!(
+            layer.mesh.signed_volume() > 0.0,
+            "layer '{}' has non-positive signed volume {} — inverted winding",
+            layer.name,
+            layer.mesh.signed_volume()
+        );
+        assert_edges_balanced(&layer.mesh, &layer.name);
+    }
+}
+
+#[test]
+fn test_full_pipeline_curved_meshes_stay_closed() {
+    use pixestl::palette::{PaletteLoader, PaletteLoaderConfig};
+    use pixestl::LithophaneGenerator;
+
+    let palette_file = test_palette_file();
+    let palette = PaletteLoader::load(palette_file.path(), PaletteLoaderConfig::default()).unwrap();
+    let image = test_image(12, 10);
+
+    let config = LithophaneConfig {
+        dest_width_mm: 12.0,
+        dest_height_mm: 10.0,
+        color_pixel_width: 1.0,
+        texture_pixel_width: 1.0,
+        color_layer: true,
+        texture_layer: true,
+        curve: 90.0,
+        ..Default::default()
+    };
+    let generator = LithophaneGenerator::new(config).unwrap();
+    let layers = generator.generate(&image, &palette).unwrap();
+
+    // apply_curve only maps vertices, so closedness and outward orientation
+    // must survive the cylindrical transform for every layer (incl. the
+    // per-column segmented plate and the per-pixel color cubes).
+    for layer in &layers {
+        assert!(
+            layer.mesh.signed_volume() > 0.0,
+            "curved layer '{}' has non-positive signed volume",
+            layer.name
+        );
+        assert_edges_balanced(&layer.mesh, &layer.name);
+    }
+}

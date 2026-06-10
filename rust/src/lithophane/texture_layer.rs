@@ -46,27 +46,73 @@ pub fn generate_texture_layer(image: &RgbaImage, config: &LithophaneConfig) -> R
 
     // Merge all row meshes with pre-allocation
     let total_triangles: usize = row_meshes.iter().map(|m| m.triangle_count()).sum();
-    let mut final_mesh = Mesh::with_capacity(total_triangles + 2);
+    let mut final_mesh = Mesh::with_capacity(total_triangles + 2 * (width + height) as usize);
     for row_mesh in row_meshes {
         final_mesh.merge_owned(row_mesh);
     }
 
-    // Close the bottom face to produce a watertight solid.
-    // Without this the mesh is open, causing slicers to misread bounding-box dimensions.
-    let pw = config.texture_pixel_width;
-    let max_x = (width as f64 - 1.0) * pw;
-    let max_y = (height as f64 - 1.0) * pw;
-    // Winding order chosen so the normal points in the -Z direction (outward bottom).
-    final_mesh.add_triangle(Triangle::new(
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(0.0, max_y, 0.0),
-        Vector3::new(max_x, max_y, 0.0),
-    ));
-    final_mesh.add_triangle(Triangle::new(
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(max_x, max_y, 0.0),
-        Vector3::new(max_x, 0.0, 0.0),
-    ));
+    // Close the bottom. The segments must match the walls' per-pixel bottom
+    // edges exactly — a single big quad would create T-junctions and the
+    // solid would no longer be edge-to-edge manifold.
+    if width >= 2 && height >= 2 {
+        let pw = config.texture_pixel_width;
+
+        if config.curve > 0.0 {
+            // Curve mode: per-cell grid. Every bottom vertex must lie on the
+            // cylinder after apply_curve; any chord spanning multiple pixel
+            // columns would cut through the interior of the arc and inflate
+            // the enclosed volume (self-intersecting solid).
+            for y in 0..height - 1 {
+                let j = y as f64 * pw;
+                let j1 = (y + 1) as f64 * pw;
+                for x in 0..width - 1 {
+                    let i = x as f64 * pw;
+                    let i1 = (x + 1) as f64 * pw;
+                    // Wound so the normals point -Z (outward bottom).
+                    final_mesh.add_triangle(Triangle::new(
+                        Vector3::new(i, j, 0.0),
+                        Vector3::new(i, j1, 0.0),
+                        Vector3::new(i1, j, 0.0),
+                    ));
+                    final_mesh.add_triangle(Triangle::new(
+                        Vector3::new(i1, j1, 0.0),
+                        Vector3::new(i1, j, 0.0),
+                        Vector3::new(i, j1, 0.0),
+                    ));
+                }
+            }
+        } else {
+            // Flat mode: a triangle fan from the center to per-pixel perimeter
+            // points (cheap: ~2(W+H) triangles instead of ~2·W·H).
+            let last_x = (width - 1) as f64 * pw;
+            let last_y = (height - 1) as f64 * pw;
+
+            // Perimeter walked clockwise viewed from above (+Z), so each fan
+            // triangle's normal points -Z (outward bottom) and each perimeter
+            // edge runs opposite to its wall-triangle twin.
+            let mut perimeter: Vec<Vector3> =
+                Vec::with_capacity((2 * (width + height) - 4) as usize);
+            for y in 0..height {
+                perimeter.push(Vector3::new(0.0, y as f64 * pw, 0.0));
+            }
+            for x in 1..width {
+                perimeter.push(Vector3::new(x as f64 * pw, last_y, 0.0));
+            }
+            for y in (0..height - 1).rev() {
+                perimeter.push(Vector3::new(last_x, y as f64 * pw, 0.0));
+            }
+            for x in (1..width - 1).rev() {
+                perimeter.push(Vector3::new(x as f64 * pw, 0.0, 0.0));
+            }
+
+            let center = Vector3::new(last_x / 2.0, last_y / 2.0, 0.0);
+            for k in 0..perimeter.len() {
+                let a = perimeter[k];
+                let b = perimeter[(k + 1) % perimeter.len()];
+                final_mesh.add_triangle(Triangle::new(center, a, b));
+            }
+        }
+    }
 
     Ok(final_mesh)
 }
@@ -244,24 +290,97 @@ mod tests {
     fn test_generate_texture_layer_2x2() {
         // 2x2 image produces 1x1 grid of quads = 2 surface triangles
         // Plus edge triangles: left(2) + top(2) + right(2) + bottom(2) = 8
-        // Plus bottom face: 2
-        // Total = 2 + 8 + 2 = 12
+        // Plus bottom fan: perimeter 2*(2+2)-4 = 4 triangles
+        // Total = 2 + 8 + 4 = 14
         let image = create_uniform_image(2, 2, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 12);
+        assert_eq!(mesh.triangle_count(), 14);
     }
 
     #[test]
     fn test_generate_texture_layer_3x3() {
         // 3x3 image produces 2x2 grid of quads = 4 quads * 2 triangles = 8 surface triangles
         // Edge triangles: left(2*2) + top(2*2) + right(2*2) + bottom(2*2) = 16
-        // Plus bottom face: 2
-        // Total = 8 + 16 + 2 = 26
+        // Plus bottom fan: perimeter 2*(3+3)-4 = 8 triangles
+        // Total = 8 + 16 + 8 = 32
         let image = create_uniform_image(3, 3, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 26);
+        assert_eq!(mesh.triangle_count(), 32);
+    }
+
+    /// Asserts every directed edge occurs exactly once with its reverse
+    /// present — fails on T-junctions and on any inverted winding.
+    fn assert_strictly_manifold(mesh: &Mesh, label: &str) {
+        let key = |v: &Vector3| (v.x.to_bits(), v.y.to_bits(), v.z.to_bits());
+        let mut edges = std::collections::HashMap::new();
+        for t in &mesh.triangles {
+            for (a, b) in [(t.v0, t.v1), (t.v1, t.v2), (t.v2, t.v0)] {
+                *edges.entry((key(&a), key(&b))).or_insert(0u32) += 1;
+            }
+        }
+        for ((a, b), count) in &edges {
+            assert_eq!(*count, 1, "{label}: directed edge used {count} times");
+            assert_eq!(
+                edges.get(&(*b, *a)),
+                Some(&1),
+                "{label}: edge has no opposite-direction twin"
+            );
+        }
+    }
+
+    fn gradient_image(width: u32, height: u32) -> RgbaImage {
+        ImageBuffer::from_fn(width, height, |x, y| {
+            let v = (x * 37 + y * 53) as u8;
+            Rgba([v, v, v, 255])
+        })
+    }
+
+    #[test]
+    fn test_texture_mesh_is_strictly_manifold() {
+        // Both bottom variants (flat fan, curve-mode grid) must produce one
+        // closed body without T-junctions.
+        let image = gradient_image(5, 4);
+
+        let flat = LithophaneConfig::default();
+        assert_strictly_manifold(&generate_texture_layer(&image, &flat).unwrap(), "flat/fan");
+
+        let curved = LithophaneConfig {
+            curve: 90.0,
+            ..LithophaneConfig::default()
+        };
+        assert_strictly_manifold(
+            &generate_texture_layer(&image, &curved).unwrap(),
+            "curve/grid",
+        );
+    }
+
+    #[test]
+    fn test_texture_curve_mode_uses_grid_bottom() {
+        // 3x3 image: 8 surface + 16 wall triangles; curve mode closes the
+        // bottom with a per-cell grid (2*2 cells * 2 = 8) instead of the fan.
+        let image = create_uniform_image(3, 3, [128, 128, 128]);
+        let config = LithophaneConfig {
+            curve: 90.0,
+            ..LithophaneConfig::default()
+        };
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+        assert_eq!(mesh.triangle_count(), 8 + 16 + 8);
+
+        // No bottom triangle may span more than one pixel column along x —
+        // a wider chord would cut through the cylinder after apply_curve.
+        let pw = config.texture_pixel_width;
+        for t in mesh
+            .triangles
+            .iter()
+            .filter(|t| t.v0.z == 0.0 && t.v1.z == 0.0 && t.v2.z == 0.0)
+        {
+            let xs = [t.v0.x, t.v1.x, t.v2.x];
+            let span = xs.iter().fold(f64::MIN, |a, &b| a.max(b))
+                - xs.iter().fold(f64::MAX, |a, &b| a.min(b));
+            assert!(span <= pw + 1e-9, "bottom triangle spans {span} mm");
+        }
     }
 
     #[test]

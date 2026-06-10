@@ -36,7 +36,9 @@ pub use color_layer::ColorLayer;
 pub use config::{PaletteLoaderConfig, PixelCreationMethod};
 pub use generator::create_multi_combi;
 pub use loader::{PaletteColorEntry, PaletteLoader};
-pub use quantize::{quantize_image, quantize_pixels, quantize_with_stats, QuantizationStats};
+pub use quantize::{
+    quantize_image, quantize_image_opt, quantize_pixels, quantize_with_stats, QuantizationStats,
+};
 
 use crate::color::{find_closest_color, ColorDistanceMethod, Rgb};
 use std::collections::HashMap;

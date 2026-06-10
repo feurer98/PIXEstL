@@ -103,6 +103,47 @@ pub fn quantize_image(
     Ok(quantized)
 }
 
+/// Quantizes an image while preserving transparent pixels in place.
+///
+/// `None` entries (transparent pixels from [`crate::image::extract_pixels`])
+/// stay `None` at their original position, so the quantized image keeps the
+/// exact geometry of the source. Dropping them instead would shift every
+/// pixel right of a transparent hole to the left.
+///
+/// # Arguments
+///
+/// * `image_data` - 2D array of optional pixels (row-major, `None` = transparent)
+/// * `palette_colors` - Available palette colors
+/// * `method` - Color distance method to use
+pub fn quantize_image_opt(
+    image_data: &[Vec<Option<Rgb>>],
+    palette_colors: &[Rgb],
+    method: ColorDistanceMethod,
+) -> Result<Vec<Vec<Option<Rgb>>>> {
+    if palette_colors.is_empty() {
+        return Ok(image_data.to_vec());
+    }
+
+    // Pre-compute CIELab values for palette colors once
+    let palette_labs: Vec<CieLab> = palette_colors.iter().map(|c| CieLab::from(*c)).collect();
+
+    let quantized: Vec<Vec<Option<Rgb>>> = image_data
+        .par_iter()
+        .map(|row| {
+            row.iter()
+                .map(|pixel| {
+                    pixel.map(|p| {
+                        find_closest_color_precomputed(&p, palette_colors, &palette_labs, method)
+                            .expect("palette is non-empty")
+                    })
+                })
+                .collect()
+        })
+        .collect();
+
+    Ok(quantized)
+}
+
 /// Information about quantization results
 #[derive(Debug, Clone)]
 pub struct QuantizationStats {
@@ -276,6 +317,32 @@ mod tests {
         let image = vec![vec![Rgb::new(100, 100, 100), Rgb::new(200, 200, 200)]];
         let palette = vec![];
         let quantized = quantize_image(&image, &palette, ColorDistanceMethod::Rgb).unwrap();
+        assert_eq!(quantized, image); // Unchanged
+    }
+
+    #[test]
+    fn test_quantize_image_opt_preserves_none_positions() {
+        let image = vec![
+            vec![Some(Rgb::new(250, 5, 5)), None, Some(Rgb::new(5, 5, 250))],
+            vec![None, Some(Rgb::new(250, 5, 5)), None],
+        ];
+        let palette = vec![Rgb::new(255, 0, 0), Rgb::new(0, 0, 255)];
+
+        let quantized = quantize_image_opt(&image, &palette, ColorDistanceMethod::Rgb).unwrap();
+
+        // Row lengths and None positions are untouched; colors are quantized.
+        assert_eq!(quantized[0].len(), 3);
+        assert_eq!(quantized[0][0], Some(Rgb::new(255, 0, 0)));
+        assert_eq!(quantized[0][1], None);
+        assert_eq!(quantized[0][2], Some(Rgb::new(0, 0, 255)));
+        assert_eq!(quantized[1], vec![None, Some(Rgb::new(255, 0, 0)), None]);
+    }
+
+    #[test]
+    fn test_quantize_image_opt_empty_palette() {
+        let image = vec![vec![Some(Rgb::new(100, 100, 100)), None]];
+        let palette = vec![];
+        let quantized = quantize_image_opt(&image, &palette, ColorDistanceMethod::Rgb).unwrap();
         assert_eq!(quantized, image); // Unchanged
     }
 
