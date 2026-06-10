@@ -1,4 +1,10 @@
-> **Note:** This is a personal project ported with Claude. Neither the documentation nor the code has been fully checked. WIP
+> **Note:** This is a personal project, originally ported from Java with AI assistance.
+> The core has since been systematically reviewed: the generated meshes are verified
+> closed and consistently outward-wound by invariant tests (signed volume, edge
+> pairing), and the known geometry bugs of the initial port (inverted cube winding,
+> missing texture z-offset, curve-mode chord cracks, alpha-channel pixel shift) are
+> fixed. What is still missing is a documented end-to-end print validation —
+> slice and inspect the output before committing to a long print.
 
 # PIXEstL - Rust Edition
 
@@ -6,9 +12,11 @@
 
 Rust port of the original [PIXEstL](https://github.com/gaugo87/PIXEstL) Java application by [gaugo87](https://github.com/gaugo87). Generate stunning color lithophanes for 3D printing using CMYK-based additive color mixing with automatic material system (AMS) support.
 
-[![Tests](https://img.shields.io/badge/tests-233%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-366%20passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
+
+📖 **Documentation (German):** https://feurer98.github.io/PIXEstL
 
 ## Features
 
@@ -16,14 +24,33 @@ Rust port of the original [PIXEstL](https://github.com/gaugo87/PIXEstL) Java app
 - 🔬 **CIELab Color Matching** - Perceptually uniform color distance for accurate matching
 - 🚀 **Parallel Processing** - Multi-threaded mesh generation using Rayon
 - 🎯 **Bambu Lab AMS Support** - Automatic multi-group filament swapping
+- 🖨️ **3MF Export** - Embedded filament colors; Bambu Studio assigns AMS slots automatically
+- 🌐 **Web UI** - React frontend with live color preview + Axum server (single Docker container)
 - 📐 **Physical Dimensions** - Direct millimeter-based sizing for accurate prints
-- 🏗️ **Dual Layer Support** - Separate color and texture (brightness) layers
+- 🏗️ **Dual Layer Support** - Separate color and texture (brightness) layers, correctly stacked
+- 🧱 **Manifold Meshes** - Closed solids with consistent outward winding, enforced by tests
+- 🌙 **Curved Lithophanes** - Cylindrical bending (`--curve`) with per-pixel segmentation
 - 💾 **STL Export** - ASCII and binary STL formats with ZIP packaging
-- ⚡ **Run-Length Encoding** - Optimized mesh generation
 
 ## Quick Start
 
-### Prerequisites
+### Option A: Web UI (Docker)
+
+One container serves both the API and the React frontend:
+
+```bash
+docker compose up -d --build
+# open http://localhost:8787
+```
+
+Upload an image, adjust the settings with live preview, and download the
+result as 3MF (recommended for Bambu Studio) or STL-ZIP. Server limits
+(concurrency, job timeout, OOM guard, job TTL) are configurable via
+environment variables — see [`server/README.md`](server/README.md).
+
+### Option B: CLI
+
+#### Prerequisites
 
 - **Rust 1.75 or later** — Install via [rustup](https://rustup.rs/):
   ```bash
@@ -32,7 +59,7 @@ Rust port of the original [PIXEstL](https://github.com/gaugo87/PIXEstL) Java app
 - Modern CPU (multi-core recommended)
 - ~100 MB RAM for typical images
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
@@ -45,7 +72,7 @@ cargo build --release
 # Binary will be at: target/release/pixestl
 ```
 
-### Basic Usage
+#### Basic Usage
 
 ```bash
 pixestl \
@@ -68,9 +95,12 @@ A ready-to-use palette file is provided in the `palette/` directory of the repos
 ### Command-Line Options
 
 **Required Arguments:**
-- `-i, --input <FILE>` - Input image file (PNG, JPG, etc.)
+- `-i, --input <FILE>` - Input image file (PNG, JPG, etc.; sources larger than 16384×16384 px are rejected)
 - `-p, --palette <FILE>` - Palette JSON file
-- `-o, --output <FILE>` - Output ZIP file
+- `-o, --output <PATH>` - Output path; the extension selects the format:
+  - `.3mf` — single 3MF file with embedded filament colors (recommended for Bambu Studio)
+  - `.zip` — ZIP archive with one STL per layer
+  - anything else — directory with one STL per layer
 
 **Image Dimensions:**
 - `-w, --width <MM>` - Destination width in millimeters (0 = auto)
@@ -90,14 +120,14 @@ A ready-to-use palette file is provided in the `palette/` directory of the repos
 - `--no-texture` - Disable texture layer
 
 **Export Options:**
-- `--format <ascii|binary>` - STL format (default: ascii)
+- `--format <ascii|binary>` - STL format (default: ascii; use `binary` for ~7× smaller files — the web server always uses binary)
 - `--plate-thickness <MM>` - Base plate thickness (default: 0.2)
 
 **Advanced Options:**
 - `--color-distance <rgb|cie-lab>` - Color matching method (default: cie-lab)
 - `--pixel-method <additive|full>` - Color creation method (default: additive)
-- `--color-number <N>` - Limit colors per AMS group (0 = all)
-- `-C, --curve <DEG>` - Curve angle in degrees for cylindrical lithophanes (default: 0)
+- `--color-number <N>` - Limit colors per AMS group (0 = all; in additive mode one slot is always reserved for white, so 1 is invalid)
+- `-C, --curve <DEG>` - Curve angle in degrees for cylindrical lithophanes (default: 0). In curve mode the meshes are segmented per pixel column so all layers follow the same arc; expect larger files than flat mode.
 - `--debug` - Enable debug output
 
 **Special Modes:**
@@ -159,7 +189,8 @@ Palettes are defined in JSON with HSL or hex color definitions:
 }
 ```
 
-**Note:** White (`#FFFFFF`) is required for proper color mixing.
+**Note:** White (`#FFFFFF`) is required in additive mode and enforced by the
+loader — a palette without an active white entry is rejected with a clear error.
 
 ## Library Usage
 
@@ -177,7 +208,7 @@ fn main() -> pixestl::Result<()> {
     
     // Load palette
     let palette_config = PaletteLoaderConfig {
-        nb_layers: 5,
+        color_layer_count: 5,
         creation_method: pixestl::PixelCreationMethod::Additive,
         color_number: 0,
         distance_method: pixestl::color::ColorDistanceMethod::CieLab,
@@ -202,7 +233,19 @@ fn main() -> pixestl::Result<()> {
 
 ## Architecture
 
-### Module Structure
+### Repository Layout
+
+```
+PIXEstL/
+├── rust/           # Core library + CLI (this is where the generation happens)
+├── server/         # Axum HTTP server; runs the CLI as a subprocess per job
+├── frontend/       # React/Vite web UI with live color preview
+├── palette/        # Ready-to-use calibrated filament palette
+├── docs/           # MkDocs documentation (German)
+└── Dockerfile      # Single-container build: server + frontend + CLI
+```
+
+### Module Structure (rust/)
 
 ```
 pixestl/
@@ -215,7 +258,7 @@ pixestl/
 │   ├── color_layer # Color layer mesh generation
 │   ├── texture_layer # Texture layer mesh generation
 │   └── support_plate # Base plate generation
-├── stl/            # STL export (ASCII/binary) and ZIP packaging
+├── stl/            # STL export (ASCII/binary), 3MF export, ZIP packaging
 └── cli/            # Command-line interface
 ```
 
@@ -227,21 +270,30 @@ pixestl/
 - Parallel processing with Rayon
 
 **Color Layer Generation:**
-- Stacks transparent CMYK layers
-- Run-length encoding for consecutive identical pixels
+- Stacks transparent CMYK layers (texture layer sits on top of the color stack)
+- Run-length encoding for consecutive identical pixels (flat mode; disabled in curve mode so all rows share the same chord grid)
 - Parallel row-based processing
 
 **Texture Layer Generation:**
 - Converts to grayscale using standard luminance formula
 - Maps brightness to thickness: `thickness = min + K * (max - min)`
-- Triangulated surface mesh with edge handling
+- Closed, manifold surface mesh: per-pixel walls and a matching bottom cap (triangle fan in flat mode, per-cell grid in curve mode)
+
+### Mesh Quality Guarantees
+
+Invariant tests enforce that every generated layer is a closed solid with
+consistent outward winding: positive signed volume, every directed edge
+paired with its reverse, and a strict one-edge-one-twin manifold check for
+the texture body. Slicers should import the output without repair warnings.
 
 ## Performance
 
 - **Multi-threaded:** Uses all CPU cores via Rayon
-- **Optimized:** Run-length encoding reduces mesh complexity
-- **Memory efficient:** Streaming STL generation
+- **Optimized:** Run-length encoding reduces mesh complexity in flat mode
 - **Fast builds:** LTO and optimization level 3 in release mode
+- **Memory:** the full mesh is held in RAM during generation (~72 bytes per
+  triangle); the web server estimates the triangle count up front and rejects
+  jobs that would exceed its configurable limit
 
 Typical generation time for 100x100mm lithophane: **~5-15 seconds**
 
@@ -262,18 +314,23 @@ Measured with [Criterion](https://github.com/bheisler/criterion.rs) on the CI ru
 
 ## Testing
 
+366 tests across the workspace: 345 in the core library/CLI (including mesh
+invariants: signed volume, manifold edge pairing, layer stacking, curve-mode
+segmentation) and 21 in the server (API, validation, job TTL sweeper), plus
+frontend unit tests (Vitest).
+
 ```bash
-# Run all tests (233 tests)
-cargo test
+# Core library + CLI
+cd rust && cargo test
 
-# Run with output
-cargo test -- --nocapture
+# Server
+cd server && cargo test
 
-# Run specific module
+# Frontend
+cd frontend && npm test
+
+# Run a specific module
 cargo test color::
-
-# Release mode tests (faster)
-cargo test --release
 ```
 
 ## Requirements
@@ -286,12 +343,15 @@ cargo test --release
 
 | Feature | Java | Rust |
 |---------|------|------|
-| Performance | ⚡ | ⚡⚡⚡ (2-3x faster) |
-| Memory Usage | 🐘 | 🐁 (50% less) |
-| Binary Size | 30+ MB | 8 MB |
+| Dependencies | JRE required | Self-contained binary |
 | Startup Time | ~2s (JVM) | <100ms |
-| Dependencies | JRE required | Self-contained |
+| Web UI + server | — | included (Docker single container) |
+| 3MF with AMS color assignment | — | included |
 | Type Safety | Runtime | Compile-time |
+
+Performance and memory have not been benchmarked head-to-head against the
+Java original; the Rust version parallelizes mesh generation with Rayon and
+runs without JVM warm-up.
 
 ## Contributing
 
@@ -310,6 +370,7 @@ MIT License - See LICENSE file
 
 ## Links
 
+- [Documentation (German)](https://feurer98.github.io/PIXEstL)
 - [Original PIXEstL (Java)](https://github.com/gaugo87/PIXEstL)
 - [Rust Port](https://github.com/feurer98/PIXEstL)
 - [Bambu Lab](https://bambulab.com/)
