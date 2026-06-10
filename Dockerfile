@@ -27,7 +27,8 @@ RUN npm run build
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin pixestl
 WORKDIR /app
 COPY --from=rust-builder /build/rust/target/release/pixestl /usr/local/bin/pixestl
 COPY --from=rust-builder /build/server/target/release/pixestl-server /usr/local/bin/pixestl-server
@@ -35,6 +36,9 @@ COPY --from=web-builder /web/dist /app/static
 ENV PIXESTL_BIN=/usr/local/bin/pixestl \
     STATIC_DIR=/app/static \
     PORT=8787
+# The server only needs to read /app/static and write job temp dirs under /tmp;
+# neither requires root.
+USER pixestl
 EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -fsS http://localhost:8787/api/health || exit 1

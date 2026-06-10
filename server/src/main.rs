@@ -189,8 +189,11 @@ fn estimate_triangles(s: &Settings) -> u64 {
         tris = tris.saturating_add(cells(s.texture_pixel_width).saturating_mul(4));
     }
     if s.enable_color {
-        // Color cubes use run-length merging; ~2 triangles per cell per layer.
-        let per_cell = 2u64.saturating_mul(s.color_layers.max(1) as u64);
+        // Worst case: one full 12-triangle cube per cell per layer (no RLE run
+        // longer than 1 pixel). Run-length merging usually reduces this a lot,
+        // but the guard exists for the worst case — raise PIXESTL_MAX_TRIANGLES
+        // if legitimate jobs get rejected.
+        let per_cell = 12u64.saturating_mul(s.color_layers.max(1) as u64);
         tris = tris.saturating_add(cells(s.color_pixel_width).saturating_mul(per_cell));
     }
     tris
@@ -281,6 +284,16 @@ fn validate_settings(s: &Settings) -> Result<(), ApiError> {
             "settings.pixelMethod must be one of [\"additive\", \"full\"], got {:?}",
             s.pixel_method
         )));
+    }
+
+    // The CLI rejects this combination anyway (one AMS slot is always reserved
+    // for white in additive mode); catching it here turns a confusing late job
+    // error into an immediate, clear 400.
+    if s.pixel_method == "additive" && s.ams_colors == 1 {
+        return Err(bad(
+            "settings.amsColors: 1 ist im Additiv-Modus nicht möglich, da ein Slot \
+             für Weiß reserviert ist. 0 (unbegrenzt) oder mindestens 2 wählen.",
+        ));
     }
 
     if s.texture_color.len() != 7
@@ -1236,6 +1249,38 @@ mod tests {
         s.texture_pixel_width = 1.0;
         // 100×100 cells × 4 triangles/cell
         assert_eq!(estimate_triangles(&s), 40_000);
+    }
+
+    #[test]
+    fn test_estimate_triangles_color_uses_full_cube_worst_case() {
+        let mut s = base_settings();
+        s.enable_color = true;
+        s.enable_texture = false;
+        s.width = 100.0;
+        s.height = 100.0;
+        s.color_pixel_width = 1.0;
+        s.color_layers = 5;
+        // 100×100 cells × 12 triangles/cube × 5 layers (no RLE assumed)
+        assert_eq!(estimate_triangles(&s), 600_000);
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_ams_colors_one_in_additive() {
+        let mut s = base_settings();
+        s.pixel_method = "additive".to_string();
+        s.ams_colors = 1;
+        assert!(validate_settings(&s).is_err());
+
+        // Unlimited and >=2 are fine in additive mode.
+        s.ams_colors = 0;
+        assert!(validate_settings(&s).is_ok());
+        s.ams_colors = 2;
+        assert!(validate_settings(&s).is_ok());
+
+        // In full mode a single color is legitimate.
+        s.pixel_method = "full".to_string();
+        s.ams_colors = 1;
+        assert!(validate_settings(&s).is_ok());
     }
 
     #[test]

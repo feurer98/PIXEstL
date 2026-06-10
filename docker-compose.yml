@@ -14,6 +14,10 @@ services:
     environment:
       # Override if you map a different host port or run behind a proxy.
       PORT: "8787"
+    # Generation jobs hold the whole mesh in RAM; cap the container so a heavy
+    # job degrades to a killed subprocess (clean job error) instead of taking
+    # the host down. Tune to your hardware.
+    mem_limit: 4g
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8787/api/health"]
