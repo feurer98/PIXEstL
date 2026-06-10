@@ -9,7 +9,7 @@ use crate::lithophane::config::LithophaneConfig;
 use crate::lithophane::geometry::Vector3;
 use crate::lithophane::layer::NamedLayer;
 use crate::lithophane::{color_layer, support_plate, texture_layer};
-use crate::palette::{quantize_image, Palette};
+use crate::palette::{quantize_image_opt, Palette};
 use image::{DynamicImage, RgbaImage};
 
 pub struct LithophaneGenerator {
@@ -38,15 +38,14 @@ impl LithophaneGenerator {
                 self.config.color_pixel_width,
             )?;
 
-            let pixels_with_option = extract_pixels(&resized);
-            let pixels: Vec<Vec<Rgb>> = pixels_with_option
-                .iter()
-                .map(|row| row.iter().filter_map(|&p| p).collect())
-                .collect();
+            // Transparent pixels stay None at their position; filtering them
+            // out would shift every pixel right of a hole to the left and
+            // erase the transparency information for the plate/edge logic.
+            let pixels = extract_pixels(&resized);
 
             let palette_colors: Vec<Rgb> = palette.colors().collect();
             let quantized_pixels =
-                quantize_image(&pixels, &palette_colors, self.config.color_distance_method)?;
+                quantize_image_opt(&pixels, &palette_colors, self.config.color_distance_method)?;
 
             let quantized = pixels_to_image(quantized_pixels);
             Some(flip_vertical(&quantized))
@@ -179,7 +178,10 @@ impl LithophaneGenerator {
     }
 }
 
-fn pixels_to_image(pixels: Vec<Vec<Rgb>>) -> RgbaImage {
+/// Builds an RGBA image from quantized pixels; `None` becomes a transparent
+/// pixel so downstream transparency handling (plate skip, edge trimming in
+/// the color layer) sees the original holes.
+fn pixels_to_image(pixels: Vec<Vec<Option<Rgb>>>) -> RgbaImage {
     use image::{ImageBuffer, Rgba};
 
     let height = pixels.len() as u32;
@@ -190,11 +192,14 @@ fn pixels_to_image(pixels: Vec<Vec<Rgb>>) -> RgbaImage {
     };
 
     ImageBuffer::from_fn(width, height, |x, y| {
-        if y as usize >= pixels.len() || x as usize >= pixels[y as usize].len() {
-            Rgba([0, 0, 0, 0])
-        } else {
-            let rgb = pixels[y as usize][x as usize];
-            Rgba([rgb.r, rgb.g, rgb.b, 255])
+        match pixels
+            .get(y as usize)
+            .and_then(|row| row.get(x as usize))
+            .copied()
+            .flatten()
+        {
+            Some(rgb) => Rgba([rgb.r, rgb.g, rgb.b, 255]),
+            None => Rgba([0, 0, 0, 0]),
         }
     })
 }
@@ -556,7 +561,7 @@ mod tests {
 
     #[test]
     fn test_pixels_to_image_empty() {
-        let pixels: Vec<Vec<Rgb>> = vec![];
+        let pixels: Vec<Vec<Option<Rgb>>> = vec![];
         let img = pixels_to_image(pixels);
         assert_eq!(img.width(), 0);
         assert_eq!(img.height(), 0);
@@ -569,7 +574,7 @@ mod tests {
         let blue = Rgb::new(0, 0, 255);
         let white = Rgb::new(255, 255, 255);
 
-        let pixels = vec![vec![red, green], vec![blue, white]];
+        let pixels = vec![vec![Some(red), Some(green)], vec![Some(blue), Some(white)]];
         let img = pixels_to_image(pixels);
 
         assert_eq!(img.width(), 2);
@@ -583,10 +588,67 @@ mod tests {
 
     #[test]
     fn test_pixels_to_image_single_pixel() {
-        let pixels = vec![vec![Rgb::new(128, 64, 32)]];
+        let pixels = vec![vec![Some(Rgb::new(128, 64, 32))]];
         let img = pixels_to_image(pixels);
         assert_eq!(img.width(), 1);
         assert_eq!(img.height(), 1);
         assert_eq!(img.get_pixel(0, 0).0, [128, 64, 32, 255]);
+    }
+
+    #[test]
+    fn test_pixels_to_image_preserves_transparent_position() {
+        // A hole in the middle of a row must stay at its position; pixels to
+        // its right must NOT shift left.
+        let red = Rgb::new(255, 0, 0);
+        let blue = Rgb::new(0, 0, 255);
+        let pixels = vec![vec![Some(red), None, Some(blue)]];
+        let img = pixels_to_image(pixels);
+
+        assert_eq!(img.width(), 3, "row width must include the hole");
+        assert_eq!(img.get_pixel(0, 0).0, [255, 0, 0, 255]);
+        assert_eq!(img.get_pixel(1, 0).0[3], 0, "hole must stay transparent");
+        assert_eq!(img.get_pixel(2, 0).0, [0, 0, 255, 255]);
+    }
+
+    // ── Transparenz-Pipeline ────────────────────────────────────────────────
+
+    fn make_image_with_transparent_hole(width: u32, height: u32) -> DynamicImage {
+        let buf = ImageBuffer::from_fn(width, height, |x, y| {
+            if x == width / 2 && y == height / 2 {
+                Rgba([0u8, 0, 0, 0])
+            } else {
+                Rgba([255u8, 0, 0, 255])
+            }
+        });
+        DynamicImage::ImageRgba8(buf)
+    }
+
+    #[test]
+    fn test_transparent_image_skips_support_plate() {
+        // Regression: transparency was erased during quantization (pixels
+        // were filtered out and re-emitted fully opaque), so the plate was
+        // generated even for images with holes.
+        let palette = load_test_palette();
+        let image = make_image_with_transparent_hole(8, 8);
+
+        let config = LithophaneConfig {
+            dest_width_mm: 8.0,
+            dest_height_mm: 8.0,
+            color_pixel_width: 1.0,
+            color_layer: true,
+            texture_layer: false,
+            ..default_config()
+        };
+        let gen = LithophaneGenerator::new(config).unwrap();
+        let layers = gen.generate(&image, &palette).unwrap();
+
+        assert!(
+            !layers.iter().any(|l| l.name == "layer-plate"),
+            "image with transparency must not get a support plate"
+        );
+        assert!(
+            layers.iter().any(|l| l.mesh.triangle_count() > 0),
+            "opaque pixels must still produce geometry"
+        );
     }
 }
