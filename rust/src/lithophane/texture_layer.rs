@@ -46,27 +46,44 @@ pub fn generate_texture_layer(image: &RgbaImage, config: &LithophaneConfig) -> R
 
     // Merge all row meshes with pre-allocation
     let total_triangles: usize = row_meshes.iter().map(|m| m.triangle_count()).sum();
-    let mut final_mesh = Mesh::with_capacity(total_triangles + 2);
+    let mut final_mesh = Mesh::with_capacity(total_triangles + 2 * (width + height) as usize);
     for row_mesh in row_meshes {
         final_mesh.merge_owned(row_mesh);
     }
 
-    // Close the bottom face to produce a watertight solid.
-    // Without this the mesh is open, causing slicers to misread bounding-box dimensions.
-    let pw = config.texture_pixel_width;
-    let max_x = (width as f64 - 1.0) * pw;
-    let max_y = (height as f64 - 1.0) * pw;
-    // Winding order chosen so the normal points in the -Z direction (outward bottom).
-    final_mesh.add_triangle(Triangle::new(
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(0.0, max_y, 0.0),
-        Vector3::new(max_x, max_y, 0.0),
-    ));
-    final_mesh.add_triangle(Triangle::new(
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(max_x, max_y, 0.0),
-        Vector3::new(max_x, 0.0, 0.0),
-    ));
+    // Close the bottom with a triangle fan from the center to per-pixel
+    // perimeter points. The fan segments must match the walls' per-pixel
+    // bottom edges exactly — a single big quad would create T-junctions and
+    // the solid would no longer be edge-to-edge manifold.
+    if width >= 2 && height >= 2 {
+        let pw = config.texture_pixel_width;
+        let last_x = (width - 1) as f64 * pw;
+        let last_y = (height - 1) as f64 * pw;
+
+        // Perimeter walked clockwise viewed from above (+Z), so each fan
+        // triangle's normal points -Z (outward bottom) and each perimeter
+        // edge runs opposite to its wall-triangle twin.
+        let mut perimeter: Vec<Vector3> = Vec::with_capacity((2 * (width + height) - 4) as usize);
+        for y in 0..height {
+            perimeter.push(Vector3::new(0.0, y as f64 * pw, 0.0));
+        }
+        for x in 1..width {
+            perimeter.push(Vector3::new(x as f64 * pw, last_y, 0.0));
+        }
+        for y in (0..height - 1).rev() {
+            perimeter.push(Vector3::new(last_x, y as f64 * pw, 0.0));
+        }
+        for x in (1..width - 1).rev() {
+            perimeter.push(Vector3::new(x as f64 * pw, 0.0, 0.0));
+        }
+
+        let center = Vector3::new(last_x / 2.0, last_y / 2.0, 0.0);
+        for k in 0..perimeter.len() {
+            let a = perimeter[k];
+            let b = perimeter[(k + 1) % perimeter.len()];
+            final_mesh.add_triangle(Triangle::new(center, a, b));
+        }
+    }
 
     Ok(final_mesh)
 }
@@ -244,24 +261,53 @@ mod tests {
     fn test_generate_texture_layer_2x2() {
         // 2x2 image produces 1x1 grid of quads = 2 surface triangles
         // Plus edge triangles: left(2) + top(2) + right(2) + bottom(2) = 8
-        // Plus bottom face: 2
-        // Total = 2 + 8 + 2 = 12
+        // Plus bottom fan: perimeter 2*(2+2)-4 = 4 triangles
+        // Total = 2 + 8 + 4 = 14
         let image = create_uniform_image(2, 2, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 12);
+        assert_eq!(mesh.triangle_count(), 14);
     }
 
     #[test]
     fn test_generate_texture_layer_3x3() {
         // 3x3 image produces 2x2 grid of quads = 4 quads * 2 triangles = 8 surface triangles
         // Edge triangles: left(2*2) + top(2*2) + right(2*2) + bottom(2*2) = 16
-        // Plus bottom face: 2
-        // Total = 8 + 16 + 2 = 26
+        // Plus bottom fan: perimeter 2*(3+3)-4 = 8 triangles
+        // Total = 8 + 16 + 8 = 32
         let image = create_uniform_image(3, 3, [128, 128, 128]);
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
-        assert_eq!(mesh.triangle_count(), 26);
+        assert_eq!(mesh.triangle_count(), 32);
+    }
+
+    #[test]
+    fn test_texture_mesh_is_strictly_manifold() {
+        // The texture solid is one closed body: every directed edge must occur
+        // exactly once and be paired with its reverse. This fails on
+        // T-junctions (the old single-quad bottom) and on any inverted winding.
+        let image: RgbaImage = ImageBuffer::from_fn(5, 4, |x, y| {
+            let v = (x * 37 + y * 53) as u8;
+            Rgba([v, v, v, 255])
+        });
+        let config = LithophaneConfig::default();
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+
+        let key = |v: &Vector3| (v.x.to_bits(), v.y.to_bits(), v.z.to_bits());
+        let mut edges = std::collections::HashMap::new();
+        for t in &mesh.triangles {
+            for (a, b) in [(t.v0, t.v1), (t.v1, t.v2), (t.v2, t.v0)] {
+                *edges.entry((key(&a), key(&b))).or_insert(0u32) += 1;
+            }
+        }
+        for ((a, b), count) in &edges {
+            assert_eq!(*count, 1, "directed edge used {count} times");
+            assert_eq!(
+                edges.get(&(*b, *a)),
+                Some(&1),
+                "edge has no opposite-direction twin"
+            );
+        }
     }
 
     #[test]
