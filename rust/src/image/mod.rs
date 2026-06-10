@@ -12,7 +12,29 @@ use crate::error::{PixestlError, Result};
 use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use std::path::Path;
 
+/// Maximum source image size accepted for decoding (16384 × 16384 ≈ 1 GiB RGBA).
+///
+/// A compressed file can be tiny while declaring enormous dimensions
+/// (decompression bomb); the header is checked before any pixel is decoded.
+const MAX_SOURCE_PIXELS: u64 = 16384 * 16384;
+
+/// Rejects source dimensions that would exhaust memory when decoded.
+fn check_source_dimensions(width: u32, height: u32) -> Result<()> {
+    let total = u64::from(width) * u64::from(height);
+    if total > MAX_SOURCE_PIXELS {
+        return Err(PixestlError::Config(format!(
+            "Input image is too large ({width}x{height} = {total} pixels, \
+             max {MAX_SOURCE_PIXELS}). Scale the image down before processing."
+        )));
+    }
+    Ok(())
+}
+
 /// Loads an image from a file path
+///
+/// The image header is inspected first and files whose decoded size would
+/// exceed [`MAX_SOURCE_PIXELS`] are rejected before any pixel data is
+/// allocated (guards against decompression bombs).
 ///
 /// # Arguments
 ///
@@ -32,10 +54,26 @@ use std::path::Path;
 /// println!("Image size: {}x{}", img.width(), img.height());
 /// ```
 pub fn load_image(path: &Path) -> Result<DynamicImage> {
-    image::open(path).map_err(|e| PixestlError::ImageLoad {
+    let map_image_err = |e| PixestlError::ImageLoad {
         path: path.to_path_buf(),
         source: e,
-    })
+    };
+    let map_io_err = |e| PixestlError::ImageLoad {
+        path: path.to_path_buf(),
+        source: image::ImageError::IoError(e),
+    };
+
+    // Read only the header to learn the dimensions; decoding happens after
+    // the size check passed.
+    let (width, height) = image::ImageReader::open(path)
+        .map_err(map_io_err)?
+        .with_guessed_format()
+        .map_err(map_io_err)?
+        .into_dimensions()
+        .map_err(map_image_err)?;
+    check_source_dimensions(width, height)?;
+
+    image::open(path).map_err(map_image_err)
 }
 
 /// Checks if the aspect ratio is preserved
@@ -277,6 +315,59 @@ mod tests {
                 Rgba([0, 255, 0, 0]) // Transparent green
             }
         })
+    }
+
+    #[test]
+    fn test_check_source_dimensions_accepts_normal_sizes() {
+        assert!(check_source_dimensions(1, 1).is_ok());
+        assert!(check_source_dimensions(8000, 6000).is_ok());
+        assert!(check_source_dimensions(16384, 16384).is_ok()); // exactly at the limit
+    }
+
+    #[test]
+    fn test_check_source_dimensions_rejects_oversized() {
+        assert!(check_source_dimensions(16385, 16384).is_err());
+        assert!(check_source_dimensions(100_000, 100_000).is_err());
+    }
+
+    #[test]
+    fn test_load_image_rejects_decompression_bomb() {
+        use std::io::Write as _;
+
+        // 58-byte BMP whose header declares 20000x20000 pixels (400M > limit).
+        // The guard must reject it from the header alone, without decoding.
+        let mut bmp = Vec::new();
+        bmp.extend_from_slice(b"BM");
+        bmp.extend_from_slice(&58u32.to_le_bytes()); // file size
+        bmp.extend_from_slice(&[0u8; 4]); // reserved
+        bmp.extend_from_slice(&54u32.to_le_bytes()); // pixel data offset
+        bmp.extend_from_slice(&40u32.to_le_bytes()); // DIB header size
+        bmp.extend_from_slice(&20_000i32.to_le_bytes()); // width
+        bmp.extend_from_slice(&20_000i32.to_le_bytes()); // height
+        bmp.extend_from_slice(&1u16.to_le_bytes()); // planes
+        bmp.extend_from_slice(&24u16.to_le_bytes()); // bits per pixel
+        bmp.extend_from_slice(&[0u8; 24]); // compression .. important colors
+        bmp.extend_from_slice(&[0u8; 4]); // (truncated) pixel data
+
+        let mut file = tempfile::Builder::new().suffix(".bmp").tempfile().unwrap();
+        file.write_all(&bmp).unwrap();
+
+        let err = load_image(file.path()).unwrap_err();
+        assert!(
+            err.to_string().contains("too large"),
+            "expected size-guard error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn test_load_image_small_file_roundtrip() {
+        let img = DynamicImage::ImageRgba8(create_test_image(4, 4));
+        let file = tempfile::Builder::new().suffix(".png").tempfile().unwrap();
+        img.save(file.path()).unwrap();
+
+        let loaded = load_image(file.path()).unwrap();
+        assert_eq!(loaded.width(), 4);
+        assert_eq!(loaded.height(), 4);
     }
 
     #[test]

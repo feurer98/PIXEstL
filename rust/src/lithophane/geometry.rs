@@ -161,6 +161,25 @@ impl Mesh {
         }
     }
 
+    /// Verschiebt alle Dreiecke in-place um einen Offset-Vektor (keine Allokation).
+    pub fn translate_mut(&mut self, offset: Vector3) {
+        for t in &mut self.triangles {
+            *t = t.translate(offset);
+        }
+    }
+
+    /// Berechnet das signierte Volumen des Meshes (Divergenzsatz).
+    ///
+    /// Für ein geschlossenes Mesh mit konsistent nach außen orientierten
+    /// Dreiecken ist das Ergebnis das (positive) eingeschlossene Volumen.
+    /// Negative oder abweichende Werte zeigen invertierte Windung an.
+    pub fn signed_volume(&self) -> f64 {
+        self.triangles
+            .iter()
+            .map(|t| t.v0.dot(&t.v1.cross(&t.v2)) / 6.0)
+            .sum()
+    }
+
     /// Fügt ein anderes Mesh per Referenz zusammen (klont die Dreiecke).
     pub fn merge(&mut self, other: &Mesh) {
         self.triangles.extend(other.triangles.iter().cloned());
@@ -204,29 +223,32 @@ impl Mesh {
         let v110 = center + Vector3::new(hw, hd, -hh);
         let v111 = center + Vector3::new(hw, hd, hh);
 
+        // All faces are wound counter-clockwise viewed from outside, so every
+        // normal points away from the cube center (STL/3MF requirement).
+
         // Front face (+Y)
-        self.add_triangle(Triangle::new(v010, v110, v111));
-        self.add_triangle(Triangle::new(v010, v111, v011));
+        self.add_triangle(Triangle::new(v010, v111, v110));
+        self.add_triangle(Triangle::new(v010, v011, v111));
 
         // Back face (-Y)
-        self.add_triangle(Triangle::new(v000, v101, v100));
-        self.add_triangle(Triangle::new(v000, v001, v101));
+        self.add_triangle(Triangle::new(v000, v100, v101));
+        self.add_triangle(Triangle::new(v000, v101, v001));
 
         // Right face (+X)
         self.add_triangle(Triangle::new(v100, v110, v101));
         self.add_triangle(Triangle::new(v110, v111, v101));
 
         // Left face (-X)
-        self.add_triangle(Triangle::new(v000, v011, v001));
-        self.add_triangle(Triangle::new(v000, v010, v011));
+        self.add_triangle(Triangle::new(v000, v001, v011));
+        self.add_triangle(Triangle::new(v000, v011, v010));
 
         // Top face (+Z)
         self.add_triangle(Triangle::new(v001, v101, v111));
         self.add_triangle(Triangle::new(v001, v111, v011));
 
         // Bottom face (-Z)
-        self.add_triangle(Triangle::new(v000, v110, v010));
-        self.add_triangle(Triangle::new(v000, v100, v110));
+        self.add_triangle(Triangle::new(v000, v010, v110));
+        self.add_triangle(Triangle::new(v000, v110, v100));
     }
 }
 
@@ -397,6 +419,53 @@ mod tests {
     }
 
     #[test]
+    fn test_cube_signed_volume_is_positive_product() {
+        // Consistent outward winding ⇒ signed volume = w*d*h.
+        let mesh = Mesh::cube(2.0, 3.0, 4.0, Vector3::new(10.0, -5.0, 7.0));
+        assert_relative_eq!(mesh.signed_volume(), 24.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_cube_normals_point_away_from_center() {
+        let center = Vector3::new(1.0, 2.0, 3.0);
+        let mesh = Mesh::cube(2.0, 2.0, 2.0, center);
+        for (i, t) in mesh.triangles.iter().enumerate() {
+            let centroid = Vector3::new(
+                (t.v0.x + t.v1.x + t.v2.x) / 3.0,
+                (t.v0.y + t.v1.y + t.v2.y) / 3.0,
+                (t.v0.z + t.v1.z + t.v2.z) / 3.0,
+            );
+            let outward = centroid - center;
+            assert!(
+                t.normal().dot(&outward) > 0.0,
+                "triangle {i} is wound inward (normal {:?})",
+                t.normal()
+            );
+        }
+    }
+
+    #[test]
+    fn test_cube_is_closed_manifold() {
+        // Every directed edge must appear exactly once, paired with its reverse.
+        let mesh = Mesh::cube(2.0, 3.0, 4.0, Vector3::zero());
+        let mut edges = std::collections::HashMap::new();
+        let key = |v: &Vector3| (v.x.to_bits(), v.y.to_bits(), v.z.to_bits());
+        for t in &mesh.triangles {
+            for (a, b) in [(t.v0, t.v1), (t.v1, t.v2), (t.v2, t.v0)] {
+                *edges.entry((key(&a), key(&b))).or_insert(0) += 1;
+            }
+        }
+        for ((a, b), count) in &edges {
+            assert_eq!(*count, 1, "directed edge used {count} times");
+            assert_eq!(
+                edges.get(&(*b, *a)),
+                Some(&1),
+                "edge has no opposite-direction twin"
+            );
+        }
+    }
+
+    #[test]
     fn test_mesh_translate() {
         let mesh = Mesh::cube(2.0, 2.0, 2.0, Vector3::zero());
         let offset = Vector3::new(10.0, 20.0, 30.0);
@@ -543,6 +612,18 @@ mod tests {
         assert_relative_eq!(cross.x, 0.0, epsilon = 1e-10);
         assert_relative_eq!(cross.y, 0.0, epsilon = 1e-10);
         assert_relative_eq!(cross.z, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_mesh_translate_mut_matches_translate() {
+        let mesh = Mesh::cube(2.0, 2.0, 2.0, Vector3::zero());
+        let offset = Vector3::new(1.0, -2.0, 3.5);
+        let expected = mesh.translate(offset);
+        let mut moved = mesh;
+        moved.translate_mut(offset);
+        for (a, b) in moved.triangles.iter().zip(expected.triangles.iter()) {
+            assert_eq!(a, b);
+        }
     }
 
     #[test]

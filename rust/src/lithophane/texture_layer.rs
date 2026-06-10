@@ -108,11 +108,12 @@ fn process_texture_row(
         let h01 = heights_y1[xu];
         let h11 = heights_y1[xu + 1];
 
-        // Create two triangles for this quad
+        // Create two triangles for this quad, both wound so the surface
+        // normal points up (+Z, away from the solid).
         let t1 = Triangle::new(
             Vector3::new(i, j, h00),
-            Vector3::new(i, j1, h01),
             Vector3::new(i1, j, h10),
+            Vector3::new(i, j1, h01),
         );
 
         let t2 = Triangle::new(
@@ -142,6 +143,9 @@ fn process_texture_row(
     mesh
 }
 
+// All edge walls are wound counter-clockwise viewed from outside the solid,
+// so their normals point outward (-X, -Y, +X, +Y respectively).
+
 fn add_left_edge(mesh: &mut Mesh, i: f64, j: f64, j1: f64, h00: f64, h01: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
@@ -150,16 +154,16 @@ fn add_left_edge(mesh: &mut Mesh, i: f64, j: f64, j1: f64, h00: f64, h01: f64, z
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
-        Vector3::new(i, j, z_base),
         Vector3::new(i, j1, z_base),
+        Vector3::new(i, j, z_base),
     ));
 }
 
 fn add_top_edge(mesh: &mut Mesh, i: f64, i1: f64, j: f64, h00: f64, h10: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
-        Vector3::new(i1, j, h10),
         Vector3::new(i1, j, z_base),
+        Vector3::new(i1, j, h10),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j, h00),
@@ -171,8 +175,8 @@ fn add_top_edge(mesh: &mut Mesh, i: f64, i1: f64, j: f64, h00: f64, h10: f64, z_
 fn add_right_edge(mesh: &mut Mesh, i1: f64, j: f64, j1: f64, h10: f64, h11: f64, z_base: f64) {
     mesh.add_triangle(Triangle::new(
         Vector3::new(i1, j, h10),
-        Vector3::new(i1, j1, h11),
         Vector3::new(i1, j1, z_base),
+        Vector3::new(i1, j1, h11),
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i1, j, h10),
@@ -189,8 +193,8 @@ fn add_bottom_edge(mesh: &mut Mesh, i: f64, i1: f64, j1: f64, h01: f64, h11: f64
     ));
     mesh.add_triangle(Triangle::new(
         Vector3::new(i, j1, h01),
-        Vector3::new(i, j1, z_base),
         Vector3::new(i1, j1, z_base),
+        Vector3::new(i, j1, z_base),
     ));
 }
 
@@ -258,6 +262,40 @@ mod tests {
         let config = LithophaneConfig::default();
         let mesh = generate_texture_layer(&image, &config).unwrap();
         assert_eq!(mesh.triangle_count(), 26);
+    }
+
+    #[test]
+    fn test_texture_signed_volume_matches_uniform_solid() {
+        // Uniform image ⇒ box of (W-1)*pw × (H-1)*pw × h. A consistent outward
+        // winding makes the signed volume equal the geometric volume.
+        let image = create_uniform_image(3, 3, [128, 128, 128]);
+        let config = LithophaneConfig::default();
+        let h = pixel_height(
+            &image,
+            0,
+            0,
+            config.texture_min_thickness,
+            config.texture_max_thickness,
+        );
+        let pw = config.texture_pixel_width;
+        let expected = (2.0 * pw) * (2.0 * pw) * h;
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+        assert_relative_eq!(mesh.signed_volume(), expected, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_texture_signed_volume_positive_for_gradient() {
+        let image: RgbaImage = ImageBuffer::from_fn(5, 4, |x, y| {
+            let v = (x * 40 + y * 30) as u8;
+            Rgba([v, v, v, 255])
+        });
+        let config = LithophaneConfig::default();
+        let mesh = generate_texture_layer(&image, &config).unwrap();
+        assert!(
+            mesh.signed_volume() > 0.0,
+            "texture solid must have positive signed volume, got {}",
+            mesh.signed_volume()
+        );
     }
 
     #[test]

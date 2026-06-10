@@ -14,7 +14,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::{RwLock, Semaphore};
 
 use axum::body::Body;
@@ -67,8 +67,32 @@ struct Job {
     filename: String,
     output_path: Option<PathBuf>,
     error: Option<String>,
+    /// Last status transition; the sweeper uses this to expire abandoned jobs.
+    updated_at: Instant,
     // Keeps the temp dir (and thus the generated file) alive while the job exists.
     _dir: Arc<TempDir>,
+}
+
+/// Removes jobs whose client has stopped polling, so their `TempDir`s (and the
+/// generated files inside) don't accumulate forever:
+/// - finished jobs (`Done`/`Error`) older than `done_ttl`
+/// - queued/running entries older than `stale_ttl` (safety net for orphans;
+///   normal jobs transition to Done/Error well within the job timeout)
+async fn sweep_expired_jobs(
+    jobs: &RwLock<HashMap<String, Job>>,
+    done_ttl: Duration,
+    stale_ttl: Duration,
+) -> usize {
+    let mut map = jobs.write().await;
+    let before = map.len();
+    map.retain(|_, job| {
+        let age = job.updated_at.elapsed();
+        match job.status {
+            JobStatus::Done | JobStatus::Error => age < done_ttl,
+            JobStatus::Queued | JobStatus::Running => age < stale_ttl,
+        }
+    });
+    before - map.len()
 }
 
 // ─── Frontend settings payload (mirrors src/lib/types.ts Settings) ───────────
@@ -131,6 +155,10 @@ fn build_args(s: &Settings, palette: &Path, input: &Path, output: &Path) -> Vec<
         s.ams_colors.to_string(),
         "--curve".into(),
         s.curve.to_string(),
+        // Binary STL: ~7x smaller ZIPs and faster writes than the CLI's ASCII
+        // default. Only affects .zip output; 3MF ignores the flag.
+        "--format".into(),
+        "binary".into(),
     ];
     if !s.enable_color {
         a.push("--no-color".into());
@@ -161,8 +189,11 @@ fn estimate_triangles(s: &Settings) -> u64 {
         tris = tris.saturating_add(cells(s.texture_pixel_width).saturating_mul(4));
     }
     if s.enable_color {
-        // Color cubes use run-length merging; ~2 triangles per cell per layer.
-        let per_cell = 2u64.saturating_mul(s.color_layers.max(1) as u64);
+        // Worst case: one full 12-triangle cube per cell per layer (no RLE run
+        // longer than 1 pixel). Run-length merging usually reduces this a lot,
+        // but the guard exists for the worst case — raise PIXESTL_MAX_TRIANGLES
+        // if legitimate jobs get rejected.
+        let per_cell = 12u64.saturating_mul(s.color_layers.max(1) as u64);
         tris = tris.saturating_add(cells(s.color_pixel_width).saturating_mul(per_cell));
     }
     tris
@@ -253,6 +284,16 @@ fn validate_settings(s: &Settings) -> Result<(), ApiError> {
             "settings.pixelMethod must be one of [\"additive\", \"full\"], got {:?}",
             s.pixel_method
         )));
+    }
+
+    // The CLI rejects this combination anyway (one AMS slot is always reserved
+    // for white in additive mode); catching it here turns a confusing late job
+    // error into an immediate, clear 400.
+    if s.pixel_method == "additive" && s.ams_colors == 1 {
+        return Err(bad(
+            "settings.amsColors: 1 ist im Additiv-Modus nicht möglich, da ein Slot \
+             für Weiß reserviert ist. 0 (unbegrenzt) oder mindestens 2 wählen.",
+        ));
     }
 
     if s.texture_color.len() != 7
@@ -408,6 +449,7 @@ async fn create_job(
                 filename: filename.clone(),
                 output_path: None,
                 error: None,
+                updated_at: Instant::now(),
                 _dir: dir.clone(),
             },
         );
@@ -462,6 +504,7 @@ async fn create_job(
 
         let mut map = jobs.write().await;
         if let Some(job) = map.get_mut(&job_id) {
+            job.updated_at = Instant::now();
             match outcome {
                 Ok(path) => {
                     job.status = JobStatus::Done;
@@ -481,6 +524,7 @@ async fn create_job(
 async fn set_status(jobs: &Arc<RwLock<HashMap<String, Job>>>, id: &str, status: JobStatus) {
     if let Some(job) = jobs.write().await.get_mut(id) {
         job.status = status;
+        job.updated_at = Instant::now();
     }
 }
 
@@ -623,6 +667,16 @@ async fn main() {
         .filter(|n| *n > 0)
         .unwrap_or(20_000_000);
 
+    // How long finished jobs wait for download before their temp files are
+    // reclaimed. Clients poll every second, so 15 minutes is generous.
+    let job_ttl = Duration::from_secs(
+        std::env::var("PIXESTL_JOB_TTL_SECS")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|n| *n > 0)
+            .unwrap_or(900),
+    );
+
     let state = AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         pixestl_bin: pixestl_bin.clone(),
@@ -630,6 +684,25 @@ async fn main() {
         job_timeout,
         max_triangles,
     };
+
+    // Background sweeper: without it, jobs whose client never downloads (closed
+    // tab, lost connection) would hold their TempDirs until restart.
+    {
+        let jobs = state.jobs.clone();
+        // Queued/Running entries get the full job timeout plus the TTL before
+        // they are considered orphaned.
+        let stale_ttl = job_timeout + job_ttl;
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                tick.tick().await;
+                let removed = sweep_expired_jobs(&jobs, job_ttl, stale_ttl).await;
+                if removed > 0 {
+                    eprintln!("sweeper: removed {removed} expired job(s)");
+                }
+            }
+        });
+    }
 
     let port = std::env::var("PORT")
         .ok()
@@ -643,8 +716,9 @@ async fn main() {
     eprintln!("pixestl-server listening on http://{addr}");
     eprintln!("using pixestl binary: {}", pixestl_bin.display());
     eprintln!(
-        "limits: max_jobs={max_jobs}, job_timeout={}s, max_triangles={max_triangles}",
-        job_timeout.as_secs()
+        "limits: max_jobs={max_jobs}, job_timeout={}s, max_triangles={max_triangles}, job_ttl={}s",
+        job_timeout.as_secs(),
+        job_ttl.as_secs()
     );
     axum::serve(listener, build_app(state))
         .await
@@ -659,7 +733,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
     use tempfile::TempDir;
     use tokio::sync::{RwLock, Semaphore};
     use tower::ServiceExt;
@@ -865,6 +939,7 @@ mod tests {
                     filename: "lithophane.3mf".to_string(),
                     output_path: None,
                     error: None,
+                    updated_at: Instant::now(),
                     _dir: dir,
                 },
             );
@@ -897,6 +972,7 @@ mod tests {
                     filename: "lithophane.3mf".to_string(),
                     output_path: Some(output_path),
                     error: None,
+                    updated_at: Instant::now(),
                     _dir: dir,
                 },
             );
@@ -962,6 +1038,78 @@ mod tests {
             !joined.contains("--no-texture"),
             "--no-texture should be absent"
         );
+        assert!(
+            joined.contains("--format binary"),
+            "server must request binary STL (ASCII is ~7x larger)"
+        );
+    }
+
+    fn job_with_status(status: JobStatus, age: Duration) -> Job {
+        Job {
+            status,
+            filename: "lithophane.3mf".to_string(),
+            output_path: None,
+            error: None,
+            updated_at: Instant::now() - age,
+            _dir: Arc::new(TempDir::new().unwrap()),
+        }
+    }
+
+    // TTLs in milliseconds: backdating an Instant by minutes can underflow the
+    // monotonic clock on freshly booted CI runners.
+
+    #[tokio::test]
+    async fn test_sweeper_removes_expired_finished_jobs() {
+        let jobs = RwLock::new(HashMap::new());
+        let ttl = Duration::from_millis(100);
+        {
+            let mut map = jobs.write().await;
+            map.insert(
+                "old-done".to_string(),
+                job_with_status(JobStatus::Done, Duration::from_millis(150)),
+            );
+            map.insert(
+                "old-error".to_string(),
+                job_with_status(JobStatus::Error, Duration::from_millis(150)),
+            );
+            map.insert(
+                "fresh-done".to_string(),
+                job_with_status(JobStatus::Done, Duration::ZERO),
+            );
+        }
+
+        let removed = sweep_expired_jobs(&jobs, ttl, ttl * 4).await;
+        assert_eq!(removed, 2);
+        let map = jobs.read().await;
+        assert!(map.contains_key("fresh-done"));
+        assert!(!map.contains_key("old-done"));
+        assert!(!map.contains_key("old-error"));
+    }
+
+    #[tokio::test]
+    async fn test_sweeper_keeps_active_jobs_until_stale_ttl() {
+        let jobs = RwLock::new(HashMap::new());
+        let done_ttl = Duration::from_millis(100);
+        let stale_ttl = Duration::from_millis(300);
+        {
+            let mut map = jobs.write().await;
+            // Older than done_ttl but still within stale_ttl: an active job must
+            // NOT be reaped just because it outlives the finished-job TTL.
+            map.insert(
+                "running".to_string(),
+                job_with_status(JobStatus::Running, Duration::from_millis(150)),
+            );
+            map.insert(
+                "orphaned-queued".to_string(),
+                job_with_status(JobStatus::Queued, Duration::from_millis(350)),
+            );
+        }
+
+        let removed = sweep_expired_jobs(&jobs, done_ttl, stale_ttl).await;
+        assert_eq!(removed, 1);
+        let map = jobs.read().await;
+        assert!(map.contains_key("running"));
+        assert!(!map.contains_key("orphaned-queued"));
     }
 
     #[test]
@@ -1101,6 +1249,38 @@ mod tests {
         s.texture_pixel_width = 1.0;
         // 100×100 cells × 4 triangles/cell
         assert_eq!(estimate_triangles(&s), 40_000);
+    }
+
+    #[test]
+    fn test_estimate_triangles_color_uses_full_cube_worst_case() {
+        let mut s = base_settings();
+        s.enable_color = true;
+        s.enable_texture = false;
+        s.width = 100.0;
+        s.height = 100.0;
+        s.color_pixel_width = 1.0;
+        s.color_layers = 5;
+        // 100×100 cells × 12 triangles/cube × 5 layers (no RLE assumed)
+        assert_eq!(estimate_triangles(&s), 600_000);
+    }
+
+    #[test]
+    fn test_validate_settings_rejects_ams_colors_one_in_additive() {
+        let mut s = base_settings();
+        s.pixel_method = "additive".to_string();
+        s.ams_colors = 1;
+        assert!(validate_settings(&s).is_err());
+
+        // Unlimited and >=2 are fine in additive mode.
+        s.ams_colors = 0;
+        assert!(validate_settings(&s).is_ok());
+        s.ams_colors = 2;
+        assert!(validate_settings(&s).is_ok());
+
+        // In full mode a single color is legitimate.
+        s.pixel_method = "full".to_string();
+        s.ams_colors = 1;
+        assert!(validate_settings(&s).is_ok());
     }
 
     #[test]

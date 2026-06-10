@@ -6,6 +6,7 @@ use crate::image::{
     convert_to_grayscale, extract_pixels, flip_vertical, has_transparent_pixel, resize_image,
 };
 use crate::lithophane::config::LithophaneConfig;
+use crate::lithophane::geometry::Vector3;
 use crate::lithophane::layer::NamedLayer;
 use crate::lithophane::{color_layer, support_plate, texture_layer};
 use crate::palette::{quantize_image, Palette};
@@ -80,7 +81,18 @@ impl LithophaneGenerator {
         }
 
         if let Some(ref texture_img) = texture_image {
-            let texture_mesh = texture_layer::generate_texture_layer(texture_img, &self.config)?;
+            let mut texture_mesh =
+                texture_layer::generate_texture_layer(texture_img, &self.config)?;
+            // The texture relief sits on top of the color stack (Java original:
+            // CSGThreadTextureRow translates by colorPixelLayerThickness * layerCount).
+            // Without this offset the texture and color solids would interpenetrate.
+            if self.config.color_layer {
+                texture_mesh.translate_mut(Vector3::new(
+                    0.0,
+                    0.0,
+                    self.config.total_color_layer_height(),
+                ));
+            }
             layers.push(NamedLayer::new(
                 "layer-texture".to_string(),
                 texture_mesh,
@@ -450,6 +462,71 @@ mod tests {
         for (flat, curved) in layers_flat.iter().zip(layers_curved.iter()) {
             assert_eq!(flat.mesh.triangle_count(), curved.mesh.triangle_count());
         }
+    }
+
+    // ── generate: texture sits on top of the color stack ────────────────────
+
+    fn min_z(mesh: &crate::lithophane::geometry::Mesh) -> f64 {
+        mesh.triangles
+            .iter()
+            .flat_map(|t| [t.v0.z, t.v1.z, t.v2.z])
+            .fold(f64::INFINITY, f64::min)
+    }
+
+    #[test]
+    fn test_texture_layer_starts_above_color_stack() {
+        let palette = load_test_palette();
+        let image = make_red_white_image(8, 8);
+
+        let config = LithophaneConfig {
+            dest_width_mm: 8.0,
+            dest_height_mm: 8.0,
+            color_pixel_width: 1.0,
+            texture_pixel_width: 1.0,
+            color_layer: true,
+            texture_layer: true,
+            ..default_config()
+        };
+        let stack_height = config.total_color_layer_height();
+        let gen = LithophaneGenerator::new(config).unwrap();
+        let layers = gen.generate(&image, &palette).unwrap();
+
+        let texture = layers.iter().find(|l| l.name == "layer-texture").unwrap();
+        assert!(
+            (min_z(&texture.mesh) - stack_height).abs() < 1e-9,
+            "texture must start at color stack height {stack_height}, got {}",
+            min_z(&texture.mesh)
+        );
+
+        // Color layers themselves stay within [0, stack_height].
+        for layer in layers
+            .iter()
+            .filter(|l| l.name != "layer-texture" && l.name != "layer-plate")
+        {
+            assert!(min_z(&layer.mesh) >= -1e-9, "color layer below z=0");
+        }
+    }
+
+    #[test]
+    fn test_texture_only_stays_at_z_zero() {
+        let palette = load_test_palette();
+        let image = make_red_white_image(8, 8);
+
+        let config = LithophaneConfig {
+            dest_width_mm: 8.0,
+            dest_height_mm: 8.0,
+            texture_pixel_width: 1.0,
+            color_layer: false,
+            texture_layer: true,
+            ..default_config()
+        };
+        let gen = LithophaneGenerator::new(config).unwrap();
+        let layers = gen.generate(&image, &palette).unwrap();
+
+        assert!(
+            min_z(&layers[0].mesh).abs() < 1e-9,
+            "texture-only lithophane must rest on z=0"
+        );
     }
 
     // ── generate: texture layer gets correct hex color ──────────────────────
