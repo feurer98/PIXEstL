@@ -124,19 +124,26 @@ fn process_row(ctx: &ColorRowContext<'_>, y: u32) -> Mesh {
 
             let pixel_rgb = Rgb::new(pixel[0], pixel[1], pixel[2]);
 
-            // Run-length encoding
+            // Run-length encoding: merge consecutive same-color pixels into one
+            // wide cube. Disabled in curve mode — apply_curve only maps the
+            // vertices, so a merged cube becomes a single flat chord across the
+            // arc while a neighbor row with different run lengths follows
+            // different chords, leaving millimeter-scale cracks between rows.
+            // Per-pixel cubes keep every row on the same chord grid.
             let mut k = 1;
-            while x + k < ctx.width {
-                let next_pixel = ctx.image.get_pixel(x + k, y);
-                let next_rgb = Rgb::new(next_pixel[0], next_pixel[1], next_pixel[2]);
+            if ctx.config.curve == 0.0 {
+                while x + k < ctx.width {
+                    let next_pixel = ctx.image.get_pixel(x + k, y);
+                    let next_rgb = Rgb::new(next_pixel[0], next_pixel[1], next_pixel[2]);
 
-                if next_rgb != pixel_rgb
-                    || (ctx.has_transparency && has_transparent_neighbor(ctx.image, x + k, y))
-                {
-                    break;
+                    if next_rgb != pixel_rgb
+                        || (ctx.has_transparency && has_transparent_neighbor(ctx.image, x + k, y))
+                    {
+                        break;
+                    }
+
+                    k += 1;
                 }
-
-                k += 1;
             }
 
             if let Some(color_combi) = ctx.palette.get_combi(&pixel_rgb) {
@@ -323,6 +330,64 @@ mod tests {
         let (h, b) = apply_layer_offset(10, 0, 2, 3);
         assert_eq!(h, 3);
         assert_eq!(b, 0);
+    }
+
+    // --- curve mode: RLE segmentation ---
+
+    fn load_test_palette() -> crate::palette::Palette {
+        use crate::palette::{PaletteLoader, PaletteLoaderConfig};
+        use std::io::Write as _;
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        let json = r##"{
+  "#FF0000": { "name": "Red", "active": true, "layers": { "5": { "H": 0, "S": 100, "L": 50 } } },
+  "#FFFFFF": { "name": "White", "active": true, "layers": { "5": { "H": 0, "S": 0, "L": 100 } } }
+}"##;
+        write!(f, "{json}").unwrap();
+        PaletteLoader::load(f.path(), PaletteLoaderConfig::default()).unwrap()
+    }
+
+    #[test]
+    fn test_curve_mode_disables_rle_merging() {
+        let palette = load_test_palette();
+        // A color that is guaranteed to have a ColorCombi in the palette.
+        let combi_color = palette.colors().next().expect("palette has colors");
+        let image = create_opaque_image(6, 2, [combi_color.r, combi_color.g, combi_color.b]);
+        let hex_codes = palette.hex_color_groups()[0].clone();
+
+        let flat_config = LithophaneConfig {
+            color_pixel_width: 1.0,
+            curve: 0.0,
+            ..LithophaneConfig::default()
+        };
+        let curved_config = LithophaneConfig {
+            curve: 90.0,
+            ..flat_config.clone()
+        };
+
+        let flat =
+            generate_color_layer(&image, &palette, &hex_codes, &flat_config, -1, -1).unwrap();
+        let curved =
+            generate_color_layer(&image, &palette, &hex_codes, &curved_config, -1, -1).unwrap();
+
+        // Flat: each uniform 6-pixel row merges into one run; curve mode must
+        // emit one cube per pixel so all rows share the same chord grid.
+        assert_eq!(
+            curved.triangle_count(),
+            6 * flat.triangle_count(),
+            "curve mode must emit per-pixel cubes (no RLE merging)"
+        );
+
+        // generate_color_layer emits pre-curve coordinates: no cube may span
+        // more than one pixel width along the bend axis.
+        for t in &curved.triangles {
+            let xs = [t.v0.x, t.v1.x, t.v2.x];
+            let span = xs.iter().fold(f64::MIN, |a, &b| a.max(b))
+                - xs.iter().fold(f64::MAX, |a, &b| a.min(b));
+            assert!(
+                span <= 1.0 + 1e-9,
+                "triangle spans {span} mm along x — RLE chord would crack when curved"
+            );
+        }
     }
 
     // --- has_transparent_neighbor tests ---

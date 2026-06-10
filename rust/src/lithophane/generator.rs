@@ -462,11 +462,26 @@ mod tests {
         let gen_curved = LithophaneGenerator::new(config_curved).unwrap();
         let layers_curved = gen_curved.generate(&image, &palette).unwrap();
 
-        // Same number of layers and triangles, but different geometry
+        // Same layers; curve mode segments per pixel column (plate and RLE),
+        // so curved layers have at least as many triangles as flat ones.
         assert_eq!(layers_flat.len(), layers_curved.len());
         for (flat, curved) in layers_flat.iter().zip(layers_curved.iter()) {
-            assert_eq!(flat.mesh.triangle_count(), curved.mesh.triangle_count());
+            assert_eq!(flat.name, curved.name);
+            assert!(
+                curved.mesh.triangle_count() >= flat.mesh.triangle_count(),
+                "layer '{}': curved {} < flat {}",
+                flat.name,
+                curved.mesh.triangle_count(),
+                flat.mesh.triangle_count()
+            );
         }
+
+        // The plate (8 pixel columns) must be segmented per column.
+        let plate = layers_curved
+            .iter()
+            .find(|l| l.name == "layer-plate")
+            .unwrap();
+        assert_eq!(plate.mesh.triangle_count(), 12 * 8);
     }
 
     // ── generate: texture sits on top of the color stack ────────────────────

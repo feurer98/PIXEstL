@@ -361,3 +361,38 @@ fn test_full_pipeline_meshes_are_closed_and_outward_wound() {
         assert_edges_balanced(&layer.mesh, &layer.name);
     }
 }
+
+#[test]
+fn test_full_pipeline_curved_meshes_stay_closed() {
+    use pixestl::palette::{PaletteLoader, PaletteLoaderConfig};
+    use pixestl::LithophaneGenerator;
+
+    let palette_file = test_palette_file();
+    let palette = PaletteLoader::load(palette_file.path(), PaletteLoaderConfig::default()).unwrap();
+    let image = test_image(12, 10);
+
+    let config = LithophaneConfig {
+        dest_width_mm: 12.0,
+        dest_height_mm: 10.0,
+        color_pixel_width: 1.0,
+        texture_pixel_width: 1.0,
+        color_layer: true,
+        texture_layer: true,
+        curve: 90.0,
+        ..Default::default()
+    };
+    let generator = LithophaneGenerator::new(config).unwrap();
+    let layers = generator.generate(&image, &palette).unwrap();
+
+    // apply_curve only maps vertices, so closedness and outward orientation
+    // must survive the cylindrical transform for every layer (incl. the
+    // per-column segmented plate and the per-pixel color cubes).
+    for layer in &layers {
+        assert!(
+            layer.mesh.signed_volume() > 0.0,
+            "curved layer '{}' has non-positive signed volume",
+            layer.name
+        );
+        assert_edges_balanced(&layer.mesh, &layer.name);
+    }
+}
