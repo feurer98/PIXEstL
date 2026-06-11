@@ -67,9 +67,15 @@ nav:
     - 3. PIXEstL ausführen: anleitung/generierung.md
     - 4. Slicer einrichten: anleitung/slicer.md
     - 5. Drucken: anleitung/druck.md
+    - Best Practices: anleitung/best-practices.md
+  - Web-UI & Docker: deployment-docker.md
   - Referenz:
     - Alle Parameter: referenz/parameter.md
+    - CLI-Referenz: cli-referenz.md
     - Palette-Format: referenz/palette-format.md
+  - Konzepte:
+    - CMYK-Farbmischung: konzepte/farbmischung.md
+    - Technische Architektur: konzepte/architektur.md
   - Galerie: galerie.md
   - FAQ: faq.md
 

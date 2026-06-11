@@ -4,6 +4,11 @@ Dein erstes Ergebnis in unter 10 Minuten – wenn PIXEstL bereits installiert is
 
 **Voraussetzungen auf einen Blick:** PIXEstL [installiert](installation/windows.md), ein Foto (JPG/PNG), Bambu Lab AMS mit transparenten CMYK-Filamenten.
 
+!!! tip "Lieber im Browser arbeiten?"
+    PIXEstL gibt es auch als Web-Oberfläche mit Live-Farbvorschau – als ein einziger
+    Docker-Container: `docker compose up -d --build`, dann `http://localhost:8787`
+    öffnen. Details: [Web-UI & Docker](deployment-docker.md).
+
 ---
 
 ## Schritt 1: Repository klonen und bauen
@@ -70,13 +75,19 @@ Du siehst mehrere STL-Dateien – je eine pro Filamentfarbe:
 
 ```
 ausgabe/
-├── layer-plate.stl                     ← Grundplatte (Weiß)
-├── layer-Cyan[PLA Basic].stl           ← Cyan-Farbschicht
-├── layer-Magenta[PLA Basic].stl        ← Magenta-Farbschicht
-├── layer-Yellow[PLA Basic].stl         ← Gelb-Farbschicht
-├── layer-White[PLA Basic].stl          ← Weiß-Füllschicht
-└── layer-texture-White[PLA Basic].stl  ← Helligkeitsschicht
+├── layer-plate.stl              ← Grundplatte (Weiß)
+├── layer-Cyan[PLA Basic].stl    ← Cyan-Farbschicht
+├── layer-Magenta[PLA Basic].stl ← Magenta-Farbschicht
+├── layer-Yellow[PLA Basic].stl  ← Gelb-Farbschicht
+├── layer-White[PLA Basic].stl   ← Weiß-Füllschicht
+└── layer-texture.stl            ← Helligkeitsschicht (Textur)
 ```
+
+!!! tip "Noch einfacher: 3MF statt ZIP"
+    Mit `-o ausgabe.3mf` erzeugt PIXEstL statt des ZIPs eine einzelne 3MF-Datei
+    mit eingebetteten Filamentfarben. Bambu Studio öffnet sie direkt und weist
+    die AMS-Slots automatisch zu – Schritt 4 und die manuelle Zuweisung in
+    Schritt 5 entfallen weitgehend.
 
 ---
 

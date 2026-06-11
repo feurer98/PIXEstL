@@ -2,6 +2,13 @@
 
 Diese Anleitung erklaert Schritt fuer Schritt, wie du die von PIXEstL erzeugten STL-Dateien in Bambu Studio einrichtest und fuer den Druck vorbereitest.
 
+!!! tip "Abkuerzung: 3MF-Ausgabe verwenden"
+    Wenn du PIXEstL mit `-o ausgabe.3mf` aufrufst, entfaellt der manuelle Import:
+    Die 3MF-Datei enthaelt alle Schichten bereits korrekt positioniert **inklusive
+    Filamentfarben** — Bambu Studio weist die AMS-Slots beim Oeffnen automatisch
+    zu. Schritt 1 und 2 dieser Anleitung brauchst du dann nur zur Kontrolle.
+    Die uebrigen Schritte (Infill, Filament-Reihenfolge, Pausen) gelten unveraendert.
+
 ---
 
 ## Voraussetzungen
@@ -42,7 +49,7 @@ Im **Objects Panel** (linke Seitenleiste) siehst du jede Farbschicht als separat
 | `layer-Yellow[...].stl` | Gelb-Filament |
 | `layer-White[...].stl` | Weiss-Filament (Slot 1) |
 | `layer-plate.stl` | Weiss-Filament (Slot 1) |
-| `layer-texture-[...].stl` | Weiss-Filament (Slot 1) |
+| `layer-texture.stl` | Weiss-Filament (Slot 1) |
 
 ![Filament-Zuordnung](../assets/images/anleitung/bambu_color_selection.png)
 

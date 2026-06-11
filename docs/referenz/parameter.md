@@ -27,7 +27,7 @@ Diese Parameter müssen beim regulären Aufruf angegeben werden.
 |-----------|----------|-------------|
 | `--input` | `-i` | Pfad zum Eingabebild (JPG, PNG, WebP). Nicht nötig bei `--calibrate` oder `--palette-info`. |
 | `--palette` | `-p` | Pfad zur Palette-Datei (JSON mit Filament-Farbdaten) |
-| `--output` | `-o` | Pfad zur Ausgabe-ZIP-Datei (enthält alle STL-Dateien). Nicht nötig bei `--palette-info`. |
+| `--output` | `-o` | Ausgabepfad. Die Endung wählt das Format: `.3mf` = einzelne 3MF-Datei mit eingebetteten Filamentfarben (Bambu Studio weist AMS-Slots automatisch zu), `.zip` = ZIP mit STL-Dateien, ohne Endung = Verzeichnis mit STL-Dateien. Nicht nötig bei `--palette-info`. |
 
 **Wann es Sinn macht zu ändern:** Diese Werte änderst du bei jedem Aufruf – sie sind immer bildspezifisch.
 
@@ -143,6 +143,9 @@ Erzeugt zylindrisch gekrümmte Lithophanien statt flacher Platten – ideal für
 - `180`: Panoramafotos als freistehendes Leuchtbild.
 - `360`: Als Lampenschirm – das Bild wickelt sich einmal komplett um.
 
+!!! note "Größere Dateien bei Krümmung"
+    Im Krümmungsmodus wird die Geometrie pro Pixelspalte segmentiert, damit alle Schichten exakt dem Bogen folgen. Gekrümmte Modelle haben deshalb deutlich mehr Dreiecke als flache – `--format binary` verwenden.
+
 !!! example "Beispiele"
     ```bash
     # Halbzylinder
@@ -178,6 +181,9 @@ Parameter für Feinsteuerung, AMS-Betrieb und Debugging.
 | 2 AMS (8 Slots) | `--color-number 8` |
 | 4 AMS (16 Slots) | `--color-number 16` |
 | Alles auf einmal | `--color-number 0` (Standard) |
+
+!!! note "Mindestens 2 im additiven Modus"
+    Im additiven Modus ist pro Gruppe immer ein Slot für Weiß reserviert. `--color-number 1` ist deshalb ungültig – gültig sind `0` (alle) oder Werte ab `2`.
 
 ---
 

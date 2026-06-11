@@ -82,7 +82,10 @@ Häufige Ursachen:
 
 - **Dateien nicht als einzelnes Objekt geladen:** In Bambu Studio beim Import *"Load as single object?"* → **Yes** auswählen.
 - **Falsche Filament-Slot-Zuweisung:** Im Objects Panel jeden Eintrag prüfen und das richtige Filament zuweisen.
-- **Platte, Weiß und Textur auf demselben Slot:** `layer-plate.stl`, `layer-White[...].stl` und `layer-texture-[...].stl` müssen alle auf Slot 1 (Weiß).
+- **Platte, Weiß und Textur auf demselben Slot:** `layer-plate.stl`, `layer-White[...].stl` und `layer-texture.stl` müssen alle auf Slot 1 (Weiß).
+
+!!! tip "Einfacher mit 3MF"
+    Mit `-o ausgabe.3mf` statt `.zip` weist Bambu Studio die Filament-Slots beim Öffnen automatisch zu – die manuelle Zuweisung entfällt.
 
 [Detaillierte Slicer-Anleitung →](anleitung/slicer.md)
 
@@ -143,6 +146,21 @@ Eine **0.2 mm Nozzle** liefert die besten Ergebnisse. Eine 0.4 mm Nozzle funktio
 Im additiven Modus (Standard) **ja** – Weiß ist Pflicht. Es füllt die Pixel-Schichten auf, die keine andere Farbe benötigen, und sorgt für gleichmäßige Dicke.
 
 Im `full`-Modus ist Weiß optional (dann nur als weitere Farboption).
+
+---
+
+### Mein Slicer meldet Mesh-Fehler oder will das Modell reparieren
+
+Ältere PIXEstL-Versionen erzeugten Dreiecke mit teils nach innen zeigenden
+Normalen – Slicer meldeten dann „Objekt hat Fehler" und reparierten automatisch.
+Das ist behoben: Aktuelle Versionen erzeugen geschlossene, konsistent nach außen
+orientierte Körper (durch automatische Tests abgesichert), die ohne
+Reparaturwarnung importiert werden sollten.
+
+Erscheint die Warnung trotzdem: PIXEstL aktualisieren (`git pull` + neu bauen)
+und die Dateien neu generieren. Bleibt sie bestehen, bitte ein
+[Issue](https://github.com/feurer98/PIXEstL/issues) mit den verwendeten
+Parametern öffnen.
 
 ---
 

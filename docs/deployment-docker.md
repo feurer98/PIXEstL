@@ -1,8 +1,12 @@
-# Docker-Deployment (NAS-Test)
+# Web-UI & Docker-Deployment
+
+PIXEstL gibt es neben dem CLI auch als **Web-Oberfläche mit Live-Farbvorschau**:
+Bild hochladen, Einstellungen mit Vorschau anpassen, Ergebnis als 3MF (mit
+automatischer AMS-Slot-Zuweisung) oder STL-ZIP herunterladen.
 
 Das gesamte Web-Setup läuft als **ein einziger Container auf einem Port**: Der
 `pixestl-server` liefert sowohl die `/api` als auch das gebaute React-Frontend
-(statisch) aus. Vorteile fürs Testen auf dem NAS: nur ein Image, ein Port, kein
+(statisch) aus. Vorteile (z. B. fürs NAS): nur ein Image, ein Port, kein
 CORS, kein separater Reverse-Proxy.
 
 ```
@@ -78,7 +82,8 @@ bereitstellen — praktisch, wenn das NAS zu schwach zum Bauen ist.
 | `PIXESTL_BIN` | `/usr/local/bin/pixestl` | Pfad zum CLI-Binary |
 | `PIXESTL_MAX_JOBS` | `min(CPU-Kerne, 2)` | Gleichzeitig laufende Generierungen. Jeder Job belegt das ganze Mesh im RAM — höher nur mit ausreichend Speicher. |
 | `PIXESTL_JOB_TIMEOUT_SECS` | `240` | Harte Zeitgrenze pro Job; danach wird der Subprozess **gekillt** und der Job als Fehler markiert (verhindert hängende Prozesse). |
-| `PIXESTL_MAX_TRIANGLES` | `20000000` | Obergrenze der geschätzten Mesh-Größe. Größere Anfragen werden mit **400** abgelehnt, statt das RAM zu sprengen. Auf speicherarmen Hosts senken. |
+| `PIXESTL_MAX_TRIANGLES` | `20000000` | Obergrenze der geschätzten Mesh-Größe (Worst-Case-Schätzung). Größere Anfragen werden mit **400** abgelehnt, statt das RAM zu sprengen. Auf speicherarmen Hosts senken, bei abgelehnten Großjobs anheben. |
+| `PIXESTL_JOB_TTL_SECS` | `900` | Wie lange fertige Jobs auf ihren Download warten. Danach räumt ein Hintergrund-Task die Temp-Dateien ab — verlassene Browser-Tabs füllen die Platte nicht mehr. |
 
 Das Frontend ruft `/api` **same-origin** auf — im Container ist daher kein
 `VITE_API_BASE` nötig.
@@ -119,10 +124,12 @@ Container mehr RAM geben (`docker logs pixestl` zeigt OOM/`SIGKILL`).
 - **Daten sind flüchtig.** Jobs liegen im Speicher, generierte Dateien in einem
   Temp-Verzeichnis im Container. Für einen Test reicht das; es gibt nichts zu
   persistieren.
-- **Noch nicht härtungsreif** (siehe `docs/frontend/02-…`, V-MODEL-07): kein
-  Job-TTL/Cleanup, CORS permissiv. Vor einer Freigabe über das lokale Netz
-  hinaus absichern. (Concurrency-Limit, Job-Timeout und Mesh-Größen-Guard sind
-  vorhanden — siehe Env-Variablen oben.)
+- **Eingebaute Härtung:** Concurrency-Limit, Job-Timeout, Mesh-Größen-Guard und
+  Job-TTL-Cleanup (siehe Env-Variablen oben); Quellbilder über 16384 × 16384 px
+  werden vor dem Dekodieren abgelehnt (Schutz vor Dekompressionsbomben). Der
+  Container läuft als non-root-User, `docker-compose.yml` begrenzt den RAM auf 4 GB.
+- **Für eine Freigabe über das lokale Netz hinaus fehlen noch:** Authentifizierung,
+  Rate-Limiting und eine restriktive CORS-Policy (derzeit permissiv).
 - **Healthcheck:** `GET /api/health` → `ok` (in Dockerfile/Compose hinterlegt).
 - **Upload-Limit:** 64 MB pro Request (für große Bilder; anpassbar im Server).
 
