@@ -1,0 +1,1810 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Verwandle deine Fotos in farbige Lithophanien für den 3D-Druck – mit CMYK-basierter additiver Farbmischung und AMS-Unterstützung">
+      
+      
+      
+        <link rel="canonical" href="https://feurer98.github.io/PIXEstL/frontend/02-offene-punkte-und-vereinfachungen/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Offene Punkte, Vereinfachungen & Unstimmigkeiten - PIXEstL - Farb-Lithophanie-Generator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#offene-punkte-vereinfachungen-unstimmigkeiten" class="md-skip">
+          Zum Inhalt
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="../.." title="PIXEstL - Farb-Lithophanie-Generator" class="md-header__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PIXEstL - Farb-Lithophanie-Generator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Offene Punkte, Vereinfachungen &amp; Unstimmigkeiten
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Dunkles Design aktivieren"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dunkles Design aktivieren" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Helles Design aktivieren"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Helles Design aktivieren" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Suche" placeholder="Suche" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Suche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Zurücksetzen" aria-label="Zurücksetzen" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Suche wird initialisiert
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Startseite
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../schnellstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Schnellstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/windows/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../anleitung/uebersicht/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Anleitung
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../deployment-docker/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web-UI & Docker
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../referenz/parameter/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Referenz
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../konzepte/farbmischung/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Konzepte
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../galerie/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Galerie
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PIXEstL - Farb-Lithophanie-Generator" class="md-nav__button md-logo" aria-label="PIXEstL - Farb-Lithophanie-Generator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PIXEstL - Farb-Lithophanie-Generator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/feurer98/PIXEstL" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    feurer98/PIXEstL
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Startseite
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schnellstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schnellstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/unix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    macOS / Linux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anleitung
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Anleitung
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/uebersicht/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Übersicht
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/kalibrierung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Palette kalibrieren
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/bild-vorbereiten/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Bild vorbereiten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/generierung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. PIXEstL ausführen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/slicer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Slicer einrichten
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/druck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Drucken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../anleitung/best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment-docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web-UI & Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Referenz
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Referenz
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../referenz/parameter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alle Parameter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli-referenz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI-Referenz
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../referenz/palette-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Palette-Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Konzepte
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Konzepte
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../konzepte/farbmischung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMYK-Farbmischung
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../konzepte/architektur/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technische Architektur
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../galerie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Galerie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v-modell-zuordnung-legende" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-Modell-Zuordnung (Legende)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ubersicht" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Übersicht
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v-model-01-reales-palettenformat-weicht-vom-prototyp-ab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-01 — Reales Palettenformat weicht vom Prototyp ab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-02-wolbung-ohne-vorschau-wirkung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-02 — Wölbung ohne Vorschau-Wirkung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-03-additive-mischung-schichtanzahl-ohne-wirkung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-03 — Additive Mischung / Schichtanzahl ohne Wirkung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-04-ams-farblimit-ohne-wirkung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-04 — AMS-Farblimit ohne Wirkung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-05-pixelmethode-ohne-wirkung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-05 — Pixelmethode ohne Wirkung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-06-performance-des-canvas-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-06 — Performance des Canvas-Processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-07-echter-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-07 — Echter Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-08-responsive-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-08 — Responsive-Layout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-09-layer-toggles-ohne-vorschau-wirkung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-09 — Layer-Toggles ohne Vorschau-Wirkung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-10-persistenz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-10 — Persistenz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-11-internationalisierung" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-11 — Internationalisierung
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-12-browser-support-oklch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-12 — Browser-Support / oklch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v-model-13-ui-filament-toggles-im-backend-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        V-MODEL-13 — UI-Filament-Toggles im Backend-Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nicht-ubernommene-prototyp-bestandteile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nicht übernommene Prototyp-Bestandteile
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="offene-punkte-vereinfachungen-unstimmigkeiten">Offene Punkte, Vereinfachungen &amp; Unstimmigkeiten<a class="headerlink" href="#offene-punkte-vereinfachungen-unstimmigkeiten" title="Permanent link">&para;</a></h1>
+<p>Dieses Dokument hält alle bewussten Vereinfachungen, strukturellen
+Unstimmigkeiten zwischen Prototyp und realem Backend, Risiken und offenen
+Entscheidungen fest, die während der Portierung aufgefallen sind.</p>
+<p>Ziel: Weiterarbeit nach dem <strong>V-Modell</strong>. Jeder Eintrag ist mit einer (zunächst
+abgeleiteten) Anforderung und einer <strong>Verifikationsebene</strong> versehen, damit aus
+diesem Backlog Spezifikation und Testfälle der jeweiligen Ebene entstehen
+können.</p>
+<h2 id="v-modell-zuordnung-legende">V-Modell-Zuordnung (Legende)<a class="headerlink" href="#v-modell-zuordnung-legende" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Ebene (Definition)</th>
+<th>Gegenstück (Verifikation)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Anforderungen</td>
+<td>Abnahmetest</td>
+</tr>
+<tr>
+<td>Systemarchitektur</td>
+<td>Systemtest</td>
+</tr>
+<tr>
+<td>Komponentendesign</td>
+<td>Integrationstest</td>
+</tr>
+<tr>
+<td>Modulimplementierung</td>
+<td>Unit-Test</td>
+</tr>
+</tbody>
+</table>
+<p>Status: <code>offen</code> · <code>umgesetzt</code> · <code>entscheidung-nötig</code>.</p>
+<h2 id="ubersicht">Übersicht<a class="headerlink" href="#ubersicht" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Typ</th>
+<th>Kurzbeschreibung</th>
+<th>V-Ebene</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V-MODEL-01</td>
+<td>Unstimmigkeit</td>
+<td>Reales Palettenformat ≠ Prototyp-Schema</td>
+<td>Komponentendesign / Integrationstest</td>
+<td>umgesetzt (Daten verworfen)</td>
+</tr>
+<tr>
+<td>V-MODEL-02</td>
+<td>Vereinfachung</td>
+<td>Vorschau ignoriert Wölbung (<code>curve</code>)</td>
+<td>Systemarchitektur / Systemtest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-03</td>
+<td>Vereinfachung</td>
+<td>Vorschau ignoriert additive Schichtmischung / <code>colorLayers</code></td>
+<td>Systemarchitektur / Systemtest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-04</td>
+<td>Vereinfachung</td>
+<td>AMS-Limit (<code>amsColors</code>) ohne Wirkung</td>
+<td>Anforderungen / Abnahmetest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-05</td>
+<td>Vereinfachung</td>
+<td><code>pixelMethod</code> (Additiv/Voll) ohne Wirkung</td>
+<td>Anforderungen / Abnahmetest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-06</td>
+<td>Risiko</td>
+<td><code>processCanvas</code> synchron im Main-Thread</td>
+<td>Komponentendesign / Integrationstest</td>
+<td>teilweise (Debounce)</td>
+</tr>
+<tr>
+<td>V-MODEL-07</td>
+<td>Offene Entscheidung</td>
+<td>Echter Export (Backend vs. WASM) fehlt</td>
+<td>Systemarchitektur / Systemtest</td>
+<td>umgesetzt (Backend)</td>
+</tr>
+<tr>
+<td>V-MODEL-13</td>
+<td>Unstimmigkeit</td>
+<td>UI-Filament-Toggles wirken nicht auf Backend-Export</td>
+<td>Komponentendesign / Integrationstest</td>
+<td>umgesetzt</td>
+</tr>
+<tr>
+<td>V-MODEL-08</td>
+<td>Lücke</td>
+<td>Kein Responsive-Layout</td>
+<td>Anforderungen / Abnahmetest</td>
+<td>umgesetzt (Breakpoints)</td>
+</tr>
+<tr>
+<td>V-MODEL-09</td>
+<td>Lücke</td>
+<td>Texturschicht-Toggles ohne Vorschau-Wirkung</td>
+<td>Komponentendesign / Integrationstest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-10</td>
+<td>Lücke</td>
+<td>Keine Persistenz (Settings/Palette/Projekt)</td>
+<td>Anforderungen / Abnahmetest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-11</td>
+<td>Vereinfachung</td>
+<td>i18n: UI hart deutsch</td>
+<td>Anforderungen / Abnahmetest</td>
+<td>offen</td>
+</tr>
+<tr>
+<td>V-MODEL-12</td>
+<td>Risiko</td>
+<td><code>oklch()</code>/Browser-Support, kein Fallback-Konzept</td>
+<td>Systemarchitektur / Systemtest</td>
+<td>umgesetzt (Hex-Fallback)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="details">Details<a class="headerlink" href="#details" title="Permanent link">&para;</a></h2>
+<h3 id="v-model-01-reales-palettenformat-weicht-vom-prototyp-ab">V-MODEL-01 — Reales Palettenformat weicht vom Prototyp ab<a class="headerlink" href="#v-model-01-reales-palettenformat-weicht-vom-prototyp-ab" title="Permanent link">&para;</a></h3>
+<p><strong>Befund.</strong> Der Prototyp-Parser erwartet <code>{ filaments|colors: [{name, color}] }</code>.
+Die echten Dateien in <a href="../../palette"><code>/palette</code></a> sind dagegen <strong>nach Hex-Farbe
+verschlüsselte Objekte</strong> mit Per-Layer-HSL-Kalibrierung:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{ &quot;#0086D6&quot;: { &quot;name&quot;: &quot;Cyan[PLA Basic]&quot;, &quot;active&quot;: true,
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>               &quot;layers&quot;: { &quot;5&quot;: {H,S,L}, &quot;4&quot;: {…}, … } } }
+</code></pre></div>
+<p><strong>Umsetzung.</strong> <code>lib/palette.ts</code> erkennt und normalisiert <strong>beide</strong> Formate
+(Unit-Tests in <code>palette.test.ts</code>). Die Hex-Schlüssel werden zur Basisfarbe.
+<strong>Vereinfachung:</strong> die <code>layers</code>-HSL-Daten (additive Mischkalibrierung) werden
+aktuell <strong>verworfen</strong> — die 2D-Vorschau nutzt nur die Basisfarbe.
+<strong>Offen für später.</strong> Die Layer-Daten erlauben eine realistischere Vorschau und
+gehören in das Color-Datenmodell (Verknüpfung mit V-MODEL-03). Außerdem kodiert
+der Dateiname (<code>*-0.10mm.json</code>) die Schichtdicke — bislang nicht ausgewertet.
+<strong>Verifikation.</strong> Integrationstest „realer Palette-Import setzt aktive
+Filamente + Kalibrierung korrekt".</p>
+<p><strong>Default-Fall gelöst.</strong> Eine echte, kalibrierte Default-Palette ist ins Frontend
+gebündelt (<code>src/assets/default-palette.json</code>, geladen über
+<code>lib/defaultPalette.ts</code>). Sie dient Anzeige <strong>und</strong> Export, sodass der Export
+ohne Upload funktioniert (vorher Fehlermeldung „Palette laden"). Die volle
+Layer-Kalibrierung bleibt erhalten, weil die Originalbytes hochgeladen werden.
+Regressionstest: <code>defaultPalette.test.ts</code> (gültig + aktives Weiß).</p>
+<h3 id="v-model-02-wolbung-ohne-vorschau-wirkung">V-MODEL-02 — Wölbung ohne Vorschau-Wirkung<a class="headerlink" href="#v-model-02-wolbung-ohne-vorschau-wirkung" title="Permanent link">&para;</a></h3>
+<p><code>settings.curve</code> (0–180°) ist als Regler vorhanden, beeinflusst die Vorschau
+nicht (nur Textanzeige). Spezifikation nötig: zylindrische Projektion in der
+Vorschau vs. nur Parameter-Weitergabe an das CLI. <strong>Abhängig von V-MODEL-07.</strong></p>
+<h3 id="v-model-03-additive-mischung-schichtanzahl-ohne-wirkung">V-MODEL-03 — Additive Mischung / Schichtanzahl ohne Wirkung<a class="headerlink" href="#v-model-03-additive-mischung-schichtanzahl-ohne-wirkung" title="Permanent link">&para;</a></h3>
+<p><code>colorLayers</code>, <code>colorLayerThickness</code>, <code>pixelMethod</code> beeinflussen die Vorschau
+nicht. Das echte PIXEstL mischt transparente Filamente additiv über gestapelte
+Schichten (vgl. <code>layers</code>-Daten aus V-MODEL-01). Eine getreue Vorschau müsste das
+CMYK-/HSL-Schichtmodell nachbilden. Entscheidung: Wie nah soll die Vorschau am
+Druckergebnis sein?</p>
+<h3 id="v-model-04-ams-farblimit-ohne-wirkung">V-MODEL-04 — AMS-Farblimit ohne Wirkung<a class="headerlink" href="#v-model-04-ams-farblimit-ohne-wirkung" title="Permanent link">&para;</a></h3>
+<p><code>amsColors</code> (0 = unbegrenzt) begrenzt im echten Workflow die gleichzeitig
+geladenen Filamente (Bambu AMS). Vorschau/Matching berücksichtigen das Limit
+nicht. Anforderung klären: harte Begrenzung der aktiven Palette?</p>
+<h3 id="v-model-05-pixelmethode-ohne-wirkung">V-MODEL-05 — Pixelmethode ohne Wirkung<a class="headerlink" href="#v-model-05-pixelmethode-ohne-wirkung" title="Permanent link">&para;</a></h3>
+<p><code>pixelMethod</code> (Additiv/Voll) ist nur ein Toggle. Bedeutung und Auswirkung auf
+Matching/Geometrie spezifizieren.</p>
+<h3 id="v-model-06-performance-des-canvas-processing">V-MODEL-06 — Performance des Canvas-Processing<a class="headerlink" href="#v-model-06-performance-des-canvas-processing" title="Permanent link">&para;</a></h3>
+<p><code>processCanvas</code> läuft synchron über alle Blöcke bei jeder Settings-Änderung.
+<strong>Umgesetzt:</strong> Debounce (80 ms) im <code>useLithophaneCanvas</code>-Hook. <strong>Offen:</strong>
+Auslagern in einen Web Worker / <code>OffscreenCanvas</code> bei feiner Pixelbreite (viele
+Blöcke). Integrationstest mit großem Bild + kleiner Pixelbreite (Frame-Budget).</p>
+<h3 id="v-model-07-echter-export">V-MODEL-07 — Echter Export<a class="headerlink" href="#v-model-07-echter-export" title="Permanent link">&para;</a></h3>
+<p><strong>Umgesetzt: Backend-Variante.</strong> Entscheidung gefallen für einen
+<strong>Rust/axum-Server, der das CLI-Binary aufruft</strong>, <strong>asynchron mit Job +
+Polling</strong>. Implementierung unter <a href="../../server"><code>/server</code></a>:
+- <code>POST /api/jobs</code> (multipart <code>image</code>+<code>palette</code>+<code>settings</code>+<code>format</code>) → <code>202
+  { jobId }</code>, startet <code>pixestl</code> als Subprozess.
+- <code>GET /api/jobs/:id</code> → <code>queued|running|done|error</code> (CLI-stderr im Fehlerfall).
+- <code>GET /api/jobs/:id/download</code> → fertiges 3MF/ZIP.</p>
+<p>Frontend: <code>useExport</code> lädt Original-<strong>Bild- und Palettendatei</strong> hoch (beide jetzt
+in <code>useImageLoader</code>/<code>usePaletteLoader</code> vorgehalten), pollt den Job und stößt den
+Browser-Download an. Dev: Vite proxyt <code>/api</code> → <code>:8787</code>; <code>VITE_API_BASE</code> für
+separaten Host. End-to-End gegen Beispielbild + Palette verifiziert (valides
+3MF und ZIP). Mapping <code>settings</code> → CLI-Flags: siehe <code>server/README.md</code>.</p>
+<p><strong>Härtung inzwischen umgesetzt:</strong> Concurrency-Limit (Semaphore), Job-Timeout mit
+Subprozess-Kill, Mesh-Größen-Guard, Job-TTL-Cleanup, Binary-STL für ZIP-Exporte,
+Dekompressionsbomben-Schutz beim Bildladen, non-root-Container mit RAM-Limit
+(siehe <code>server/README.md</code> und <a href="../../deployment-docker/">Web-UI &amp; Docker</a>).
+<strong>Offen:</strong> restriktive CORS-Policy, Authentifizierung/Rate-Limit für öffentliches
+Deployment, ggf. Fortschritts-Prozent statt nur Status.</p>
+<h3 id="v-model-08-responsive-layout">V-MODEL-08 — Responsive-Layout<a class="headerlink" href="#v-model-08-responsive-layout" title="Permanent link">&para;</a></h3>
+<p><strong>Umgesetzt</strong> (Styling-Phase 4). <code>ConverterPage.module.css</code> macht <code>.page</code> zum
+einzigen Scroll-Container; Breakpoints: &gt; 1024 px = Desktop unverändert,
+≤ 1024 px = Panels als 2×2 mit Seiten-Scroll, ≤ 640 px = alles einspaltig
+(Vorschauen erhalten dabei eine Mindesthöhe). <strong>Offen:</strong> echte Geräte-Tests und
+ggf. ein dediziertes Mobile-Drawer-Muster statt reinem Stacking.</p>
+<h3 id="v-model-09-layer-toggles-ohne-vorschau-wirkung">V-MODEL-09 — Layer-Toggles ohne Vorschau-Wirkung<a class="headerlink" href="#v-model-09-layer-toggles-ohne-vorschau-wirkung" title="Permanent link">&para;</a></h3>
+<p><code>enableColor</code> / <code>enableTexture</code> schalten Schichten nur konzeptionell. In Vorschau
+und Export-Mapping müssen sie wirken (z. B. nur-Textur-Druck).</p>
+<h3 id="v-model-10-persistenz">V-MODEL-10 — Persistenz<a class="headerlink" href="#v-model-10-persistenz" title="Permanent link">&para;</a></h3>
+<p>Settings, Palette und „Projekt" gehen bei Reload verloren. Optionen: localStorage,
+URL-State, Export/Import einer Projektdatei. Anforderung offen.</p>
+<h3 id="v-model-11-internationalisierung">V-MODEL-11 — Internationalisierung<a class="headerlink" href="#v-model-11-internationalisierung" title="Permanent link">&para;</a></h3>
+<p>UI-Texte sind hart deutsch. Falls Mehrsprachigkeit gewünscht: i18n-Schicht
+einziehen (Texte zentralisieren).</p>
+<h3 id="v-model-12-browser-support-oklch">V-MODEL-12 — Browser-Support / oklch<a class="headerlink" href="#v-model-12-browser-support-oklch" title="Permanent link">&para;</a></h3>
+<p><strong>Umgesetzt</strong> (Styling-Phase 5). <code>lib/oklch.ts</code> rechnet die oklch-Theme-Tokens
+bei Bedarf <strong>berechnet</strong> (oklch→oklab→sRGB, nicht geraten) nach Hex; der
+<code>ThemeProvider</code> prüft <code>CSS.supports('color','oklch(0 0 0)')</code> einmalig und setzt
+nur bei fehlender Unterstützung die Hex-Fallbacks. Unit-Tests in
+<code>oklch.test.ts</code>. <strong>Offen:</strong> Zielbrowser-Matrix formal festlegen; analog Fallback
+für <code>DecompressionStream</code>/<code>OffscreenCanvas</code> (Bezug V-MODEL-06).</p>
+<h3 id="v-model-13-ui-filament-toggles-im-backend-export">V-MODEL-13 — UI-Filament-Toggles im Backend-Export<a class="headerlink" href="#v-model-13-ui-filament-toggles-im-backend-export" title="Permanent link">&para;</a></h3>
+<p><strong>Umgesetzt</strong> (Lösungsweg a). Das Frontend sendet die aktiven Filament-Farben
+als <code>activeColors</code> (Hex-Liste) mit; <code>useExport</code> hängt sie an den Multipart-Request.
+Der Server (<code>apply_active_toggles</code>) setzt im hochgeladenen, hex-keyed Palette-JSON
+pro Farbe das <code>active</code>-Flag entsprechend (case-insensitiv), bevor das CLI läuft.
+Vorschau (filtert bereits nach <code>active</code>) und Export sind damit konsistent.
+<strong>Verifiziert</strong> (Integrationstest, manuell): Baseline = 8 Farb-Layer; mit nur
+White+Cyan+Magenta+Yellow aktiv enthält das ZIP genau diese 4 — die deaktivierten
+Farben fehlen. <strong>Hinweis:</strong> Im additiven Modus erzwingt das CLI ein aktives
+<code>#FFFFFF</code>; wird Weiß deaktiviert, meldet der Export einen entsprechenden
+CLI-Fehler (erwartetes Verhalten).</p>
+<hr />
+<h2 id="nicht-ubernommene-prototyp-bestandteile">Nicht übernommene Prototyp-Bestandteile<a class="headerlink" href="#nicht-ubernommene-prototyp-bestandteile" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Bundler-/Unpacking-Logik</strong> (<code>__bundler/*</code>, base64-Assets, DOMParser-Swap):
+  reines Artefakt der Artefakt-Umgebung.</li>
+<li><strong><code>postMessage</code> Edit-Mode-Bridge</strong> (<code>__activate_edit_mode</code> …): ersetzt durch
+  <code>ThemePanel</code> (siehe ADR-07).</li>
+<li><strong>Eingebettete woff2-Fonts</strong>: ersetzt durch Google-Fonts-Link.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Zurück zum Seitenanfang
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/feurer98/PIXEstL" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "In Zwischenablage kopiert", "clipboard.copy": "In Zwischenablage kopieren", "search.result.more.one": "1 weiteres Suchergebnis auf dieser Seite", "search.result.more.other": "# weitere Suchergebnisse auf dieser Seite", "search.result.none": "Keine Suchergebnisse", "search.result.one": "1 Suchergebnis", "search.result.other": "# Suchergebnisse", "search.result.placeholder": "Suchbegriff eingeben", "search.result.term.missing": "Es fehlt", "select.version": "Version ausw\u00e4hlen"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
