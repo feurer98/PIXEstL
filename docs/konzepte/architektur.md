@@ -29,7 +29,13 @@ graph TB
 | `palette`     | `src/palette/`   | Paletten-Laden, Farbkombinationen, Quantisierung |
 | `image`       | `src/image/`     | Bildladen, Skalierung, Transparenzerkennung      |
 | `lithophane`  | `src/lithophane/`| Konfiguration, Mesh-Generierung, Geometrie       |
-| `stl`         | `src/stl/`       | ASCII-/Binaer-STL-Export, ZIP-Verpackung          |
+| `stl`         | `src/stl/`       | ASCII-/Binaer-STL-Export, 3MF-Export (mit Filamentfarben), ZIP-Verpackung |
+
+!!! note "Web-Stack"
+    Neben dem Rust-Kern (`rust/`) enthaelt das Repository einen Axum-HTTP-Server
+    (`server/`), der das CLI pro Job als Subprozess startet, und ein
+    React-Frontend (`frontend/`) mit Live-Farbvorschau. Beides laeuft zusammen
+    in einem Docker-Container — siehe [Web-UI & Docker](../deployment-docker.md).
 
 ---
 
@@ -110,7 +116,15 @@ Das Kernmodul mit folgenden Unterkomponenten:
 | **Geometry**      | `geometry.rs`        | Mesh, Triangle, Vector3 - Basis-Geometrie      |
 
 !!! note "Run-Length Encoding (RLE)"
-    Benachbarte Pixel gleicher Farbe werden zu einem einzigen breiteren Quader zusammengefasst. Dies reduziert die Anzahl der Dreiecke erheblich und fuehrt zu kleineren STL-Dateien.
+    Benachbarte Pixel gleicher Farbe werden zu einem einzigen breiteren Quader zusammengefasst. Dies reduziert die Anzahl der Dreiecke erheblich und fuehrt zu kleineren STL-Dateien. Im Kruemmungsmodus (`--curve`) ist RLE deaktiviert, damit alle Zeilen demselben Sehnenraster folgen (siehe unten).
+
+!!! note "Manifold-Garantie"
+    Jede erzeugte Schicht ist ein geschlossener Koerper mit konsistent nach aussen
+    zeigenden Normalen. Das wird durch Invarianten-Tests abgesichert: positives
+    signiertes Volumen, jede gerichtete Kante mit Gegenrichtungs-Zwilling, und
+    ein strikter Kantenpaarungs-Check fuer den Texturkoerper. Die Texturschicht
+    sitzt dabei oben auf dem Farbstapel (z-Versatz um die Gesamthoehe der
+    Farbschichten), die Grundplatte darunter.
 
 ### `stl/` - STL-Export
 
@@ -179,6 +193,14 @@ Optimierung der Farbschichten fuer kleinere STL-Dateien:
 3. Statt einzelner Quader pro Pixel einen **zusammengefassten breiten Quader** erzeugen
 4. Reduziert die Dreiecksanzahl um typischerweise 40-70%
 
+**Ausnahme Kruemmungsmodus:** Die Zylindertransformation (`--curve`) verschiebt
+nur Vertices — ein ueber mehrere Pixel zusammengefasster Quader wuerde zu einer
+einzelnen flachen Sehne ueber den Bogen, waehrend Nachbarzeilen mit anderen
+Run-Laengen anderen Sehnen folgen (Risse zwischen den Zeilen). Im Kruemmungsmodus
+wird deshalb pro Pixelspalte segmentiert: RLE aus, Grundplatte in Spalten-Quader
+aufgeteilt, Texturboden als Raster statt als Faecher. Korrektheit geht hier vor
+Dateigroesse.
+
 ### Mesh-Generierung
 
 Zwei unterschiedliche Strategien je nach Schichttyp:
@@ -199,11 +221,10 @@ Die wichtigsten externen Abhaengigkeiten von PIXEstL:
 | `clap`             | 4       | Kommandozeilen-Parsing                        |
 | `image`            | 0.25    | Bildladen und -verarbeitung                   |
 | `rayon`            | 1.10    | Datenparallele Verarbeitung                   |
-| `nalgebra`         | 0.34    | Lineare Algebra / Vektoroperationen           |
-| `stl_io`           | 0.10    | STL-Datei-Schreiben                           |
 | `serde` / `serde_json` | 1   | JSON-Serialisierung (Paletten)                |
 | `thiserror`        | 2       | Ergonomische Fehlertypen                      |
-| `anyhow`           | 1       | Fehlerbehandlung auf Anwendungsebene          |
 | `zip`              | 8       | ZIP-Archiv-Erstellung                         |
-| `tracing`          | 0.1     | Strukturiertes Logging                        |
-| `num_cpus`         | 1       | CPU-Kern-Erkennung                            |
+| `lib3mf-core`      | 0.4 (vendored) | 3MF-Export mit Filamentfarben (Bambu Studio) |
+
+Geometrie (Vektoren, Dreiecke, Meshes) und das STL-Schreiben sind ohne externe
+Crates implementiert (`src/lithophane/geometry.rs`, `src/stl/writer.rs`).

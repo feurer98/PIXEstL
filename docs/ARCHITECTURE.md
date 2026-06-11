@@ -1,5 +1,12 @@
 # PIXEstL Architecture Documentation
 
+> **Historisches Dokument:** Diese Analyse der Java-Implementierung entstand
+> **vor** dem Rust-Port als Planungsgrundlage ("proposed" Dependencies,
+> "Open Questions"). Sie beschreibt **nicht** den aktuellen Stand des
+> Rust-Codes — Defaults, Dateinamen und Implementierungsdetails weichen ab.
+> Die aktuelle Architektur ist unter
+> [Konzepte → Technische Architektur](konzepte/architektur.md) dokumentiert.
+
 ## Overview
 
 PIXEstL is a command-line tool for creating color lithophanes for 3D printing with multi-color filaments (CMYK-based additive color mixing). This document provides a comprehensive analysis of the Java implementation to guide the Rust port.
@@ -204,11 +211,11 @@ XYZ → CIELab (using pivot functions)
 **Texture Layer (CSGThreadTexture):**
 - Single STL file (usually white)
 - For each pixel:
-  - Grayscale value → height mapping
-  - Black (0) → `textureMinThickness` (default 0.2mm)
-  - White (255) → `textureMaxThickness` (default 2.5mm)
+  - Grayscale value → height mapping (darkness K = 1 − brightness)
+  - White (255) → `textureMinThickness` (Rust default 0.3mm)
+  - Black (0) → `textureMaxThickness` (Rust default 1.8mm)
   - Linear interpolation for intermediate values
-- Creates 3D relief effect
+- Creates 3D relief effect (dark = thick = less light)
 
 **Support Plate (CSGSupportPlate):**
 - Base plate at Z=0
@@ -374,19 +381,20 @@ function quantizeColors(image, paletteColors, distanceMethod):
 
 **Purpose:** Convert grayscale values to 3D height for texture layer.
 
-**Formula:**
+**Formula (as implemented):**
 ```
-height = minThickness + (luminance / 255) * (maxThickness - minThickness)
+darkness K = 1 - luminance / 255
+height = minThickness + K * (maxThickness - minThickness)
 ```
 
 Where:
 - luminance: 0 (black) to 255 (white)
-- minThickness: Default 0.2mm
-- maxThickness: Default 2.5mm
+- minThickness: Rust default 0.3mm
+- maxThickness: Rust default 1.8mm
 
 **Effect:**
-- Dark areas: thinner (more light passes through)
-- Light areas: thicker (less light passes through)
+- Dark areas: thicker (less light passes through)
+- Light areas: thinner (more light passes through)
 - Creates relief/depth effect when backlit
 
 ## Java-to-Rust Mapping

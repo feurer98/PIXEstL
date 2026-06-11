@@ -118,6 +118,12 @@ Wenn du mehr Farben in der Palette hast, als dein AMS gleichzeitig aufnehmen kan
 
 Die Kruemmung wickelt die Lithophanie um einen Zylinder. Der Radius wird automatisch aus der Breite und dem Winkel berechnet, sodass die Bogenlaenge der eingestellten Breite entspricht.
 
+!!! note "Mehr Dreiecke im Kruemmungsmodus"
+    Damit alle Schichten dem Bogen exakt folgen, segmentiert PIXEstL die Geometrie
+    im Kruemmungsmodus pro Pixelspalte (Platte, Farbwuerfel und Texturboden).
+    Gekruemmte Lithophanien haben dadurch spuerbar groessere STL-Dateien als
+    flache — `--format binary` ist hier besonders empfehlenswert.
+
 ```bash
 # Halbzylinder, 150mm breit
 pixestl -i panorama.jpg -p palette.json -o panorama.zip -w 150 -C 180
@@ -245,19 +251,25 @@ PIXEstL erzeugt ein ZIP-Archiv mit mehreren STL-Dateien. Jede Datei entspricht e
 
 ```
 ausgabe.zip
-+-- layer-plate.stl                    # Grundplatte
-+-- layer-Cyan[PLA Basic].stl          # Cyan-Farbschicht
-+-- layer-Magenta[PLA Basic].stl       # Magenta-Farbschicht
-+-- layer-Yellow[PLA Basic].stl        # Gelb-Farbschicht
-+-- layer-White[PLA Basic].stl         # Weiss-Fuellschicht
-+-- layer-texture-White[PLA Basic].stl # Textur-/Helligkeitsschicht
++-- layer-plate.stl              # Grundplatte
++-- layer-Cyan[PLA Basic].stl    # Cyan-Farbschicht
++-- layer-Magenta[PLA Basic].stl # Magenta-Farbschicht
++-- layer-Yellow[PLA Basic].stl  # Gelb-Farbschicht
++-- layer-White[PLA Basic].stl   # Weiss-Fuellschicht
++-- layer-texture.stl            # Textur-/Helligkeitsschicht
 ```
 
 | Datei | Funktion |
 |-------|----------|
 | `layer-plate.stl` | Die Grundplatte, auf der alle anderen Schichten aufbauen. Wird in der Farbe des Texturfilaments (typischerweise Weiss) gedruckt. |
 | `layer-[Farbe].stl` | Eine Farbschicht. Enthaelt die Pixel, die diese Filamentfarbe verwenden. Pro aktiver Farbe in der Palette wird eine STL-Datei erzeugt. |
-| `layer-texture-[Farbe].stl` | Die Texturschicht, die die Helligkeitsinformation traegt. Wird in Weiss (oder einer anderen hellen Farbe) gedruckt. |
+| `layer-texture.stl` | Die Texturschicht, die die Helligkeitsinformation traegt. Sitzt oben auf dem Farbstapel und wird in der mit `--texture-color` gewaehlten Farbe (Standard: Weiss) gedruckt. |
+
+!!! tip "Alternative: 3MF-Ausgabe"
+    Endet der Ausgabepfad auf `.3mf` statt `.zip`, schreibt PIXEstL eine einzelne
+    3MF-Datei mit eingebetteten Filamentfarben. Bambu Studio weist die AMS-Slots
+    dann automatisch zu. Ein Pfad ohne Endung erzeugt ein Verzeichnis mit
+    einzelnen STL-Dateien.
 
 ![STL-Dateien](../assets/images/anleitung/sample_result.png)
 

@@ -111,8 +111,12 @@ Browser-Download an. Dev: Vite proxyt `/api` → `:8787`; `VITE_API_BASE` für
 separaten Host. End-to-End gegen Beispielbild + Palette verifiziert (valides
 3MF und ZIP). Mapping `settings` → CLI-Flags: siehe `server/README.md`.
 
-**Offen (Härtung vor geteiltem Deployment):** Job-Cleanup/TTL, Concurrency-Limit,
-restriktive CORS, ggf. Fortschritts-Prozent statt nur Status.
+**Härtung inzwischen umgesetzt:** Concurrency-Limit (Semaphore), Job-Timeout mit
+Subprozess-Kill, Mesh-Größen-Guard, Job-TTL-Cleanup, Binary-STL für ZIP-Exporte,
+Dekompressionsbomben-Schutz beim Bildladen, non-root-Container mit RAM-Limit
+(siehe `server/README.md` und [Web-UI & Docker](../deployment-docker.md)).
+**Offen:** restriktive CORS-Policy, Authentifizierung/Rate-Limit für öffentliches
+Deployment, ggf. Fortschritts-Prozent statt nur Status.
 
 ### V-MODEL-08 — Responsive-Layout
 **Umgesetzt** (Styling-Phase 4). `ConverterPage.module.css` macht `.page` zum

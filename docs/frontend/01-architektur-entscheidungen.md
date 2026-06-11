@@ -47,7 +47,8 @@ ein **eigenständiger Crate außerhalb des `rust/`-Workspace**, damit die CLI-CI
 unberührt bleibt; die Kopplung ist nur das Binary (auflösbar über
 `$PIXESTL_BIN`/PATH), nicht der Code. `useExport` lädt die Original-Dateien hoch,
 weil das CLI die volle Palette/das echte Bild braucht (Bezug V-MODEL-01).
-Härtungspunkte (TTL, Concurrency, CORS) sind in V-MODEL-07 vermerkt.
+Härtung (TTL, Concurrency, Timeout, OOM-Guard) ist inzwischen umgesetzt; offen
+bleiben CORS/Auth — Status in V-MODEL-07.
 
 ## ADR-06 — Paletten-Parser akzeptiert beide Formate
 **Status:** angenommen (siehe V-MODEL-01).

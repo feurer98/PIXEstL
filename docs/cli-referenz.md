@@ -20,9 +20,9 @@ Diese Parameter sind beim regulaeren Lithophanie-Aufruf erforderlich:
 
 | Parameter        | Kurzform | Beschreibung                                      |
 |------------------|----------|---------------------------------------------------|
-| `--input`        | `-i`     | Pfad zum Eingabebild (JPG, PNG, WebP). Nicht noetig bei `--calibrate` oder `--palette-info`. |
+| `--input`        | `-i`     | Pfad zum Eingabebild (JPG, PNG, WebP; maximal 16384 x 16384 Pixel). Nicht noetig bei `--calibrate` oder `--palette-info`. |
 | `--palette`      | `-p`     | Pfad zur Palette-Datei (JSON)                     |
-| `--output`       | `-o`     | Pfad zur Ausgabe-Datei (ZIP mit STL-Dateien). Nicht noetig bei `--palette-info`. |
+| `--output`       | `-o`     | Ausgabepfad. Die Endung waehlt das Format: `.3mf` = 3MF-Datei mit eingebetteten Filamentfarben (empfohlen fuer Bambu Studio), `.zip` = ZIP mit STL-Dateien, ohne Endung = Verzeichnis. Nicht noetig bei `--palette-info`. |
 
 !!! example "Minimalbeispiel"
     ```bash
@@ -142,6 +142,9 @@ Der Winkel gibt an, welchen Bogenabschnitt eines Zylinders die Lithophanie umspa
 
 !!! info "Wie die Kruemmung wirkt"
     Die X-Achse (Breite) der Lithophanie wird um einen Zylinder gewickelt. Die Y-Achse (Hoehe) bleibt die Zylinderachse. Die Z-Achse (Tiefe/Dicke) wird zum radialen Abstand von der Zylinderoberflaeche. Der Radius wird automatisch so berechnet, dass die Bogenlaenge der eingestellten Breite entspricht.
+
+!!! note "Segmentierung im Kruemmungsmodus"
+    Damit alle Schichten dem Bogen exakt folgen, wird die Geometrie im Kruemmungsmodus pro Pixelspalte segmentiert (Platte, Farbwuerfel, Texturboden; das Run-Length-Encoding der Farbschichten ist deaktiviert). Gekruemmte Modelle haben deshalb deutlich mehr Dreiecke als flache — `--format binary` verwenden.
 
 !!! example "Beispiele"
     ```bash

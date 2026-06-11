@@ -33,7 +33,13 @@ Durch clevere Farbmischung aus transparenten Filamenten entstehen Kunstwerke, di
 
     ---
 
-    In Rust geschrieben mit paralleler Verarbeitung über alle CPU-Kerne. Typische Bilder werden in Sekunden verarbeitet – 2–3× schneller als die Java-Vorgängerversion.
+    In Rust geschrieben mit paralleler Verarbeitung über alle CPU-Kerne. Typische Bilder werden in Sekunden verarbeitet – ohne JVM, als einzelnes Binary.
+
+-   **Web-Oberfläche**
+
+    ---
+
+    Neben dem CLI gibt es eine Browser-Oberfläche mit Live-Farbvorschau – als ein einziger Docker-Container inklusive 3MF-Export mit automatischer AMS-Slot-Zuweisung. [Zur Web-UI →](deployment-docker.md)
 
 </div>
 
