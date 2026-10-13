@@ -32,7 +32,7 @@ rayon = "1.10"
 thiserror = "2"
 
 # Archiving
-zip = "8"
+zip = "9"
 
 # 3MF export
 lib3mf-core = "0.4"
